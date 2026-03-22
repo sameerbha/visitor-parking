@@ -229,40 +229,58 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-config.js"></script>
 <script src="js/app.js"></script>
 <script>
-// ── Auth ────────────────────────────────────────────────────────────────────
-const user = requireAuth('exemptions.html');
-if (!user) throw new Error('redirecting');
-
-document.getElementById('user-badge').textContent = user.name;
-document.getElementById('mobile-user').textContent = 'Signed in as ' + user.name;
-
-function doLogout() { logoutUser(); window.location.href = 'login.html'; }
-document.getElementById('logout-btn').addEventListener('click', doLogout);
-document.getElementById('mobile-logout').addEventListener('click', doLogout);
-document.getElementById('hamburger').addEventListener('click', () =>
-  document.getElementById('mobile-nav').classList.toggle('open'));
-
 // ── State ────────────────────────────────────────────────────────────────────
 let currentAddressId  = null;
+let currentAddress    = null;
 let allExemptions     = [];
 let allUnitCodes      = [];
 let deleteTargetId    = null;
 let ucDeleteTargetId  = null;
 let activeTab         = 'exemptions';
+let _currentUser      = null;
 
-// ── Address selector ─────────────────────────────────────────────────────────
-const addrSelect = document.getElementById('addr-select');
-populateAddressSelect(addrSelect, (id) => { currentAddressId = id; loadAll(); });
-addrSelect.addEventListener('change', () => { currentAddressId = addrSelect.value; loadAll(); });
+// ── Page init (async) ────────────────────────────────────────────────────────
+(async () => {
+  const user = await requireAuth('exemptions.html');
+  if (!user) return;
+  _currentUser = user;
 
-// Hide the entire toolbar when there is only one building
-if (getAddresses().length <= 1) {
-  document.querySelector('.portal-toolbar').style.display = 'none';
+  document.getElementById('user-badge').textContent  = user.name;
+  document.getElementById('mobile-user').textContent = 'Signed in as ' + user.name;
+
+  function doLogout() { logoutUser().then(() => { window.location.href = 'login.html'; }); }
+  document.getElementById('logout-btn').addEventListener('click', doLogout);
+  document.getElementById('mobile-logout').addEventListener('click', doLogout);
+  document.getElementById('hamburger').addEventListener('click', () =>
+    document.getElementById('mobile-nav').classList.toggle('open'));
+
+  const addrSelect = document.getElementById('addr-select');
+  const addrs      = await populateAddressSelect(addrSelect);
+
+  if (addrs.length <= 1) {
+    document.querySelector('.portal-toolbar').style.display = 'none';
+  }
+
+  if (addrs.length > 0) {
+    currentAddress   = addrs[0];
+    currentAddressId = addrs[0].id;
+    await loadAll();
+  }
+
+  addrSelect.addEventListener('change', async () => {
+    currentAddress   = await getAddressById(addrSelect.value);
+    currentAddressId = currentAddress.id;
+    await loadAll();
+  });
+})();
+
+async function loadAll() {
+  await Promise.all([loadExemptions(), loadUnitCodes()]);
 }
-
-function loadAll() { loadExemptions(); loadUnitCodes(); }
 
 // ── Tabs ─────────────────────────────────────────────────────────────────────
 function showTab(tab) {
@@ -283,12 +301,11 @@ function handleAddBtn() {
 // EXEMPTIONS
 // ════════════════════════════════════════════════════════════
 
-function loadExemptions() {
+async function loadExemptions() {
   if (!currentAddressId) return;
-  allExemptions = getExemptions(currentAddressId);
-  const addr = getAddressById(currentAddressId);
+  allExemptions = await getExemptions(currentAddressId);
   document.getElementById('table-title').textContent =
-    'Plates currently exempt at ' + (addr ? addr.full_name : '');
+    'Plates currently exempt at ' + (currentAddress ? currentAddress.full_name : '');
   renderExemptionsTable();
 }
 
@@ -309,22 +326,22 @@ function renderExemptionsTable() {
 
   const tbody = document.getElementById('exemptions-tbody');
   tbody.innerHTML = filtered.length === 0
-    ? `<tr><td colspan="8" class="empty-row">${q || filter !== 'all' ? 'No results matching your filters.' : 'No exemptions on file.'}</td></tr>`
+    ? '<tr><td colspan="8" class="empty-row">' + (q || filter !== 'all' ? 'No results matching your filters.' : 'No exemptions on file.') + '</td></tr>'
     : filtered.map(e => {
         const active = isActive(e);
-        return `<tr class="${active ? '' : 'row-expired'}">
-          <td>${plateBadge(e.plate)}</td>
-          <td>${e.notes ? escapeHtml(e.notes) : '<span class="muted">—</span>'}</td>
-          <td class="date-cell">${e.start_date}</td>
-          <td class="date-cell">${e.end_date}</td>
-          <td>${escapeHtml(e.entered_by)}</td>
-          <td class="date-cell">${e.entry_date}</td>
-          <td><span class="status-badge ${active ? 'status-active' : 'status-expired'}">${active ? 'Active' : 'Expired'}</span></td>
-          <td class="controls-cell">
-            <button class="btn btn-warning btn-sm" onclick="openEditModal('${e.id}')" title="Edit">✏</button>
-            <button class="btn btn-danger btn-sm"  onclick="confirmDelete('${e.id}','${escapeHtml(e.plate)}','${escapeHtml(e.notes||'')}')" title="Delete">🗑</button>
-          </td>
-        </tr>`;
+        return '<tr class="' + (active ? '' : 'row-expired') + '">' +
+          '<td>' + plateBadge(e.plate) + '</td>' +
+          '<td>' + (e.notes ? escapeHtml(e.notes) : '<span class="muted">—</span>') + '</td>' +
+          '<td class="date-cell">' + e.start_date + '</td>' +
+          '<td class="date-cell">' + e.end_date + '</td>' +
+          '<td>' + escapeHtml(e.entered_by) + '</td>' +
+          '<td class="date-cell">' + e.entry_date + '</td>' +
+          '<td><span class="status-badge ' + (active ? 'status-active' : 'status-expired') + '">' + (active ? 'Active' : 'Expired') + '</span></td>' +
+          '<td class="controls-cell">' +
+            '<button class="btn btn-warning btn-sm" onclick="openEditModal(\'' + e.id + '\')" title="Edit">✏</button>' +
+            '<button class="btn btn-danger btn-sm"  onclick="confirmDelete(\'' + e.id + '\',\'' + escapeHtml(e.plate) + '\',\'' + escapeHtml(e.notes||'') + '\')" title="Delete">🗑</button>' +
+          '</td>' +
+          '</tr>';
       }).join('');
 
   document.getElementById('table-footer').textContent =
@@ -340,7 +357,7 @@ document.getElementById('export-btn').addEventListener('click', () => {
     ['Plate','Notes','Start Date','End Date','Entered By','Entry Date','Status'],
     ...allExemptions.map(e => [e.plate, e.notes, e.start_date, e.end_date, e.entered_by, e.entry_date, isActive(e)?'Active':'Expired'])
   ];
-  exportCSV(rows, 'exemptions-' + (getAddressById(currentAddressId)?.lot_code||'') + '-' + todayStr() + '.csv');
+  exportCSV(rows, 'exemptions-' + (currentAddress?.lot_code||'') + '-' + todayStr() + '.csv');
 });
 
 function openAddModal() {
@@ -374,7 +391,7 @@ document.getElementById('f-plate').addEventListener('input', function() {
   const pos = this.selectionStart; this.value = this.value.toUpperCase(); this.setSelectionRange(pos,pos);
 });
 
-document.getElementById('exemption-form').addEventListener('submit', function(e) {
+document.getElementById('exemption-form').addEventListener('submit', async function(e) {
   e.preventDefault();
   const errEl  = document.getElementById('form-error');
   const plate  = document.getElementById('f-plate').value.trim().toUpperCase();
@@ -384,32 +401,43 @@ document.getElementById('exemption-form').addEventListener('submit', function(e)
   const editId = document.getElementById('edit-id').value;
 
   errEl.classList.add('hidden');
-  if (!plate)                              { errEl.textContent='Plate is required.'; errEl.classList.remove('hidden'); return; }
-  if (!/^[A-Z0-9 ]{2,10}$/.test(plate))  { errEl.textContent='Invalid plate format.'; errEl.classList.remove('hidden'); return; }
-  if (!start)                              { errEl.textContent='Start date is required.'; errEl.classList.remove('hidden'); return; }
-  if (!end)                                { errEl.textContent='End date is required.'; errEl.classList.remove('hidden'); return; }
-  if (end < start)                         { errEl.textContent='End date must be on or after start date.'; errEl.classList.remove('hidden'); return; }
+  if (!plate)                             { errEl.textContent='Plate is required.'; errEl.classList.remove('hidden'); return; }
+  if (!/^[A-Z0-9 ]{2,10}$/.test(plate)) { errEl.textContent='Invalid plate format.'; errEl.classList.remove('hidden'); return; }
+  if (!start)                             { errEl.textContent='Start date is required.'; errEl.classList.remove('hidden'); return; }
+  if (!end)                               { errEl.textContent='End date is required.'; errEl.classList.remove('hidden'); return; }
+  if (end < start)                        { errEl.textContent='End date must be on or after start date.'; errEl.classList.remove('hidden'); return; }
 
-  const payload = { plate, notes, start_date:start, end_date:end, address_id:currentAddressId, entered_by: user.name };
-  if (editId) { updateExemption(editId, payload); showAlert('Exemption updated.'); }
-  else        { addExemption(payload);             showAlert('Exemption added.');   }
-  closeModal('form-modal');
-  loadExemptions();
+  const submitBtn = document.getElementById('form-submit-btn');
+  submitBtn.disabled = true;
+  try {
+    const payload = { plate, notes, start_date:start, end_date:end, address_id:currentAddressId,
+                      entered_by: _currentUser.name, entry_date: todayStr() };
+    if (editId) { await updateExemption(editId, payload); showAlert('Exemption updated.'); }
+    else        { await addExemption(payload);             showAlert('Exemption added.');   }
+    closeModal('form-modal');
+    await loadExemptions();
+  } catch(err) {
+    errEl.textContent = 'Failed to save. Please try again.';
+    errEl.classList.remove('hidden');
+  } finally {
+    submitBtn.disabled = false;
+  }
 });
 
 function confirmDelete(id, plate, notes) {
   deleteTargetId = id;
   document.getElementById('delete-modal-body').innerHTML =
-    `Remove the exemption for plate <strong>${escapeHtml(plate)}</strong>${notes ? ' (' + escapeHtml(notes) + ')' : ''}? This cannot be undone.`;
+    'Remove the exemption for plate <strong>' + escapeHtml(plate) + '</strong>' +
+    (notes ? ' (' + escapeHtml(notes) + ')' : '') + '? This cannot be undone.';
   document.getElementById('delete-modal').classList.add('open');
 }
 
-document.getElementById('confirm-delete-btn').addEventListener('click', () => {
+document.getElementById('confirm-delete-btn').addEventListener('click', async () => {
   if (deleteTargetId) {
-    deleteExemption(deleteTargetId);
+    await deleteExemption(deleteTargetId);
     closeModal('delete-modal');
     deleteTargetId = null;
-    loadExemptions();
+    await loadExemptions();
     showAlert('Exemption deleted.');
   }
 });
@@ -418,12 +446,11 @@ document.getElementById('confirm-delete-btn').addEventListener('click', () => {
 // UNIT CODES
 // ════════════════════════════════════════════════════════════
 
-function loadUnitCodes() {
+async function loadUnitCodes() {
   if (!currentAddressId) return;
-  allUnitCodes = getUnitCodes(currentAddressId);
-  const addr = getAddressById(currentAddressId);
+  allUnitCodes = await getUnitCodes(currentAddressId);
   document.getElementById('uc-table-title').textContent =
-    'Unit Codes — ' + (addr ? addr.full_name : '');
+    'Unit Codes — ' + (currentAddress ? currentAddress.full_name : '');
   renderUnitCodesTable();
 }
 
@@ -435,19 +462,20 @@ function renderUnitCodesTable() {
 
   const tbody = document.getElementById('unitcodes-tbody');
   tbody.innerHTML = filtered.length === 0
-    ? `<tr><td colspan="6" class="empty-row">${q ? 'No units matching your search.' : 'No unit codes set up yet. Click "+ Add Unit Code" to create one.'}</td></tr>`
-    : filtered.map(u => `
-        <tr>
-          <td><strong>${escapeHtml(u.unit_number)}</strong></td>
-          <td><span class="code-badge">${escapeHtml(u.code)}</span></td>
-          <td>${escapeHtml(u.created_by)}</td>
-          <td class="date-cell">${u.created_date}</td>
-          <td class="date-cell">${u.last_reset}</td>
-          <td class="controls-cell">
-            <button class="btn btn-warning btn-sm" onclick="openUCEditModal('${u.id}')" title="Edit / Reset code">✏ Edit</button>
-            <button class="btn btn-danger btn-sm"  onclick="confirmUCDelete('${u.id}','${escapeHtml(u.unit_number)}')" title="Remove">🗑</button>
-          </td>
-        </tr>`).join('');
+    ? '<tr><td colspan="6" class="empty-row">' + (q ? 'No units matching your search.' : 'No unit codes set up yet. Click "+ Add Unit Code" to create one.') + '</td></tr>'
+    : filtered.map(u =>
+        '<tr>' +
+          '<td><strong>' + escapeHtml(u.unit_number) + '</strong></td>' +
+          '<td><span class="code-badge">' + escapeHtml(u.code) + '</span></td>' +
+          '<td>' + escapeHtml(u.created_by) + '</td>' +
+          '<td class="date-cell">' + u.created_date + '</td>' +
+          '<td class="date-cell">' + u.last_reset + '</td>' +
+          '<td class="controls-cell">' +
+            '<button class="btn btn-warning btn-sm" onclick="openUCEditModal(\'' + u.id + '\')" title="Edit / Reset code">✏ Edit</button>' +
+            '<button class="btn btn-danger btn-sm"  onclick="confirmUCDelete(\'' + u.id + '\',\'' + escapeHtml(u.unit_number) + '\')" title="Remove">🗑</button>' +
+          '</td>' +
+        '</tr>'
+      ).join('');
 
   document.getElementById('uc-table-footer').textContent =
     'Showing ' + filtered.length + ' of ' + allUnitCodes.length + ' unit code(s)';
@@ -457,7 +485,7 @@ document.getElementById('uc-search-input').addEventListener('input', renderUnitC
 
 // Generate a random 6-char alphanumeric code
 function generateUnitCode() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no ambiguous chars
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let code = '';
   for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
   document.getElementById('uc-code').value = code;
@@ -482,20 +510,19 @@ function openUCEditModal(id) {
   document.getElementById('uc-modal-title').textContent = 'Edit Unit Code — ' + uc.unit_number;
   document.getElementById('uc-submit-btn').textContent = 'Save Changes';
   document.getElementById('uc-unit').value = uc.unit_number;
-  document.getElementById('uc-unit').disabled = true; // unit number cannot change on edit
+  document.getElementById('uc-unit').disabled = true;
   document.getElementById('uc-code').value = uc.code;
   document.getElementById('uc-form-error').classList.add('hidden');
   document.getElementById('uc-form-modal').classList.add('open');
 }
 
-// Auto-uppercase both fields
 ['uc-unit','uc-code'].forEach(id => {
   document.getElementById(id).addEventListener('input', function() {
     const pos = this.selectionStart; this.value = this.value.toUpperCase(); this.setSelectionRange(pos,pos);
   });
 });
 
-document.getElementById('uc-form').addEventListener('submit', function(e) {
+document.getElementById('uc-form').addEventListener('submit', async function(e) {
   e.preventDefault();
   const errEl  = document.getElementById('uc-form-error');
   const unit   = document.getElementById('uc-unit').value.trim().toUpperCase();
@@ -507,32 +534,46 @@ document.getElementById('uc-form').addEventListener('submit', function(e) {
   if (!code) { errEl.textContent = 'Unit code is required.'; errEl.classList.remove('hidden'); return; }
   if (!/^[A-Z0-9]{4,20}$/.test(code)) { errEl.textContent = 'Code must be 4–20 letters and numbers, no spaces.'; errEl.classList.remove('hidden'); return; }
 
-  // Check for duplicate unit on new add
-  if (!editId) {
-    const existing = getUnitCode(unit, currentAddressId);
-    if (existing) { errEl.textContent = 'Unit ' + unit + ' already has a code. Use Edit to change it.'; errEl.classList.remove('hidden'); return; }
+  const submitBtn = document.getElementById('uc-submit-btn');
+  submitBtn.disabled = true;
+  try {
+    // Check for duplicate unit on new add
+    if (!editId) {
+      const existing = await getUnitCode(unit, currentAddressId);
+      if (existing) {
+        errEl.textContent = 'Unit ' + unit + ' already has a code. Use Edit to change it.';
+        errEl.classList.remove('hidden');
+        return;
+      }
+    }
+    const payload = { unit_number: unit, code, address_id: currentAddressId,
+                      created_by: _currentUser.name, created_date: todayStr() };
+    if (editId) { await updateUnitCode(editId, payload); showAlert('Unit code updated for unit ' + unit + '.'); }
+    else        { await addUnitCode(payload);             showAlert('Unit code added for unit ' + unit + '.');  }
+    closeModal('uc-form-modal');
+    await loadUnitCodes();
+  } catch(err) {
+    errEl.textContent = 'Failed to save. Please try again.';
+    errEl.classList.remove('hidden');
+  } finally {
+    submitBtn.disabled = false;
   }
-
-  const payload = { unit_number: unit, code, address_id: currentAddressId, created_by: user.name };
-  if (editId) { updateUnitCode(editId, payload); showAlert('Unit code updated for unit ' + unit + '.'); }
-  else        { addUnitCode(payload);             showAlert('Unit code added for unit ' + unit + '.');   }
-  closeModal('uc-form-modal');
-  loadUnitCodes();
 });
 
 function confirmUCDelete(id, unit) {
   ucDeleteTargetId = id;
   document.getElementById('uc-delete-body').innerHTML =
-    `Remove the parking code for unit <strong>${escapeHtml(unit)}</strong>? Residents of this unit will no longer be able to register visitors until a new code is assigned.`;
+    'Remove the parking code for unit <strong>' + escapeHtml(unit) + '</strong>? ' +
+    'Residents of this unit will no longer be able to register visitors until a new code is assigned.';
   document.getElementById('uc-delete-modal').classList.add('open');
 }
 
-document.getElementById('uc-confirm-delete-btn').addEventListener('click', () => {
+document.getElementById('uc-confirm-delete-btn').addEventListener('click', async () => {
   if (ucDeleteTargetId) {
-    deleteUnitCode(ucDeleteTargetId);
+    await deleteUnitCode(ucDeleteTargetId);
     closeModal('uc-delete-modal');
     ucDeleteTargetId = null;
-    loadUnitCodes();
+    await loadUnitCodes();
     showAlert('Unit code removed.');
   }
 });

@@ -36,10 +36,12 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-config.js"></script>
 <script src="js/app.js"></script>
 <script>
-  // If already logged in, go home
-  if (getCurrentUser()) window.location.href = 'index.html';
+  // If already logged in, redirect to home
+  (async () => { if (await getCurrentUser()) window.location.href = 'index.html'; })();
 
   // Parse ?from= param for redirect after login
   const params   = new URLSearchParams(window.location.search);

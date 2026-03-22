@@ -4,6 +4,44 @@ All changes to this project are documented here in reverse chronological order.
 
 ---
 
+## [1.3.0] — 2026-03-22
+
+### Production: Full Supabase integration
+
+All pages and the shared data layer have been fully migrated from localStorage demo mode to Supabase (PostgreSQL + Supabase Auth). The app is now production-ready.
+
+**`supabase-schema.sql`** — Complete rewrite:
+- Tables: `addresses`, `visitor_registrations`, `exemptions`, `unit_codes`
+- Row Level Security (RLS) policies: anonymous users can insert visitor registrations; authenticated staff can read/write all tables
+- Three SECURITY DEFINER RPCs (unit codes never exposed to the client):
+  - `validate_unit_code(p_unit_number, p_address_id, p_code)` → boolean
+  - `get_monthly_pass_stats(p_unit_number, p_address_id)` → JSON stats
+  - `can_register_visitor(p_unit_number, p_address_id, p_plate)` → `{ allowed, reason }`
+- Seed data: 225 Sumach Street, lot_code `10001`
+
+**`js/app.js`** — Complete rewrite:
+- All data functions are now `async` and talk directly to Supabase via the JS client
+- Auth migrated to Supabase Auth (`signInWithPassword`, `signOut`, `updateUser`, `getUser`)
+- `validateUnitCode`, `canRegisterVisitor`, `getMonthlyPassStats` now call server-side RPCs
+- localStorage removed entirely
+
+**`js/supabase-config.js`** (gitignored) — Placeholder config file; copy from `supabase-config.example.js` and fill in project URL + anon key.
+
+**`js/supabase-config.example.js`** (committed) — Safe template for the above.
+
+**`.gitignore`** — Added `js/supabase-config.js` and `.Rhistory`.
+
+**HTML pages updated** — All five pages now load the Supabase CDN, config, and app scripts in the correct order. Page-init logic wrapped in `async () => { … }()` IIFEs; all data calls `await`ed; event handlers made `async`:
+- `enforcement.html` ✓
+- `exemptions.html` ✓
+- `register.html` ✓
+- `login.html` ✓
+- `change-password.html` ✓
+
+**Files changed:** `supabase-schema.sql`, `js/app.js`, `js/supabase-config.js` (new), `js/supabase-config.example.js` (new), `.gitignore`, `enforcement.html`, `exemptions.html`, `register.html`, `login.html`, `change-password.html`, `CHANGELOG.md`
+
+---
+
 ## [1.0.0] — 2026-03-21
 
 ### Initial Build

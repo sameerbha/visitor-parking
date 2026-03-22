@@ -11,6 +11,9 @@ Thumbs.db
 .env.local
 .env.*.local
 
+# Supabase credentials (copy supabase-config.example.js → supabase-config.js and fill in)
+js/supabase-config.js
+
 # Supabase local config (when you set it up)
 .supabase/
 supabase/.env

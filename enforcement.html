@@ -124,58 +124,68 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-config.js"></script>
 <script src="js/app.js"></script>
 <script>
-// ── Auth ────────────────────────────────────────────────────────────────────
-const user = requireAuth('enforcement.html');
-if (!user) throw new Error('redirecting');
-
-document.getElementById('user-badge').textContent = user.name;
-document.getElementById('mobile-user').textContent = 'Signed in as ' + user.name;
-
-function doLogout() { logoutUser(); window.location.href = 'login.html'; }
-document.getElementById('logout-btn').addEventListener('click', doLogout);
-document.getElementById('mobile-logout').addEventListener('click', doLogout);
-document.getElementById('hamburger').addEventListener('click', () =>
-  document.getElementById('mobile-nav').classList.toggle('open'));
-
 // ── State ────────────────────────────────────────────────────────────────────
-let currentAddressId  = null;
-let currentAddress    = null;
-let allVisitors       = [];
-let deleteTargetId    = null;
-let refreshTimer      = null;
+let currentAddressId = null;
+let currentAddress   = null;
+let allVisitors      = [];
+let deleteTargetId   = null;
 
-// ── Address selector ─────────────────────────────────────────────────────────
-const addrSelect = document.getElementById('addr-select');
-populateAddressSelect(addrSelect, (id, addr) => { currentAddressId = id; currentAddress = addr; loadVisitors(); });
+// ── Page init (async) ────────────────────────────────────────────────────────
+(async () => {
+  const user = await requireAuth('enforcement.html');
+  if (!user) return;
 
-// Hide the entire toolbar when there is only one building
-if (getAddresses().length <= 1) {
-  document.querySelector('.portal-toolbar').style.display = 'none';
-}
+  document.getElementById('user-badge').textContent        = user.name;
+  document.getElementById('mobile-user').textContent       = 'Signed in as ' + user.name;
 
-addrSelect.addEventListener('change', () => {
-  const addr = getAddressById(addrSelect.value);
-  currentAddressId = addr.id; currentAddress = addr;
-  document.getElementById('lookup-title').textContent = 'Plate Lookup — ' + addr.name;
-  document.getElementById('check-result').innerHTML = '';
-  loadVisitors();
-});
+  function doLogout() { logoutUser().then(() => { window.location.href = 'login.html'; }); }
+  document.getElementById('logout-btn').addEventListener('click', doLogout);
+  document.getElementById('mobile-logout').addEventListener('click', doLogout);
+  document.getElementById('hamburger').addEventListener('click', () =>
+    document.getElementById('mobile-nav').classList.toggle('open'));
 
-// ── Load visitors ─────────────────────────────────────────────────────────────
-function loadVisitors() {
+  const addrSelect = document.getElementById('addr-select');
+  const addrs      = await populateAddressSelect(addrSelect);
+
+  if (addrs.length <= 1) {
+    document.querySelector('.portal-toolbar').style.display = 'none';
+  }
+
+  if (addrs.length > 0) {
+    currentAddressId = addrs[0].id;
+    currentAddress   = addrs[0];
+    await loadVisitors();
+  }
+
+  addrSelect.addEventListener('change', async () => {
+    currentAddress   = await getAddressById(addrSelect.value);
+    currentAddressId = currentAddress.id;
+    document.getElementById('lookup-title').textContent = 'Plate Lookup — ' + currentAddress.name;
+    document.getElementById('check-result').innerHTML = '';
+    await loadVisitors();
+  });
+
+  // Auto-refresh every 30s
+  setInterval(loadVisitors, 30000);
+  document.getElementById('refresh-btn').addEventListener('click', loadVisitors);
+})();
+
+// ── Load & render visitors ───────────────────────────────────────────────────
+async function loadVisitors() {
   if (!currentAddressId) return;
-  allVisitors = getActiveVisitors(currentAddressId);
-  document.getElementById('plate-count').textContent = allVisitors.length;
-  document.getElementById('table-title').textContent =
+  allVisitors = await getActiveVisitors(currentAddressId);
+  document.getElementById('plate-count').textContent  = allVisitors.length;
+  document.getElementById('table-title').textContent  =
     (currentAddress ? currentAddress.full_name : '') + ' — 24-Hour Visitor Lot';
   renderTable();
 }
 
-// ── Render table ───────────────────────────────────────────────────────────────
 function renderTable() {
-  const q = document.getElementById('search-input').value.toLowerCase();
+  const q        = document.getElementById('search-input').value.toLowerCase();
   const filtered = allVisitors.filter(v =>
     !q || v.visitor_plate.toLowerCase().includes(q) ||
           v.unit_number.toLowerCase().includes(q)   ||
@@ -184,65 +194,56 @@ function renderTable() {
 
   const tbody = document.getElementById('plates-tbody');
   if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" class="empty-row">${q ? 'No results matching your search.' : 'No active registrations for this address.'}</td></tr>`;
+    tbody.innerHTML = '<tr><td colspan="7" class="empty-row">' + (q ? 'No results matching your search.' : 'No active registrations for this address.') + '</td></tr>';
   } else {
     tbody.innerHTML = filtered.map(v => {
-      const diff     = new Date(v.expires_at) - new Date();
-      const expiring = diff < 2 * 3600000;
+      const expiring = (new Date(v.expires_at) - new Date()) < 2 * 3600000;
       const rem      = timeRemaining(v.expires_at);
-      return `<tr class="${expiring ? 'row-warning' : ''}">
-        <td>${plateBadge(v.visitor_plate)}</td>
-        <td>${escapeHtml(v.unit_number)}</td>
-        <td>${escapeHtml(v.tenant_phone)}</td>
-        <td class="date-cell">${formatDateTime(v.registered_at)}</td>
-        <td class="date-cell">${formatDateTime(v.expires_at)}</td>
-        <td><span class="time-badge ${expiring ? 'expiring' : 'active'}">${rem}</span></td>
-        <td class="controls-cell">
-          <button class="btn btn-danger btn-sm" onclick="confirmRemove('${v.id}','${escapeHtml(v.visitor_plate)}','${escapeHtml(v.unit_number)}')">✕ Remove</button>
-        </td>
-      </tr>`;
+      return '<tr class="' + (expiring ? 'row-warning' : '') + '">' +
+        '<td>' + plateBadge(v.visitor_plate) + '</td>' +
+        '<td>' + escapeHtml(v.unit_number) + '</td>' +
+        '<td>' + escapeHtml(v.tenant_phone) + '</td>' +
+        '<td class="date-cell">' + formatDateTime(v.registered_at) + '</td>' +
+        '<td class="date-cell">' + formatDateTime(v.expires_at) + '</td>' +
+        '<td><span class="time-badge ' + (expiring ? 'expiring' : 'active') + '">' + rem + '</span></td>' +
+        '<td class="controls-cell"><button class="btn btn-danger btn-sm" onclick="confirmRemove(\'' + v.id + '\',\'' + escapeHtml(v.visitor_plate) + '\',\'' + escapeHtml(v.unit_number) + '\')">✕ Remove</button></td>' +
+        '</tr>';
     }).join('');
   }
-
   document.getElementById('table-footer').textContent =
     'Showing ' + filtered.length + ' of ' + allVisitors.length + ' active registration(s)';
 }
 
-// ── Search ─────────────────────────────────────────────────────────────────────
 document.getElementById('search-input').addEventListener('input', renderTable);
 
-// ── Auto-refresh every 30s ─────────────────────────────────────────────────────
-refreshTimer = setInterval(loadVisitors, 30000);
-document.getElementById('refresh-btn').addEventListener('click', loadVisitors);
-
-// ── Remove ─────────────────────────────────────────────────────────────────────
+// ── Remove ───────────────────────────────────────────────────────────────────
 function confirmRemove(id, plate, unit) {
   deleteTargetId = id;
   document.getElementById('remove-modal-body').innerHTML =
-    `Are you sure you want to remove the registration for plate <strong>${escapeHtml(plate)}</strong> (Unit ${escapeHtml(unit)})?`;
+    'Are you sure you want to remove the registration for plate <strong>' + escapeHtml(plate) + '</strong> (Unit ' + escapeHtml(unit) + ')?';
   document.getElementById('remove-modal').classList.add('open');
 }
 
-document.getElementById('confirm-remove-btn').addEventListener('click', () => {
+document.getElementById('confirm-remove-btn').addEventListener('click', async () => {
   if (deleteTargetId) {
-    deleteVisitorRegistration(deleteTargetId);
+    await deleteVisitorRegistration(deleteTargetId);
     closeModal('remove-modal');
     deleteTargetId = null;
-    loadVisitors();
+    await loadVisitors();
     showAlert('Registration removed.');
   }
 });
 
-// ── Export CSV ─────────────────────────────────────────────────────────────────
+// ── Export CSV ───────────────────────────────────────────────────────────────
 document.getElementById('export-btn').addEventListener('click', () => {
   const rows = [
     ['Plate', 'Unit', 'Phone', 'Registered At', 'Expires At'],
     ...allVisitors.map(v => [v.visitor_plate, v.unit_number, v.tenant_phone, formatDateTime(v.registered_at), formatDateTime(v.expires_at)])
   ];
-  exportCSV(rows, 'valid-plates-' + (currentAddress?.lot_code||'') + '-' + todayStr() + '.csv');
+  exportCSV(rows, 'valid-plates-' + (currentAddress?.lot_code || '') + '-' + todayStr() + '.csv');
 });
 
-// ── Tabs ───────────────────────────────────────────────────────────────────────
+// ── Tabs ─────────────────────────────────────────────────────────────────────
 function showTab(tab) {
   document.getElementById('panel-plates').classList.toggle('hidden', tab !== 'plates');
   document.getElementById('panel-lookup').classList.toggle('hidden', tab !== 'lookup');
@@ -250,7 +251,7 @@ function showTab(tab) {
   document.getElementById('tab-lookup').classList.toggle('active', tab === 'lookup');
 }
 
-// ── Plate Lookup ───────────────────────────────────────────────────────────────
+// ── Plate Lookup ─────────────────────────────────────────────────────────────
 const lookupInput = document.getElementById('lookup-plate');
 lookupInput.addEventListener('input', function() {
   const pos = this.selectionStart;
@@ -258,23 +259,24 @@ lookupInput.addEventListener('input', function() {
   this.setSelectionRange(pos, pos);
   document.getElementById('check-result').innerHTML = '';
 });
-lookupInput.addEventListener('keydown', e => { if(e.key==='Enter') doLookup(); });
+lookupInput.addEventListener('keydown', e => { if (e.key === 'Enter') doLookup(); });
 document.getElementById('check-btn').addEventListener('click', doLookup);
 
-function doLookup() {
+async function doLookup() {
   const plate = lookupInput.value.trim();
   if (!plate || !currentAddressId) return;
-  const result = checkPlate(plate, currentAddressId);
-  document.getElementById('check-result').innerHTML = `
-    <div class="check-result ${result.valid ? 'valid' : 'invalid'}">
-      <div class="check-plate">${escapeHtml(plate.toUpperCase())}</div>
-      <div class="check-status">${result.valid ? '✅ AUTHORIZED' : '❌ NOT AUTHORIZED'}</div>
-      <div class="check-reason">${escapeHtml(result.reason)}</div>
-      ${result.detail ? `<div class="check-detail">${escapeHtml(result.detail)}</div>` : ''}
-    </div>`;
+  document.getElementById('check-result').innerHTML = '<p style="padding:12px;color:var(--muted)">Checking…</p>';
+  const result = await checkPlate(plate, currentAddressId);
+  document.getElementById('check-result').innerHTML =
+    '<div class="check-result ' + (result.valid ? 'valid' : 'invalid') + '">' +
+    '<div class="check-plate">'  + escapeHtml(plate.toUpperCase()) + '</div>' +
+    '<div class="check-status">' + (result.valid ? '✅ AUTHORIZED' : '❌ NOT AUTHORIZED') + '</div>' +
+    '<div class="check-reason">' + escapeHtml(result.reason) + '</div>' +
+    (result.detail ? '<div class="check-detail">' + escapeHtml(result.detail) + '</div>' : '') +
+    '</div>';
 }
 
-// ── Modal helpers ──────────────────────────────────────────────────────────────
+// ── Modal helpers ─────────────────────────────────────────────────────────────
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 document.getElementById('remove-modal').addEventListener('click', function(e) {
   if (e.target === this) closeModal('remove-modal');
