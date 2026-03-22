@@ -73,9 +73,10 @@ ALTER TABLE unit_codes             ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Addresses are public"
   ON addresses FOR SELECT TO anon, authenticated USING (true);
 
--- Visitor registrations: residents can register (INSERT) without logging in
+-- Visitor registrations: public page inserts may run as either anon or
+-- authenticated if the browser already has a Supabase session cached.
 CREATE POLICY "Public can register visitors"
-  ON visitor_registrations FOR INSERT TO anon WITH CHECK (true);
+  ON visitor_registrations FOR INSERT TO anon, authenticated WITH CHECK (true);
 
 -- Staff can read and delete registrations
 CREATE POLICY "Staff can view registrations"

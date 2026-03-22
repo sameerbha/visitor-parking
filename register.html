@@ -235,7 +235,7 @@ document.getElementById('reg-form').addEventListener('submit', async function(e)
 
   } catch(err) {
     console.error('[register.html] Submit error:', err);
-    showError('Something went wrong. Please try again.');
+    showError(err?.message || 'Something went wrong. Please try again.');
     submitBtn.textContent = 'Submit';
     submitBtn.disabled = false;
   }
