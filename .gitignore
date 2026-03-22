@@ -11,8 +11,8 @@ Thumbs.db
 .env.local
 .env.*.local
 
-# Supabase credentials (copy supabase-config.example.js → supabase-config.js and fill in)
-js/supabase-config.js
+# supabase-config.js is committed — it contains only the anon/publishable key which is safe for client-side code.
+# NEVER commit the Supabase service_role key.
 
 # Supabase local config (when you set it up)
 .supabase/
