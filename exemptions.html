@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Exemptions Management Portal</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<!-- Header -->
+<header class="app-header">
+  <div class="header-inner">
+    <a class="header-logo" href="index.html">
+      <span class="logo-icon">🅿️</span>
+      <div class="logo-text">
+        <span class="logo-name">Visitors Parking</span>
+        <span class="logo-sub">Exemptions Management Portal</span>
+      </div>
+    </a>
+    <nav class="header-nav desktop-nav">
+      <a href="enforcement.html" class="nav-link">Enforcement</a>
+      <a href="exemptions.html"  class="nav-link active">Exemptions</a>
+      <a href="register.html"    class="nav-link" target="_blank">Resident Portal ↗</a>
+    </nav>
+    <div class="header-right">
+      <span class="user-badge desktop-only" id="user-badge"></span>
+      <a href="change-password.html" class="btn btn-outline btn-sm desktop-only" title="Change Password">🔒 Password</a>
+      <button class="btn btn-outline btn-sm" id="logout-btn">Sign Out</button>
+      <button class="hamburger" id="hamburger" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+  <nav class="mobile-nav" id="mobile-nav">
+    <a href="enforcement.html" class="mobile-nav-link">Enforcement Portal</a>
+    <a href="exemptions.html"  class="mobile-nav-link">Exemptions Portal</a>
+    <a href="register.html" target="_blank" class="mobile-nav-link">Resident Portal ↗</a>
+    <div class="mobile-nav-divider"></div>
+    <span class="mobile-nav-user" id="mobile-user"></span>
+    <button class="mobile-nav-link logout-link" id="mobile-logout">Sign Out</button>
+  </nav>
+</header>
+
+<!-- Flash message -->
+<div class="alert alert-success flash-msg" id="flash-msg"></div>
+
+<!-- Page Content -->
+<div class="portal-page">
+
+  <!-- Toolbar (address selector — hidden when single building) -->
+  <div class="portal-toolbar">
+    <div class="toolbar-row">
+      <div class="field-group">
+        <label>Address:</label>
+        <select class="form-control" id="addr-select"></select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs + Add button inline -->
+  <div class="tab-bar">
+    <button class="tab-btn active" id="tab-exemptions" onclick="showTab('exemptions')">
+      Vehicle Exemptions
+    </button>
+    <button class="tab-btn" id="tab-unitcodes" onclick="showTab('unitcodes')">
+      🔑 Unit Codes
+    </button>
+    <div class="tab-bar-spacer"></div>
+    <button class="btn btn-primary btn-sm" id="add-btn" onclick="handleAddBtn()">+ Add Exemption</button>
+  </div>
+
+  <!-- ── Exemptions Panel ────────────────────────────────────────────────── -->
+  <div id="panel-exemptions" class="table-section">
+    <div class="table-header-bar">
+      <h2 id="table-title">Loading…</h2>
+      <div class="table-actions">
+        <select class="filter-select" id="filter-select">
+          <option value="all">All exemptions</option>
+          <option value="active">Active only</option>
+          <option value="expired">Expired only</option>
+        </select>
+        <input class="search-input" id="search-input" placeholder="Search plate, notes…" />
+        <button class="btn btn-secondary" id="export-btn">⬇ Export CSV</button>
+      </div>
+    </div>
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Plate</th><th>Notes</th><th>Start Date</th><th>End Date</th>
+            <th>Entered By</th><th>Entry Date</th><th>Status</th><th>Controls</th>
+          </tr>
+        </thead>
+        <tbody id="exemptions-tbody"></tbody>
+      </table>
+    </div>
+    <div class="table-footer" id="table-footer"></div>
+  </div>
+
+  <!-- ── Unit Codes Panel ────────────────────────────────────────────────── -->
+  <div id="panel-unitcodes" class="table-section hidden">
+    <div class="table-header-bar">
+      <h2 id="uc-table-title">Unit Codes</h2>
+      <div class="table-actions">
+        <input class="search-input" id="uc-search-input" placeholder="Search unit…" />
+      </div>
+    </div>
+    <div class="unit-codes-info">
+      <strong>ℹ️ What is a Unit Code?</strong>
+      Each unit gets a unique code that residents enter on the Visitor Registration page to authenticate their parking requests. Codes are case-insensitive. Share each code only with the resident(s) of that unit.
+    </div>
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Unit Number</th>
+            <th>Code</th>
+            <th>Created By</th>
+            <th>Created</th>
+            <th>Last Reset</th>
+            <th>Controls</th>
+          </tr>
+        </thead>
+        <tbody id="unitcodes-tbody"></tbody>
+      </table>
+    </div>
+    <div class="table-footer" id="uc-table-footer"></div>
+  </div>
+
+</div><!-- portal-page -->
+
+<!-- ═══════════════════════════════════════════════════════════
+     EXEMPTIONS — Add / Edit Modal
+     ═══════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="form-modal">
+  <div class="modal-box modal-lg">
+    <h3 id="modal-title">Add Exemption</h3>
+    <p class="modal-subtitle">Exempted vehicles will not be ticketed during the specified date range.</p>
+    <div class="alert alert-error hidden" id="form-error"></div>
+    <form id="exemption-form" novalidate>
+      <input type="hidden" id="edit-id" value="" />
+      <div class="form-row">
+        <div class="form-group">
+          <label>License Plate *</label>
+          <input type="text" id="f-plate" class="form-control" placeholder="e.g. 792FRV"
+            maxlength="10" required autocapitalize="characters"
+            style="text-transform:uppercase;letter-spacing:2px;font-weight:600" />
+        </div>
+        <div class="form-group">
+          <label>Notes / Description</label>
+          <input type="text" id="f-notes" class="form-control" placeholder="e.g. HVAC Contractor" maxlength="80" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Start Date *</label>
+          <input type="date" id="f-start" class="form-control" required />
+        </div>
+        <div class="form-group">
+          <label>End Date *</label>
+          <input type="date" id="f-end" class="form-control" required />
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('form-modal')">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="form-submit-btn">Add Exemption</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- EXEMPTIONS — Delete Modal -->
+<div class="modal-overlay" id="delete-modal">
+  <div class="modal-box">
+    <h3>Delete Exemption?</h3>
+    <p id="delete-modal-body">Are you sure?</p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('delete-modal')">Cancel</button>
+      <button class="btn btn-danger"    id="confirm-delete-btn">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     UNIT CODES — Add / Edit Modal
+     ═══════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="uc-form-modal">
+  <div class="modal-box modal-lg">
+    <h3 id="uc-modal-title">Add Unit Code</h3>
+    <p class="modal-subtitle">Assign a unique parking code to a unit. The resident will enter this code when registering a visitor.</p>
+    <div class="alert alert-error hidden" id="uc-form-error"></div>
+    <form id="uc-form" novalidate>
+      <input type="hidden" id="uc-edit-id" value="" />
+      <div class="form-row">
+        <div class="form-group">
+          <label>Unit Number *</label>
+          <input type="text" id="uc-unit" class="form-control" placeholder="e.g. W403"
+            required autocapitalize="characters" autocomplete="off" />
+        </div>
+        <div class="form-group">
+          <label>Unit Code *</label>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input type="text" id="uc-code" class="form-control" placeholder="e.g. MAPLE1"
+              required autocomplete="off" maxlength="20"
+              style="text-transform:uppercase;letter-spacing:2px;font-weight:600;flex:1" />
+            <button type="button" class="btn btn-secondary btn-sm" onclick="generateUnitCode()" title="Generate random code">⚄ Generate</button>
+          </div>
+          <small class="field-hint">Letters and numbers only, 4–20 characters. Case-insensitive.</small>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('uc-form-modal')">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="uc-submit-btn">Save Code</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- UNIT CODES — Delete Modal -->
+<div class="modal-overlay" id="uc-delete-modal">
+  <div class="modal-box">
+    <h3>Remove Unit Code?</h3>
+    <p id="uc-delete-body">Are you sure?</p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('uc-delete-modal')">Cancel</button>
+      <button class="btn btn-danger"    id="uc-confirm-delete-btn">Remove</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/app.js"></script>
+<script>
+// ── Auth ────────────────────────────────────────────────────────────────────
+const user = requireAuth('exemptions.html');
+if (!user) throw new Error('redirecting');
+
+document.getElementById('user-badge').textContent = user.name;
+document.getElementById('mobile-user').textContent = 'Signed in as ' + user.name;
+
+function doLogout() { logoutUser(); window.location.href = 'login.html'; }
+document.getElementById('logout-btn').addEventListener('click', doLogout);
+document.getElementById('mobile-logout').addEventListener('click', doLogout);
+document.getElementById('hamburger').addEventListener('click', () =>
+  document.getElementById('mobile-nav').classList.toggle('open'));
+
+// ── State ────────────────────────────────────────────────────────────────────
+let currentAddressId  = null;
+let allExemptions     = [];
+let allUnitCodes      = [];
+let deleteTargetId    = null;
+let ucDeleteTargetId  = null;
+let activeTab         = 'exemptions';
+
+// ── Address selector ─────────────────────────────────────────────────────────
+const addrSelect = document.getElementById('addr-select');
+populateAddressSelect(addrSelect, (id) => { currentAddressId = id; loadAll(); });
+addrSelect.addEventListener('change', () => { currentAddressId = addrSelect.value; loadAll(); });
+
+// Hide the entire toolbar when there is only one building
+if (getAddresses().length <= 1) {
+  document.querySelector('.portal-toolbar').style.display = 'none';
+}
+
+function loadAll() { loadExemptions(); loadUnitCodes(); }
+
+// ── Tabs ─────────────────────────────────────────────────────────────────────
+function showTab(tab) {
+  activeTab = tab;
+  document.getElementById('panel-exemptions').classList.toggle('hidden', tab !== 'exemptions');
+  document.getElementById('panel-unitcodes').classList.toggle('hidden',  tab !== 'unitcodes');
+  document.getElementById('tab-exemptions').classList.toggle('active', tab === 'exemptions');
+  document.getElementById('tab-unitcodes').classList.toggle('active',  tab === 'unitcodes');
+  document.getElementById('add-btn').textContent = tab === 'exemptions' ? '+ Add Exemption' : '+ Add Unit Code';
+}
+
+function handleAddBtn() {
+  if (activeTab === 'exemptions') openAddModal();
+  else openUCAddModal();
+}
+
+// ════════════════════════════════════════════════════════════
+// EXEMPTIONS
+// ════════════════════════════════════════════════════════════
+
+function loadExemptions() {
+  if (!currentAddressId) return;
+  allExemptions = getExemptions(currentAddressId);
+  const addr = getAddressById(currentAddressId);
+  document.getElementById('table-title').textContent =
+    'Plates currently exempt at ' + (addr ? addr.full_name : '');
+  renderExemptionsTable();
+}
+
+function renderExemptionsTable() {
+  const q      = document.getElementById('search-input').value.toLowerCase();
+  const filter = document.getElementById('filter-select').value;
+
+  const filtered = allExemptions.filter(e => {
+    const matchSearch = !q || (
+      e.plate.toLowerCase().includes(q) ||
+      (e.notes||'').toLowerCase().includes(q) ||
+      e.entered_by.toLowerCase().includes(q)
+    );
+    const active = isActive(e);
+    const matchFilter = filter === 'all' ? true : filter === 'active' ? active : !active;
+    return matchSearch && matchFilter;
+  });
+
+  const tbody = document.getElementById('exemptions-tbody');
+  tbody.innerHTML = filtered.length === 0
+    ? `<tr><td colspan="8" class="empty-row">${q || filter !== 'all' ? 'No results matching your filters.' : 'No exemptions on file.'}</td></tr>`
+    : filtered.map(e => {
+        const active = isActive(e);
+        return `<tr class="${active ? '' : 'row-expired'}">
+          <td>${plateBadge(e.plate)}</td>
+          <td>${e.notes ? escapeHtml(e.notes) : '<span class="muted">—</span>'}</td>
+          <td class="date-cell">${e.start_date}</td>
+          <td class="date-cell">${e.end_date}</td>
+          <td>${escapeHtml(e.entered_by)}</td>
+          <td class="date-cell">${e.entry_date}</td>
+          <td><span class="status-badge ${active ? 'status-active' : 'status-expired'}">${active ? 'Active' : 'Expired'}</span></td>
+          <td class="controls-cell">
+            <button class="btn btn-warning btn-sm" onclick="openEditModal('${e.id}')" title="Edit">✏</button>
+            <button class="btn btn-danger btn-sm"  onclick="confirmDelete('${e.id}','${escapeHtml(e.plate)}','${escapeHtml(e.notes||'')}')" title="Delete">🗑</button>
+          </td>
+        </tr>`;
+      }).join('');
+
+  document.getElementById('table-footer').textContent =
+    'Showing ' + filtered.length + ' of ' + allExemptions.length + ' exemption(s)' +
+    (filter !== 'all' ? ' (' + filter + ')' : '');
+}
+
+document.getElementById('search-input').addEventListener('input', renderExemptionsTable);
+document.getElementById('filter-select').addEventListener('change', renderExemptionsTable);
+
+document.getElementById('export-btn').addEventListener('click', () => {
+  const rows = [
+    ['Plate','Notes','Start Date','End Date','Entered By','Entry Date','Status'],
+    ...allExemptions.map(e => [e.plate, e.notes, e.start_date, e.end_date, e.entered_by, e.entry_date, isActive(e)?'Active':'Expired'])
+  ];
+  exportCSV(rows, 'exemptions-' + (getAddressById(currentAddressId)?.lot_code||'') + '-' + todayStr() + '.csv');
+});
+
+function openAddModal() {
+  document.getElementById('edit-id').value = '';
+  document.getElementById('modal-title').textContent = 'Add Exemption';
+  document.getElementById('form-submit-btn').textContent = 'Add Exemption';
+  document.getElementById('f-plate').value = '';
+  document.getElementById('f-notes').value = '';
+  document.getElementById('f-start').value = todayStr();
+  document.getElementById('f-end').value   = todayStr();
+  document.getElementById('form-error').classList.add('hidden');
+  document.getElementById('form-modal').classList.add('open');
+  setTimeout(() => document.getElementById('f-plate').focus(), 100);
+}
+
+function openEditModal(id) {
+  const ex = allExemptions.find(e => e.id === id);
+  if (!ex) return;
+  document.getElementById('edit-id').value = ex.id;
+  document.getElementById('modal-title').textContent = 'Edit Exemption';
+  document.getElementById('form-submit-btn').textContent = 'Save Changes';
+  document.getElementById('f-plate').value = ex.plate;
+  document.getElementById('f-notes').value = ex.notes || '';
+  document.getElementById('f-start').value = ex.start_date;
+  document.getElementById('f-end').value   = ex.end_date;
+  document.getElementById('form-error').classList.add('hidden');
+  document.getElementById('form-modal').classList.add('open');
+}
+
+document.getElementById('f-plate').addEventListener('input', function() {
+  const pos = this.selectionStart; this.value = this.value.toUpperCase(); this.setSelectionRange(pos,pos);
+});
+
+document.getElementById('exemption-form').addEventListener('submit', function(e) {
+  e.preventDefault();
+  const errEl  = document.getElementById('form-error');
+  const plate  = document.getElementById('f-plate').value.trim().toUpperCase();
+  const notes  = document.getElementById('f-notes').value.trim();
+  const start  = document.getElementById('f-start').value;
+  const end    = document.getElementById('f-end').value;
+  const editId = document.getElementById('edit-id').value;
+
+  errEl.classList.add('hidden');
+  if (!plate)                              { errEl.textContent='Plate is required.'; errEl.classList.remove('hidden'); return; }
+  if (!/^[A-Z0-9 ]{2,10}$/.test(plate))  { errEl.textContent='Invalid plate format.'; errEl.classList.remove('hidden'); return; }
+  if (!start)                              { errEl.textContent='Start date is required.'; errEl.classList.remove('hidden'); return; }
+  if (!end)                                { errEl.textContent='End date is required.'; errEl.classList.remove('hidden'); return; }
+  if (end < start)                         { errEl.textContent='End date must be on or after start date.'; errEl.classList.remove('hidden'); return; }
+
+  const payload = { plate, notes, start_date:start, end_date:end, address_id:currentAddressId, entered_by: user.name };
+  if (editId) { updateExemption(editId, payload); showAlert('Exemption updated.'); }
+  else        { addExemption(payload);             showAlert('Exemption added.');   }
+  closeModal('form-modal');
+  loadExemptions();
+});
+
+function confirmDelete(id, plate, notes) {
+  deleteTargetId = id;
+  document.getElementById('delete-modal-body').innerHTML =
+    `Remove the exemption for plate <strong>${escapeHtml(plate)}</strong>${notes ? ' (' + escapeHtml(notes) + ')' : ''}? This cannot be undone.`;
+  document.getElementById('delete-modal').classList.add('open');
+}
+
+document.getElementById('confirm-delete-btn').addEventListener('click', () => {
+  if (deleteTargetId) {
+    deleteExemption(deleteTargetId);
+    closeModal('delete-modal');
+    deleteTargetId = null;
+    loadExemptions();
+    showAlert('Exemption deleted.');
+  }
+});
+
+// ════════════════════════════════════════════════════════════
+// UNIT CODES
+// ════════════════════════════════════════════════════════════
+
+function loadUnitCodes() {
+  if (!currentAddressId) return;
+  allUnitCodes = getUnitCodes(currentAddressId);
+  const addr = getAddressById(currentAddressId);
+  document.getElementById('uc-table-title').textContent =
+    'Unit Codes — ' + (addr ? addr.full_name : '');
+  renderUnitCodesTable();
+}
+
+function renderUnitCodesTable() {
+  const q = document.getElementById('uc-search-input').value.toLowerCase();
+  const filtered = allUnitCodes.filter(u =>
+    !q || u.unit_number.toLowerCase().includes(q)
+  );
+
+  const tbody = document.getElementById('unitcodes-tbody');
+  tbody.innerHTML = filtered.length === 0
+    ? `<tr><td colspan="6" class="empty-row">${q ? 'No units matching your search.' : 'No unit codes set up yet. Click "+ Add Unit Code" to create one.'}</td></tr>`
+    : filtered.map(u => `
+        <tr>
+          <td><strong>${escapeHtml(u.unit_number)}</strong></td>
+          <td><span class="code-badge">${escapeHtml(u.code)}</span></td>
+          <td>${escapeHtml(u.created_by)}</td>
+          <td class="date-cell">${u.created_date}</td>
+          <td class="date-cell">${u.last_reset}</td>
+          <td class="controls-cell">
+            <button class="btn btn-warning btn-sm" onclick="openUCEditModal('${u.id}')" title="Edit / Reset code">✏ Edit</button>
+            <button class="btn btn-danger btn-sm"  onclick="confirmUCDelete('${u.id}','${escapeHtml(u.unit_number)}')" title="Remove">🗑</button>
+          </td>
+        </tr>`).join('');
+
+  document.getElementById('uc-table-footer').textContent =
+    'Showing ' + filtered.length + ' of ' + allUnitCodes.length + ' unit code(s)';
+}
+
+document.getElementById('uc-search-input').addEventListener('input', renderUnitCodesTable);
+
+// Generate a random 6-char alphanumeric code
+function generateUnitCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no ambiguous chars
+  let code = '';
+  for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  document.getElementById('uc-code').value = code;
+}
+
+function openUCAddModal() {
+  document.getElementById('uc-edit-id').value = '';
+  document.getElementById('uc-modal-title').textContent = 'Add Unit Code';
+  document.getElementById('uc-submit-btn').textContent = 'Save Code';
+  document.getElementById('uc-unit').value = '';
+  document.getElementById('uc-unit').disabled = false;
+  document.getElementById('uc-code').value = '';
+  document.getElementById('uc-form-error').classList.add('hidden');
+  document.getElementById('uc-form-modal').classList.add('open');
+  setTimeout(() => document.getElementById('uc-unit').focus(), 100);
+}
+
+function openUCEditModal(id) {
+  const uc = allUnitCodes.find(u => u.id === id);
+  if (!uc) return;
+  document.getElementById('uc-edit-id').value = uc.id;
+  document.getElementById('uc-modal-title').textContent = 'Edit Unit Code — ' + uc.unit_number;
+  document.getElementById('uc-submit-btn').textContent = 'Save Changes';
+  document.getElementById('uc-unit').value = uc.unit_number;
+  document.getElementById('uc-unit').disabled = true; // unit number cannot change on edit
+  document.getElementById('uc-code').value = uc.code;
+  document.getElementById('uc-form-error').classList.add('hidden');
+  document.getElementById('uc-form-modal').classList.add('open');
+}
+
+// Auto-uppercase both fields
+['uc-unit','uc-code'].forEach(id => {
+  document.getElementById(id).addEventListener('input', function() {
+    const pos = this.selectionStart; this.value = this.value.toUpperCase(); this.setSelectionRange(pos,pos);
+  });
+});
+
+document.getElementById('uc-form').addEventListener('submit', function(e) {
+  e.preventDefault();
+  const errEl  = document.getElementById('uc-form-error');
+  const unit   = document.getElementById('uc-unit').value.trim().toUpperCase();
+  const code   = document.getElementById('uc-code').value.trim().toUpperCase();
+  const editId = document.getElementById('uc-edit-id').value;
+
+  errEl.classList.add('hidden');
+  if (!unit) { errEl.textContent = 'Unit number is required.'; errEl.classList.remove('hidden'); return; }
+  if (!code) { errEl.textContent = 'Unit code is required.'; errEl.classList.remove('hidden'); return; }
+  if (!/^[A-Z0-9]{4,20}$/.test(code)) { errEl.textContent = 'Code must be 4–20 letters and numbers, no spaces.'; errEl.classList.remove('hidden'); return; }
+
+  // Check for duplicate unit on new add
+  if (!editId) {
+    const existing = getUnitCode(unit, currentAddressId);
+    if (existing) { errEl.textContent = 'Unit ' + unit + ' already has a code. Use Edit to change it.'; errEl.classList.remove('hidden'); return; }
+  }
+
+  const payload = { unit_number: unit, code, address_id: currentAddressId, created_by: user.name };
+  if (editId) { updateUnitCode(editId, payload); showAlert('Unit code updated for unit ' + unit + '.'); }
+  else        { addUnitCode(payload);             showAlert('Unit code added for unit ' + unit + '.');   }
+  closeModal('uc-form-modal');
+  loadUnitCodes();
+});
+
+function confirmUCDelete(id, unit) {
+  ucDeleteTargetId = id;
+  document.getElementById('uc-delete-body').innerHTML =
+    `Remove the parking code for unit <strong>${escapeHtml(unit)}</strong>? Residents of this unit will no longer be able to register visitors until a new code is assigned.`;
+  document.getElementById('uc-delete-modal').classList.add('open');
+}
+
+document.getElementById('uc-confirm-delete-btn').addEventListener('click', () => {
+  if (ucDeleteTargetId) {
+    deleteUnitCode(ucDeleteTargetId);
+    closeModal('uc-delete-modal');
+    ucDeleteTargetId = null;
+    loadUnitCodes();
+    showAlert('Unit code removed.');
+  }
+});
+
+// ── Modal helpers ─────────────────────────────────────────────────────────────
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+['form-modal','delete-modal','uc-form-modal','uc-delete-modal'].forEach(id => {
+  document.getElementById(id).addEventListener('click', function(e) {
+    if (e.target === this) closeModal(id);
+  });
+});
+</script>
+</body>
+</html>

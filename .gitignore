@@ -1,0 +1,22 @@
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor folders
+.vscode/
+.idea/
+
+# Local environment / secrets (never commit these)
+.env
+.env.local
+.env.*.local
+
+# Supabase local config (when you set it up)
+.supabase/
+supabase/.env
+
+# Logs
+*.log
+
+# R history (not part of this project)
+.Rhistory

@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Visitor Enforcement Portal</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<!-- Header -->
+<header class="app-header">
+  <div class="header-inner">
+    <a class="header-logo" href="index.html">
+      <span class="logo-icon">🅿️</span>
+      <div class="logo-text">
+        <span class="logo-name">Visitors Parking</span>
+        <span class="logo-sub">Visitor Enforcement Portal</span>
+      </div>
+    </a>
+    <nav class="header-nav desktop-nav">
+      <a href="enforcement.html" class="nav-link active">Enforcement</a>
+      <a href="exemptions.html"  class="nav-link">Exemptions</a>
+      <a href="register.html"    class="nav-link" target="_blank">Resident Portal ↗</a>
+    </nav>
+    <div class="header-right">
+      <span class="user-badge desktop-only" id="user-badge"></span>
+      <a href="change-password.html" class="btn btn-outline btn-sm desktop-only" title="Change Password">🔒 Password</a>
+      <button class="btn btn-outline btn-sm" id="logout-btn">Sign Out</button>
+      <button class="hamburger" id="hamburger" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+  <nav class="mobile-nav" id="mobile-nav">
+    <a href="enforcement.html" class="mobile-nav-link">Enforcement Portal</a>
+    <a href="exemptions.html"  class="mobile-nav-link">Exemptions Portal</a>
+    <a href="register.html" target="_blank" class="mobile-nav-link">Resident Portal ↗</a>
+    <div class="mobile-nav-divider"></div>
+    <span class="mobile-nav-user" id="mobile-user"></span>
+    <button class="mobile-nav-link logout-link" id="mobile-logout">Sign Out</button>
+  </nav>
+</header>
+
+<!-- Flash message -->
+<div class="alert alert-success flash-msg" id="flash-msg"></div>
+
+<!-- Page Content -->
+<div class="portal-page">
+
+  <!-- Toolbar -->
+  <div class="portal-toolbar">
+    <div class="toolbar-row">
+      <div class="field-group">
+        <label>Address:</label>
+        <select class="form-control" id="addr-select"></select>
+      </div>
+      <button class="btn btn-primary" id="refresh-btn">↻ Refresh</button>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tab-bar">
+    <button class="tab-btn active" id="tab-plates" onclick="showTab('plates')">
+      Valid Plates (<span id="plate-count">0</span>)
+    </button>
+    <button class="tab-btn" id="tab-lookup" onclick="showTab('lookup')">
+      🔍 Plate Lookup
+    </button>
+  </div>
+
+  <!-- Valid Plates Panel -->
+  <div id="panel-plates" class="table-section">
+    <div class="table-header-bar">
+      <h2 id="table-title">Loading…</h2>
+      <div class="table-actions">
+        <input class="search-input" id="search-input" placeholder="Search plate, unit, phone…" />
+        <button class="btn btn-secondary" id="export-btn">⬇ Export CSV</button>
+      </div>
+    </div>
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Plate</th><th>Unit</th><th>Phone</th>
+            <th>Registered</th><th>Expires</th><th>Time Left</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="plates-tbody"></tbody>
+      </table>
+    </div>
+    <div class="table-footer" id="table-footer"></div>
+  </div>
+
+  <!-- Plate Lookup Panel -->
+  <div id="panel-lookup" class="table-section hidden">
+    <div class="table-header-bar">
+      <h2 id="lookup-title">Plate Lookup</h2>
+    </div>
+    <div class="lookup-box">
+      <p>Check whether a plate is currently authorized to park at this address (active visitor registration or valid exemption).</p>
+      <div class="lookup-row">
+        <input class="form-control lookup-input" id="lookup-plate"
+          placeholder="Enter license plate…" maxlength="10"
+          style="text-transform:uppercase;letter-spacing:2px;font-weight:600"
+          autocapitalize="characters" />
+        <button class="btn btn-primary" id="check-btn">Check Plate</button>
+      </div>
+      <div id="check-result"></div>
+    </div>
+  </div>
+
+</div><!-- portal-page -->
+
+<!-- Remove Confirmation Modal -->
+<div class="modal-overlay" id="remove-modal">
+  <div class="modal-box">
+    <h3>Remove Registration?</h3>
+    <p id="remove-modal-body">Are you sure?</p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('remove-modal')">Cancel</button>
+      <button class="btn btn-danger"    id="confirm-remove-btn">Remove</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/app.js"></script>
+<script>
+// ── Auth ────────────────────────────────────────────────────────────────────
+const user = requireAuth('enforcement.html');
+if (!user) throw new Error('redirecting');
+
+document.getElementById('user-badge').textContent = user.name;
+document.getElementById('mobile-user').textContent = 'Signed in as ' + user.name;
+
+function doLogout() { logoutUser(); window.location.href = 'login.html'; }
+document.getElementById('logout-btn').addEventListener('click', doLogout);
+document.getElementById('mobile-logout').addEventListener('click', doLogout);
+document.getElementById('hamburger').addEventListener('click', () =>
+  document.getElementById('mobile-nav').classList.toggle('open'));
+
+// ── State ────────────────────────────────────────────────────────────────────
+let currentAddressId  = null;
+let currentAddress    = null;
+let allVisitors       = [];
+let deleteTargetId    = null;
+let refreshTimer      = null;
+
+// ── Address selector ─────────────────────────────────────────────────────────
+const addrSelect = document.getElementById('addr-select');
+populateAddressSelect(addrSelect, (id, addr) => { currentAddressId = id; currentAddress = addr; loadVisitors(); });
+
+// Hide the entire toolbar when there is only one building
+if (getAddresses().length <= 1) {
+  document.querySelector('.portal-toolbar').style.display = 'none';
+}
+
+addrSelect.addEventListener('change', () => {
+  const addr = getAddressById(addrSelect.value);
+  currentAddressId = addr.id; currentAddress = addr;
+  document.getElementById('lookup-title').textContent = 'Plate Lookup — ' + addr.name;
+  document.getElementById('check-result').innerHTML = '';
+  loadVisitors();
+});
+
+// ── Load visitors ─────────────────────────────────────────────────────────────
+function loadVisitors() {
+  if (!currentAddressId) return;
+  allVisitors = getActiveVisitors(currentAddressId);
+  document.getElementById('plate-count').textContent = allVisitors.length;
+  document.getElementById('table-title').textContent =
+    (currentAddress ? currentAddress.full_name : '') + ' — 24-Hour Visitor Lot';
+  renderTable();
+}
+
+// ── Render table ───────────────────────────────────────────────────────────────
+function renderTable() {
+  const q = document.getElementById('search-input').value.toLowerCase();
+  const filtered = allVisitors.filter(v =>
+    !q || v.visitor_plate.toLowerCase().includes(q) ||
+          v.unit_number.toLowerCase().includes(q)   ||
+          v.tenant_phone.includes(q)
+  );
+
+  const tbody = document.getElementById('plates-tbody');
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" class="empty-row">${q ? 'No results matching your search.' : 'No active registrations for this address.'}</td></tr>`;
+  } else {
+    tbody.innerHTML = filtered.map(v => {
+      const diff     = new Date(v.expires_at) - new Date();
+      const expiring = diff < 2 * 3600000;
+      const rem      = timeRemaining(v.expires_at);
+      return `<tr class="${expiring ? 'row-warning' : ''}">
+        <td>${plateBadge(v.visitor_plate)}</td>
+        <td>${escapeHtml(v.unit_number)}</td>
+        <td>${escapeHtml(v.tenant_phone)}</td>
+        <td class="date-cell">${formatDateTime(v.registered_at)}</td>
+        <td class="date-cell">${formatDateTime(v.expires_at)}</td>
+        <td><span class="time-badge ${expiring ? 'expiring' : 'active'}">${rem}</span></td>
+        <td class="controls-cell">
+          <button class="btn btn-danger btn-sm" onclick="confirmRemove('${v.id}','${escapeHtml(v.visitor_plate)}','${escapeHtml(v.unit_number)}')">✕ Remove</button>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  document.getElementById('table-footer').textContent =
+    'Showing ' + filtered.length + ' of ' + allVisitors.length + ' active registration(s)';
+}
+
+// ── Search ─────────────────────────────────────────────────────────────────────
+document.getElementById('search-input').addEventListener('input', renderTable);
+
+// ── Auto-refresh every 30s ─────────────────────────────────────────────────────
+refreshTimer = setInterval(loadVisitors, 30000);
+document.getElementById('refresh-btn').addEventListener('click', loadVisitors);
+
+// ── Remove ─────────────────────────────────────────────────────────────────────
+function confirmRemove(id, plate, unit) {
+  deleteTargetId = id;
+  document.getElementById('remove-modal-body').innerHTML =
+    `Are you sure you want to remove the registration for plate <strong>${escapeHtml(plate)}</strong> (Unit ${escapeHtml(unit)})?`;
+  document.getElementById('remove-modal').classList.add('open');
+}
+
+document.getElementById('confirm-remove-btn').addEventListener('click', () => {
+  if (deleteTargetId) {
+    deleteVisitorRegistration(deleteTargetId);
+    closeModal('remove-modal');
+    deleteTargetId = null;
+    loadVisitors();
+    showAlert('Registration removed.');
+  }
+});
+
+// ── Export CSV ─────────────────────────────────────────────────────────────────
+document.getElementById('export-btn').addEventListener('click', () => {
+  const rows = [
+    ['Plate', 'Unit', 'Phone', 'Registered At', 'Expires At'],
+    ...allVisitors.map(v => [v.visitor_plate, v.unit_number, v.tenant_phone, formatDateTime(v.registered_at), formatDateTime(v.expires_at)])
+  ];
+  exportCSV(rows, 'valid-plates-' + (currentAddress?.lot_code||'') + '-' + todayStr() + '.csv');
+});
+
+// ── Tabs ───────────────────────────────────────────────────────────────────────
+function showTab(tab) {
+  document.getElementById('panel-plates').classList.toggle('hidden', tab !== 'plates');
+  document.getElementById('panel-lookup').classList.toggle('hidden', tab !== 'lookup');
+  document.getElementById('tab-plates').classList.toggle('active', tab === 'plates');
+  document.getElementById('tab-lookup').classList.toggle('active', tab === 'lookup');
+}
+
+// ── Plate Lookup ───────────────────────────────────────────────────────────────
+const lookupInput = document.getElementById('lookup-plate');
+lookupInput.addEventListener('input', function() {
+  const pos = this.selectionStart;
+  this.value = this.value.toUpperCase();
+  this.setSelectionRange(pos, pos);
+  document.getElementById('check-result').innerHTML = '';
+});
+lookupInput.addEventListener('keydown', e => { if(e.key==='Enter') doLookup(); });
+document.getElementById('check-btn').addEventListener('click', doLookup);
+
+function doLookup() {
+  const plate = lookupInput.value.trim();
+  if (!plate || !currentAddressId) return;
+  const result = checkPlate(plate, currentAddressId);
+  document.getElementById('check-result').innerHTML = `
+    <div class="check-result ${result.valid ? 'valid' : 'invalid'}">
+      <div class="check-plate">${escapeHtml(plate.toUpperCase())}</div>
+      <div class="check-status">${result.valid ? '✅ AUTHORIZED' : '❌ NOT AUTHORIZED'}</div>
+      <div class="check-reason">${escapeHtml(result.reason)}</div>
+      ${result.detail ? `<div class="check-detail">${escapeHtml(result.detail)}</div>` : ''}
+    </div>`;
+}
+
+// ── Modal helpers ──────────────────────────────────────────────────────────────
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.getElementById('remove-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal('remove-modal');
+});
+</script>
+</body>
+</html>

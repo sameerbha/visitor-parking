@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <meta name="theme-color" content="#1565c0" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <title>Visitor Parking Registration</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<div class="resident-portal">
+  <div class="resident-header">
+    <div class="resident-logo">🅿️</div>
+    <h1>Visitor Parking<br>Registration</h1>
+    <p class="resident-subtitle" id="building-subtitle">Register your guest's vehicle for 24-hour parking</p>
+  </div>
+
+  <div class="resident-card">
+
+    <!-- Registration Form -->
+    <div id="form-view">
+      <p class="form-intro">Please enter the following information:</p>
+
+      <form id="reg-form" novalidate>
+
+        <!-- Building is determined by ?lot= URL param — hidden from resident -->
+        <input type="hidden" id="address_id" value="" />
+
+        <div class="form-group">
+          <label for="unit_number">Unit Number</label>
+          <input id="unit_number" type="text" class="form-control"
+            required autocapitalize="characters" autocomplete="off" />
+        </div>
+
+        <div class="form-group">
+          <label for="unit_code">Unit Code</label>
+          <input id="unit_code" type="password" class="form-control"
+            required autocomplete="off"
+            placeholder="Enter your unit's parking code" />
+          <small class="field-hint">Your unit code is provided by building management.</small>
+        </div>
+
+        <div class="form-group">
+          <label for="tenant_phone">Your Phone Number</label>
+          <input id="tenant_phone" type="tel" class="form-control"
+            required inputmode="tel" autocomplete="tel" />
+        </div>
+
+        <div class="form-group">
+          <label for="visitor_plate">Visitor License Plate</label>
+          <input id="visitor_plate" type="text" class="form-control"
+            placeholder="e.g. ABCD 123" required maxlength="10"
+            autocapitalize="characters" autocomplete="off"
+            style="text-transform:uppercase;letter-spacing:2px;font-weight:600" />
+        </div>
+
+        <div class="form-group captcha-group">
+          <label for="captcha_answer">Security Check</label>
+          <div class="captcha-row">
+            <input id="captcha_answer" type="text" class="form-control captcha-input"
+              placeholder="Answer" required inputmode="numeric" maxlength="3" autocomplete="off" />
+            <div class="captcha-display" id="captcha-display"></div>
+          </div>
+        </div>
+
+        <!-- Error banner lives here — directly above Submit so it's always visible -->
+        <div class="alert alert-error hidden" id="form-error"></div>
+
+        <button type="submit" class="btn btn-success btn-block btn-lg" id="submit-btn">Submit</button>
+      </form>
+    </div>
+
+    <!-- Success View -->
+    <div id="success-view" class="success-box hidden">
+      <div class="success-icon">✓</div>
+      <p id="success-msg"></p>
+      <div class="pass-stats-box" id="pass-stats-box"></div>
+      <button class="btn btn-primary btn-block mt-16" id="register-again-btn">Register Another Vehicle</button>
+    </div>
+
+  </div>
+
+  <p class="resident-footer">
+    Registration is valid for 24 hours from the time of submission.<br>
+    For assistance, contact your building concierge.
+  </p>
+</div>
+
+<script src="js/app.js"></script>
+<script>
+try {
+
+  // ── Determine address from URL ?lot= param ───────────────────────────────
+  const params   = new URLSearchParams(window.location.search);
+  const lotParam = params.get('lot');
+  const addresses = getAddresses();
+
+  let currentAddress = lotParam
+    ? getAddressByLotCode(lotParam)
+    : (addresses.length > 0 ? addresses[0] : null);
+
+  if (!currentAddress && addresses.length > 0) currentAddress = addresses[0];
+
+  if (currentAddress) {
+    document.getElementById('address_id').value = currentAddress.id;
+    document.getElementById('building-subtitle').textContent =
+      'Registering at ' + currentAddress.name;
+  }
+
+  // ── Captcha ───────────────────────────────────────────────────────────────
+  let captcha = generateCaptcha();
+
+  function renderCaptcha() {
+    captcha = generateCaptcha();
+    document.getElementById('captcha-display').textContent = captcha.question + ' = ?';
+    document.getElementById('captcha_answer').value = '';
+  }
+  renderCaptcha();
+
+  // Auto-uppercase plate
+  document.getElementById('visitor_plate').addEventListener('input', function() {
+    const pos = this.selectionStart;
+    this.value = this.value.toUpperCase();
+    this.setSelectionRange(pos, pos);
+  });
+
+  // Auto-uppercase unit number
+  document.getElementById('unit_number').addEventListener('input', function() {
+    const pos = this.selectionStart;
+    this.value = this.value.toUpperCase();
+    this.setSelectionRange(pos, pos);
+  });
+
+  // ── Form submit ───────────────────────────────────────────────────────────
+  function showError(msg) {
+    const errEl = document.getElementById('form-error');
+    errEl.textContent = msg;
+    errEl.classList.remove('hidden');
+    // Scroll the error into view so it's always visible on mobile
+    errEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  document.getElementById('reg-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const errEl     = document.getElementById('form-error');
+    const submitBtn = document.getElementById('submit-btn');
+    errEl.classList.add('hidden');
+
+    const address_id   = document.getElementById('address_id').value;
+    const unit_number  = document.getElementById('unit_number').value.trim().toUpperCase();
+    const unit_code    = document.getElementById('unit_code').value.trim();
+    const tenant_phone = document.getElementById('tenant_phone').value.trim();
+    const visitor_plate= document.getElementById('visitor_plate').value.trim().toUpperCase();
+    const captchaAns   = document.getElementById('captcha_answer').value.trim();
+
+    // 1. Require a valid address
+    if (!currentAddress) {
+      showError('Building not found. Please use the link provided by your building management.');
+      return;
+    }
+
+    // 2. Validate captcha first (cheap check)
+    if (captchaAns !== captcha.answer) {
+      showError('Incorrect answer to the security question. Please try again.');
+      renderCaptcha();
+      return;
+    }
+
+    // 3. Validate unit code
+    const codeCheck = validateUnitCode(unit_number, unit_code, address_id);
+    if (!codeCheck.valid) {
+      showError(codeCheck.error);
+      document.getElementById('unit_code').value = '';
+      return;
+    }
+
+    // 4. Validate plate format
+    if (!/^[A-Z0-9 ]{2,10}$/.test(visitor_plate)) {
+      showError('Please enter a valid license plate (letters, numbers, spaces, 2–10 characters).');
+      return;
+    }
+
+    // 5. Check monthly pass limits
+    const passCheck = canRegisterVisitor(unit_number, visitor_plate, address_id);
+    if (!passCheck.allowed) {
+      showError(passCheck.reason);
+      return;
+    }
+
+    submitBtn.textContent = 'Registering…';
+    submitBtn.disabled = true;
+
+    setTimeout(() => {
+      try {
+        addVisitorRegistration({
+          address_id,
+          lot_code:     currentAddress.lot_code,
+          tenant_phone,
+          unit_number,
+          visitor_plate,
+        });
+
+        const expires = new Date(Date.now() + 24*3600000);
+        document.getElementById('success-msg').innerHTML =
+          'Plate <strong>' + escapeHtml(visitor_plate) + '</strong> has been registered at <strong>' + escapeHtml(currentAddress.name) + '</strong>.<br>' +
+          'Valid until <strong>' + expires.toLocaleString('en-CA',{hour:'2-digit',minute:'2-digit',hour12:true,month:'short',day:'numeric'}) + '</strong>.';
+
+        // Show remaining pass counts
+        const stats = getMonthlyPassStats(unit_number, address_id);
+        const normPlate = visitor_plate.replace(/\s/g,'').toUpperCase();
+        const daysUsed  = stats.plateDays[normPlate] || 0;
+        document.getElementById('pass-stats-box').innerHTML =
+          '<div class="pass-stats">' +
+          '<span>Monthly passes used: <strong>' + stats.totalPasses + ' / 10</strong></span>' +
+          '<span>Days this plate registered: <strong>' + daysUsed + ' / 7</strong></span>' +
+          '</div>';
+
+        document.getElementById('form-view').classList.add('hidden');
+        document.getElementById('success-view').classList.remove('hidden');
+        document.getElementById('success-view').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } catch(err) {
+        showError('Something went wrong. Please try again.');
+        submitBtn.textContent = 'Submit';
+        submitBtn.disabled = false;
+      }
+    }, 600);
+  });
+
+  // Register again
+  document.getElementById('register-again-btn').addEventListener('click', function() {
+    document.getElementById('reg-form').reset();
+    document.getElementById('unit_code').value = '';
+    document.getElementById('submit-btn').textContent = 'Submit';
+    document.getElementById('submit-btn').disabled = false;
+    renderCaptcha();
+    document.getElementById('success-view').classList.add('hidden');
+    document.getElementById('form-view').classList.remove('hidden');
+  });
+
+} catch (initErr) {
+  // Surface any initialisation error so it is never silently swallowed.
+  console.error('[register.html] Initialisation error:', initErr);
+  const errEl = document.getElementById('form-error');
+  if (errEl) {
+    errEl.textContent = 'Page failed to load correctly. Please refresh and try again. (' + initErr.message + ')';
+    errEl.classList.remove('hidden');
+  }
+}
+</script>
+</body>
+</html>

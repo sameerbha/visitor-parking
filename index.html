@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Visitors Parking Management</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<!-- Header -->
+<header class="app-header">
+  <div class="header-inner">
+    <a class="header-logo" href="index.html">
+      <span class="logo-icon">🅿️</span>
+      <div class="logo-text">
+        <span class="logo-name">Visitors Parking</span>
+        <span class="logo-sub">Management System</span>
+      </div>
+    </a>
+    <nav class="header-nav desktop-nav" id="staff-nav" style="display:none">
+      <a href="enforcement.html" class="nav-link">Enforcement</a>
+      <a href="exemptions.html"  class="nav-link">Exemptions</a>
+      <a href="register.html"    class="nav-link" target="_blank">Resident Portal ↗</a>
+    </nav>
+    <div class="header-right">
+      <span class="user-badge desktop-only" id="user-badge"></span>
+      <button class="btn btn-outline btn-sm" id="auth-btn"></button>
+      <button class="hamburger" id="hamburger" aria-label="Menu" style="display:none">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+  <nav class="mobile-nav" id="mobile-nav">
+    <a href="enforcement.html" class="mobile-nav-link">Enforcement Portal</a>
+    <a href="exemptions.html"  class="mobile-nav-link">Exemptions Portal</a>
+    <a href="register.html" target="_blank" class="mobile-nav-link">Resident Portal ↗</a>
+    <div class="mobile-nav-divider"></div>
+    <span class="mobile-nav-user" id="mobile-user"></span>
+    <button class="mobile-nav-link logout-link" id="mobile-logout">Sign Out</button>
+  </nav>
+</header>
+
+<!-- Landing Content -->
+<div class="landing-page">
+  <div class="landing-hero">
+    <div class="landing-logo">🅿️</div>
+    <h1>Visitors Parking<br>Management System</h1>
+    <p>Select a portal to get started</p>
+  </div>
+
+  <div class="portal-cards">
+    <!-- Portal 1 -->
+    <div class="portal-card portal-card-resident">
+      <div class="portal-card-icon">📱</div>
+      <h2>Resident Registration</h2>
+      <p>Register your visitor's license plate for 24-hour parking access. This portal is for building residents and their guests.</p>
+      <a href="register.html" class="btn btn-success btn-block">Register a Visitor →</a>
+      <small class="portal-note">Public — No login required</small>
+    </div>
+
+    <!-- Portal 2 -->
+    <div class="portal-card portal-card-enforcement">
+      <div class="portal-card-icon">🚔</div>
+      <h2>Visitor Enforcement</h2>
+      <p>View all currently registered visitor plates for a given address. For building concierge and security staff.</p>
+      <a href="enforcement.html" class="btn btn-primary btn-block" id="enforcement-link">Enforcement Portal →</a>
+      <small class="portal-note">Staff login required</small>
+    </div>
+
+    <!-- Portal 3 -->
+    <div class="portal-card portal-card-exemptions">
+      <div class="portal-card-icon">📋</div>
+      <h2>Exemptions Management</h2>
+      <p>Add, edit, and remove vehicle exemptions for contractors, realtors, and other authorized visitors.</p>
+      <a href="exemptions.html" class="btn btn-primary btn-block" id="exemptions-link">Exemptions Portal →</a>
+      <small class="portal-note">Staff login required</small>
+    </div>
+  </div>
+
+  <p class="landing-login-hint" id="login-hint"></p>
+</div>
+
+<script src="js/app.js"></script>
+<script>
+  const user = getCurrentUser();
+
+  // Auth button
+  const authBtn = document.getElementById('auth-btn');
+  if (user) {
+    authBtn.textContent = 'Sign Out';
+    authBtn.addEventListener('click', () => { logoutUser(); location.reload(); });
+    document.getElementById('user-badge').textContent = user.name;
+    document.getElementById('staff-nav').style.display = 'flex';
+    document.getElementById('hamburger').style.display = 'flex';
+    document.getElementById('mobile-user').textContent = 'Signed in as ' + user.name;
+    document.getElementById('mobile-logout').addEventListener('click', () => { logoutUser(); location.reload(); });
+    document.getElementById('login-hint').innerHTML = 'Signed in as <strong>' + escapeHtml(user.name) + '</strong>';
+  } else {
+    authBtn.textContent = 'Staff Login';
+    authBtn.addEventListener('click', () => { window.location.href = 'login.html'; });
+    document.getElementById('enforcement-link').href = 'login.html?from=enforcement.html';
+    document.getElementById('exemptions-link').href  = 'login.html?from=exemptions.html';
+    document.getElementById('login-hint').innerHTML  = 'Building staff? <a href="login.html">Sign in here</a>';
+  }
+
+  // Hamburger
+  const hamburger  = document.getElementById('hamburger');
+  const mobileNav  = document.getElementById('mobile-nav');
+  hamburger.addEventListener('click', () => mobileNav.classList.toggle('open'));
+</script>
+</body>
+</html>
