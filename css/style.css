@@ -124,7 +124,7 @@ select.form-control{cursor:pointer}
 .login-demo-hint{margin-top:20px;padding:12px 14px;background:#f8f9fa;border-radius:var(--radius);font-size:.8rem;color:var(--muted);line-height:1.7;text-align:center}
 
 /* ── Resident Portal ──────────────────────────────────────── */
-.resident-portal{min-height:100vh;background:linear-gradient(160deg,#1565c0 0%,#0a0a6e 100%);padding:24px 16px 48px;display:flex;flex-direction:column;align-items:center}
+.resident-portal{min-height:100vh;background:linear-gradient(160deg,#1565c0 0%,#0a0a6e 100%);padding:calc(24px + env(safe-area-inset-top)) 16px calc(48px + env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center}
 .resident-header{text-align:center;color:#fff;margin-bottom:28px}
 .resident-logo{font-size:3.5rem;margin-bottom:8px}
 .resident-header h1{font-size:2rem;font-weight:800;line-height:1.2;margin-bottom:6px}
