@@ -81,33 +81,44 @@
   <p class="landing-login-hint" id="login-hint"></p>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-config.js"></script>
 <script src="js/app.js"></script>
 <script>
-  const user = getCurrentUser();
+  (async () => {
+    const authBtn   = document.getElementById('auth-btn');
+    const hamburger = document.getElementById('hamburger');
+    const mobileNav = document.getElementById('mobile-nav');
+    const user      = await getCurrentUser();
+    const displayName = user?.name || user?.email || 'Staff User';
 
-  // Auth button
-  const authBtn = document.getElementById('auth-btn');
-  if (user) {
-    authBtn.textContent = 'Sign Out';
-    authBtn.addEventListener('click', () => { logoutUser(); location.reload(); });
-    document.getElementById('user-badge').textContent = user.name;
-    document.getElementById('staff-nav').style.display = 'flex';
-    document.getElementById('hamburger').style.display = 'flex';
-    document.getElementById('mobile-user').textContent = 'Signed in as ' + user.name;
-    document.getElementById('mobile-logout').addEventListener('click', () => { logoutUser(); location.reload(); });
-    document.getElementById('login-hint').innerHTML = 'Signed in as <strong>' + escapeHtml(user.name) + '</strong>';
-  } else {
+    // Hamburger
+    hamburger.addEventListener('click', () => mobileNav.classList.toggle('open'));
+
+    if (user) {
+      authBtn.textContent = 'Sign Out';
+      authBtn.addEventListener('click', async () => {
+        await logoutUser();
+        location.reload();
+      });
+      document.getElementById('user-badge').textContent = displayName;
+      document.getElementById('staff-nav').style.display = 'flex';
+      document.getElementById('hamburger').style.display = 'flex';
+      document.getElementById('mobile-user').textContent = 'Signed in as ' + displayName;
+      document.getElementById('mobile-logout').addEventListener('click', async () => {
+        await logoutUser();
+        location.reload();
+      });
+      document.getElementById('login-hint').innerHTML = 'Signed in as <strong>' + escapeHtml(displayName) + '</strong>';
+      return;
+    }
+
     authBtn.textContent = 'Staff Login';
     authBtn.addEventListener('click', () => { window.location.href = 'login.html'; });
     document.getElementById('enforcement-link').href = 'login.html?from=enforcement.html';
     document.getElementById('exemptions-link').href  = 'login.html?from=exemptions.html';
     document.getElementById('login-hint').innerHTML  = 'Building staff? <a href="login.html">Sign in here</a>';
-  }
-
-  // Hamburger
-  const hamburger  = document.getElementById('hamburger');
-  const mobileNav  = document.getElementById('mobile-nav');
-  hamburger.addEventListener('click', () => mobileNav.classList.toggle('open'));
+  })();
 </script>
 </body>
 </html>
