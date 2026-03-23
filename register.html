@@ -224,14 +224,34 @@ document.getElementById('reg-form').addEventListener('submit', async function(e)
       '<strong>' + escapeHtml(currentAddress.name) + '</strong>.<br>' +
       'Valid until <strong>' + expires.toLocaleString('en-CA',{hour:'2-digit',minute:'2-digit',hour12:true,month:'short',day:'numeric'}) + '</strong>.';
 
-    // Show pass stats
+    // Show pass stats with colour-coded progress bars
     const stats     = await getMonthlyPassStats(unit_number, address_id);
     const normPlate = visitor_plate.replace(/\s/g,'').toUpperCase();
     const daysUsed  = (stats.plateDays && stats.plateDays[normPlate]) ? stats.plateDays[normPlate] : 0;
+
+    function passBar(label, used, max) {
+      const pct       = Math.min(100, Math.round((used / max) * 100));
+      const remaining = max - used;
+      const colour    = pct > 80 ? 'red' : pct > 50 ? 'amber' : 'green';
+      const remLabel  = remaining === 0
+        ? '<span class="pass-stat-remaining pass-remaining--red">No passes remaining this month</span>'
+        : '<span class="pass-stat-remaining">' + remaining + ' remaining this month</span>';
+      return '<div class="pass-stat-item">' +
+        '<div class="pass-stat-header">' +
+          '<span class="pass-stat-label">' + label + '</span>' +
+          '<span class="pass-stat-count pass-count--' + colour + '">' + used + ' / ' + max + '</span>' +
+        '</div>' +
+        '<div class="pass-stat-track">' +
+          '<div class="pass-stat-fill pass-fill--' + colour + '" style="width:' + pct + '%"></div>' +
+        '</div>' +
+        remLabel +
+      '</div>';
+    }
+
     document.getElementById('pass-stats-box').innerHTML =
-      '<div class="pass-stats">' +
-      '<span>Monthly passes used: <strong>' + stats.totalPasses + ' / 10</strong></span>' +
-      '<span>Days this plate registered: <strong>' + daysUsed + ' / 7</strong></span>' +
+      '<div class="pass-stats-grid">' +
+        passBar('Monthly passes used', stats.totalPasses, 10) +
+        passBar('Days registered (this plate)', daysUsed, 7) +
       '</div>';
 
     document.getElementById('form-view').classList.add('hidden');

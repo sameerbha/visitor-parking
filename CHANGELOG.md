@@ -4,6 +4,21 @@ All changes to this project are documented here in reverse chronological order.
 
 ---
 
+## [1.4.0] — 2026-03-23
+
+### Success screen: colour-coded pass usage progress bars
+
+The registration success screen now displays two animated progress bars showing how much of the monthly allowance the unit has used.
+
+- **Monthly passes used** (X / 10) — tracks all visitor registrations for the unit this month
+- **Days registered for this plate** (X / 7) — tracks how many distinct days this specific plate has been registered
+
+Both bars transition **green → amber → red** as the limit approaches (>50% = amber, >80% = red). The count label matches the bar colour, and a "X remaining this month" line sits below each bar. When a limit is fully reached the label reads "No passes remaining this month" in red.
+
+**Files changed:** `register.html`, `css/style.css`, `CHANGELOG.md`
+
+---
+
 ## [1.3.0] — 2026-03-22
 
 ### Production: Full Supabase integration
