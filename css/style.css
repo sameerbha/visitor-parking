@@ -159,6 +159,20 @@ select.form-control{cursor:pointer}
 .pass-stat-remaining{font-size:.75rem;color:var(--muted)}
 .pass-remaining--red{color:var(--red);font-weight:600}
 
+/* ── Extend Registration Prompt ──────────────────────────── */
+.extend-header{text-align:center;margin-bottom:16px}
+.extend-icon{font-size:2.5rem;margin-bottom:6px}
+.extend-header h3{font-size:1.2rem;font-weight:700;color:var(--text)}
+.extend-desc{font-size:.9rem;color:var(--muted);text-align:center;margin-bottom:16px;line-height:1.5}
+.extend-times{background:#f8f9fa;border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:14px;display:flex;flex-direction:column;gap:8px}
+.extend-time-row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.extend-time-label{font-size:.8rem;color:var(--muted);font-weight:500}
+.extend-time-val{font-size:.9rem;font-weight:700;color:var(--text);text-align:right}
+.extend-arrow{text-align:center;font-size:.85rem;font-weight:700;color:var(--green);letter-spacing:1px}
+.extend-time-new .extend-time-val{color:var(--green-dark)}
+.extend-pass-note{font-size:.78rem;color:var(--muted);text-align:center;margin-bottom:14px;font-style:italic}
+.extend-actions{display:flex;flex-direction:column;gap:8px}
+
 /* ── Staff Portal Pages ───────────────────────────────────── */
 .portal-page{max-width:1200px;margin:0 auto;padding:20px}
 .portal-toolbar{background:var(--surface);border-radius:var(--radius);padding:16px 20px;margin-bottom:20px;box-shadow:var(--shadow)}

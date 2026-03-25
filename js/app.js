@@ -172,6 +172,28 @@ async function canRegisterVisitor(unitNumber, plate, addressId) {
   return data;
 }
 
+// ─── Extend registration (resident portal) ───────────────────────────────────
+
+async function checkPlateActive(plate, addressId) {
+  const { data, error } = await _sb.rpc('check_plate_active', {
+    p_plate:       plate,
+    p_address_id:  addressId,
+  });
+  if (error) return { active: false };
+  return data;
+}
+
+async function extendVisitorRegistration(plate, addressId, unitNumber, code) {
+  const { data, error } = await _sb.rpc('extend_visitor_registration', {
+    p_plate:       plate,
+    p_address_id:  addressId,
+    p_unit_number: unitNumber,
+    p_code:        code,
+  });
+  if (error) return { extended: false, error: error.message };
+  return data;
+}
+
 // ─── Plate check (staff enforcement) ────────────────────────────────────────
 
 async function checkPlate(plate, addressId) {

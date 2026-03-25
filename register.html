@@ -77,6 +77,32 @@
       </form>
     </div>
 
+    <!-- Extend View (shown when plate is already active) -->
+    <div id="extend-view" class="hidden">
+      <div class="extend-header">
+        <div class="extend-icon">⏱</div>
+        <h3>Already Registered</h3>
+      </div>
+      <p id="extend-plate-msg" class="extend-desc"></p>
+      <div class="extend-times">
+        <div class="extend-time-row">
+          <span class="extend-time-label">Current expiry</span>
+          <span class="extend-time-val" id="extend-current-expiry"></span>
+        </div>
+        <div class="extend-arrow">↓ +24 hours</div>
+        <div class="extend-time-row extend-time-new">
+          <span class="extend-time-label">New expiry after extending</span>
+          <span class="extend-time-val" id="extend-new-expiry"></span>
+        </div>
+      </div>
+      <p class="extend-pass-note">This extension uses 1 of your unit's monthly visitor passes.</p>
+      <div class="alert alert-error hidden" id="extend-error"></div>
+      <div class="extend-actions">
+        <button class="btn btn-secondary btn-block" id="extend-cancel-btn">Cancel</button>
+        <button class="btn btn-success btn-block" id="extend-confirm-btn">Extend by 24 Hours</button>
+      </div>
+    </div>
+
     <!-- Success View -->
     <div id="success-view" class="success-box hidden">
       <div class="success-icon">✓</div>
@@ -100,6 +126,39 @@
 // ── State ─────────────────────────────────────────────────────────────────────
 let currentAddress = null;
 let captcha        = generateCaptcha();
+let _extendContext = null; // holds data when the extend prompt is showing
+
+// ── Shared helper: colour-coded progress bar ──────────────────────────────────
+function passBar(label, used, max) {
+  const pct       = Math.min(100, Math.round((used / max) * 100));
+  const remaining = max - used;
+  const colour    = pct > 80 ? 'red' : pct > 50 ? 'amber' : 'green';
+  const remLabel  = remaining === 0
+    ? '<span class="pass-stat-remaining pass-remaining--red">No passes remaining this month</span>'
+    : '<span class="pass-stat-remaining">' + remaining + ' remaining this month</span>';
+  return '<div class="pass-stat-item">' +
+    '<div class="pass-stat-header">' +
+      '<span class="pass-stat-label">' + label + '</span>' +
+      '<span class="pass-stat-count pass-count--' + colour + '">' + used + ' / ' + max + '</span>' +
+    '</div>' +
+    '<div class="pass-stat-track">' +
+      '<div class="pass-stat-fill pass-fill--' + colour + '" style="width:' + pct + '%"></div>' +
+    '</div>' +
+    remLabel +
+  '</div>';
+}
+
+// ── Shared helper: render pass stats box ──────────────────────────────────────
+async function renderPassStats(unitNumber, addressId, plate) {
+  const stats     = await getMonthlyPassStats(unitNumber, addressId);
+  const normPlate = plate.replace(/\s/g, '').toUpperCase();
+  const daysUsed  = (stats.plateDays && stats.plateDays[normPlate]) ? stats.plateDays[normPlate] : 0;
+  document.getElementById('pass-stats-box').innerHTML =
+    '<div class="pass-stats-grid">' +
+      passBar('Monthly passes used', stats.totalPasses, 10) +
+      passBar('Days registered (this plate)', daysUsed, 7) +
+    '</div>';
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function showError(msg) {
@@ -197,7 +256,35 @@ document.getElementById('reg-form').addEventListener('submit', async function(e)
       return;
     }
 
-    // 5. Check monthly pass limits (server-side RPC)
+    // 5. Check if plate is already actively registered
+    submitBtn.textContent = 'Checking…';
+    const activeCheck = await checkPlateActive(visitor_plate, address_id);
+    if (activeCheck.active) {
+      // Show extend prompt instead of proceeding with new registration
+      const fmt = { hour:'2-digit', minute:'2-digit', hour12:true, month:'short', day:'numeric' };
+      const currentExpiry = new Date(activeCheck.expires_at);
+      const newExpiry     = new Date(currentExpiry.getTime() + 24 * 3600000);
+
+      document.getElementById('extend-plate-msg').innerHTML =
+        'Plate <strong>' + escapeHtml(visitor_plate) + '</strong> is already registered at ' +
+        escapeHtml(currentAddress.name) + '.';
+      document.getElementById('extend-current-expiry').textContent =
+        currentExpiry.toLocaleString('en-CA', fmt);
+      document.getElementById('extend-new-expiry').textContent =
+        newExpiry.toLocaleString('en-CA', fmt);
+      document.getElementById('extend-error').classList.add('hidden');
+
+      // Store context for the extend confirm handler
+      _extendContext = { plate: visitor_plate, unit_number, unit_code, address_id };
+
+      document.getElementById('form-view').classList.add('hidden');
+      document.getElementById('extend-view').classList.remove('hidden');
+      submitBtn.textContent = 'Submit';
+      submitBtn.disabled = false;
+      return;
+    }
+
+    // 6. Check monthly pass limits (server-side RPC)
     const passCheck = await canRegisterVisitor(unit_number, visitor_plate, address_id);
     if (!passCheck.allowed) {
       showError(passCheck.reason);
@@ -208,7 +295,7 @@ document.getElementById('reg-form').addEventListener('submit', async function(e)
 
     submitBtn.textContent = 'Registering…';
 
-    // 6. Create the registration
+    // 7. Create the registration
     await addVisitorRegistration({
       address_id,
       lot_code:     currentAddress.lot_code,
@@ -217,42 +304,14 @@ document.getElementById('reg-form').addEventListener('submit', async function(e)
       visitor_plate,
     });
 
-    // 7. Show success
-    const expires = new Date(Date.now() + 24*3600000);
+    // 8. Show success
+    const expires = new Date(Date.now() + 24 * 3600000);
     document.getElementById('success-msg').innerHTML =
       'Plate <strong>' + escapeHtml(visitor_plate) + '</strong> has been registered at ' +
       '<strong>' + escapeHtml(currentAddress.name) + '</strong>.<br>' +
       'Valid until <strong>' + expires.toLocaleString('en-CA',{hour:'2-digit',minute:'2-digit',hour12:true,month:'short',day:'numeric'}) + '</strong>.';
 
-    // Show pass stats with colour-coded progress bars
-    const stats     = await getMonthlyPassStats(unit_number, address_id);
-    const normPlate = visitor_plate.replace(/\s/g,'').toUpperCase();
-    const daysUsed  = (stats.plateDays && stats.plateDays[normPlate]) ? stats.plateDays[normPlate] : 0;
-
-    function passBar(label, used, max) {
-      const pct       = Math.min(100, Math.round((used / max) * 100));
-      const remaining = max - used;
-      const colour    = pct > 80 ? 'red' : pct > 50 ? 'amber' : 'green';
-      const remLabel  = remaining === 0
-        ? '<span class="pass-stat-remaining pass-remaining--red">No passes remaining this month</span>'
-        : '<span class="pass-stat-remaining">' + remaining + ' remaining this month</span>';
-      return '<div class="pass-stat-item">' +
-        '<div class="pass-stat-header">' +
-          '<span class="pass-stat-label">' + label + '</span>' +
-          '<span class="pass-stat-count pass-count--' + colour + '">' + used + ' / ' + max + '</span>' +
-        '</div>' +
-        '<div class="pass-stat-track">' +
-          '<div class="pass-stat-fill pass-fill--' + colour + '" style="width:' + pct + '%"></div>' +
-        '</div>' +
-        remLabel +
-      '</div>';
-    }
-
-    document.getElementById('pass-stats-box').innerHTML =
-      '<div class="pass-stats-grid">' +
-        passBar('Monthly passes used', stats.totalPasses, 10) +
-        passBar('Days registered (this plate)', daysUsed, 7) +
-      '</div>';
+    await renderPassStats(unit_number, address_id, visitor_plate);
 
     document.getElementById('form-view').classList.add('hidden');
     document.getElementById('success-view').classList.remove('hidden');
@@ -266,6 +325,62 @@ document.getElementById('reg-form').addEventListener('submit', async function(e)
   }
 });
 
+// ── Extend: cancel ───────────────────────────────────────────────────────────
+document.getElementById('extend-cancel-btn').addEventListener('click', function() {
+  document.getElementById('extend-view').classList.add('hidden');
+  document.getElementById('form-view').classList.remove('hidden');
+  document.getElementById('submit-btn').textContent = 'Submit';
+  document.getElementById('submit-btn').disabled = false;
+  _extendContext = null;
+});
+
+// ── Extend: confirm ───────────────────────────────────────────────────────────
+document.getElementById('extend-confirm-btn').addEventListener('click', async function() {
+  const btn   = this;
+  const errEl = document.getElementById('extend-error');
+  btn.disabled = true;
+  btn.textContent = 'Extending…';
+  errEl.classList.add('hidden');
+
+  try {
+    const result = await extendVisitorRegistration(
+      _extendContext.plate,
+      _extendContext.address_id,
+      _extendContext.unit_number,
+      _extendContext.unit_code
+    );
+
+    if (!result.extended) {
+      errEl.textContent = result.error || 'Could not extend. Please try again.';
+      errEl.classList.remove('hidden');
+      btn.disabled = false;
+      btn.textContent = 'Extend by 24 Hours';
+      return;
+    }
+
+    // Show success with extended expiry
+    const newExpiry = new Date(result.new_expires_at);
+    document.getElementById('success-msg').innerHTML =
+      'Registration for plate <strong>' + escapeHtml(_extendContext.plate) + '</strong> at ' +
+      '<strong>' + escapeHtml(currentAddress.name) + '</strong> has been extended.<br>' +
+      'Now valid until <strong>' + newExpiry.toLocaleString('en-CA',{hour:'2-digit',minute:'2-digit',hour12:true,month:'short',day:'numeric'}) + '</strong>.';
+
+    await renderPassStats(_extendContext.unit_number, _extendContext.address_id, _extendContext.plate);
+
+    document.getElementById('extend-view').classList.add('hidden');
+    document.getElementById('success-view').classList.remove('hidden');
+    document.getElementById('success-view').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    _extendContext = null;
+
+  } catch(err) {
+    console.error('[register.html] Extend error:', err);
+    errEl.textContent = 'Something went wrong. Please try again.';
+    errEl.classList.remove('hidden');
+    btn.disabled = false;
+    btn.textContent = 'Extend by 24 Hours';
+  }
+});
+
 // ── Register again ────────────────────────────────────────────────────────────
 document.getElementById('register-again-btn').addEventListener('click', function() {
   document.getElementById('reg-form').reset();
@@ -274,7 +389,9 @@ document.getElementById('register-again-btn').addEventListener('click', function
   document.getElementById('submit-btn').disabled = false;
   renderCaptcha();
   document.getElementById('success-view').classList.add('hidden');
+  document.getElementById('extend-view').classList.add('hidden');
   document.getElementById('form-view').classList.remove('hidden');
+  _extendContext = null;
 });
 </script>
 <script>

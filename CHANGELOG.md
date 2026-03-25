@@ -4,6 +4,32 @@ All changes to this project are documented here in reverse chronological order.
 
 ---
 
+## [1.5.0] — 2026-03-25
+
+### Duplicate Plate / Extend Flow
+
+When a resident tries to register a plate that is already actively registered, the system now intercepts and offers to extend the existing registration by 24 hours instead of creating a duplicate.
+
+**Flow:**
+1. Resident submits the form as normal
+2. After unit code validation, the system checks if the plate is already active (`check_plate_active` RPC)
+3. If active, an **extend prompt** replaces the form — showing the current expiry and the new expiry after extension
+4. Resident clicks **"Extend by 24 Hours"** — the existing record's `expires_at` is pushed forward, no new booking created
+5. Success screen shows the updated expiry time with pass usage bars
+6. Resident can cancel and return to the form if they made a mistake
+
+**Rules enforced server-side (`extend_visitor_registration` RPC):**
+- Unit code must be valid
+- Only the unit that originally registered the plate can extend it
+- Extension counts as a new monthly pass (blocked if unit is at the 10/month limit)
+- Unlimited extensions allowed (useful for long-stay guests)
+
+**Files changed:** `patch-extend-registration.sql` (new — run in Supabase SQL Editor), `js/app.js`, `register.html`, `css/style.css`, `CHANGELOG.md`
+
+**Required Supabase step:** Run `patch-extend-registration.sql` in the SQL Editor to add the two new RPC functions.
+
+---
+
 ## [1.4.0] — 2026-03-23
 
 ### Success screen: colour-coded pass usage progress bars
