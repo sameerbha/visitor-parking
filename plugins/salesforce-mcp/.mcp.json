@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "salesforce": {
+      "command": "[TODO: path-to-salesforce-mcp-server]",
+      "args": [
+        "[TODO: server-arg-1]"
+      ],
+      "env": {
+        "SALESFORCE_INSTANCE_URL": "[TODO: https://your-instance.my.salesforce.com]",
+        "SALESFORCE_CLIENT_ID": "[TODO: connected-app-client-id]",
+        "SALESFORCE_CLIENT_SECRET": "[TODO: connected-app-client-secret]",
+        "SALESFORCE_USERNAME": "[TODO: username@example.com]",
+        "SALESFORCE_PASSWORD": "[TODO: password+security_token]",
+        "SALESFORCE_LOGIN_URL": "[TODO: https://login.salesforce.com or https://test.salesforce.com]"
+      }
+    }
+  }
+}
