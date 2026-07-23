@@ -162,9 +162,36 @@ async function main() {
     JSON.stringify(extend.data)
   );
 
+  // 8. Registration History (Admin) — same query shape as getPlateHistory()
+  // and getUnitHistory(), no expiry filter, should find this registration.
+  const plateHistRes = await fetch(
+    `${SUPABASE_URL}/rest/v1/visitor_registrations?address_id=eq.${addressId}` +
+      `&visitor_plate=ilike.${encodeURIComponent(testPlate)}&order=registered_at.desc`,
+    { headers }
+  );
+  const plateHist = await plateHistRes.json().catch(() => null);
+  report(
+    'Plate history finds this registration',
+    plateHistRes.ok && Array.isArray(plateHist) && plateHist.length >= 1,
+    `${Array.isArray(plateHist) ? plateHist.length : 0} row(s)`
+  );
+
+  const unitHistRes = await fetch(
+    `${SUPABASE_URL}/rest/v1/visitor_registrations?address_id=eq.${addressId}` +
+      `&unit_number=ilike.${encodeURIComponent(unitNumber)}&order=registered_at.desc`,
+    { headers }
+  );
+  const unitHist = await unitHistRes.json().catch(() => null);
+  report(
+    'Unit history finds this registration',
+    unitHistRes.ok && Array.isArray(unitHist) && unitHist.length >= 1,
+    `${Array.isArray(unitHist) ? unitHist.length : 0} row(s)`
+  );
+
   finish();
   console.log(`\nNote: this created a real visitor_registrations row for plate ${testPlate} / unit ${unitNumber}.`);
   console.log('It expires on its own in ~24 hours, or delete it now via the Admin/Enforcement portal.');
+  console.log('It will also show up under Admin > Registration History for the next 3 years (retention policy).');
 }
 
 main().catch((err) => {

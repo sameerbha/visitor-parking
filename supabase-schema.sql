@@ -206,9 +206,9 @@ END;
 $$;
 GRANT EXECUTE ON FUNCTION can_register_visitor TO anon;
 
--- ── 6. Optional: auto-cleanup of expired registrations (pg_cron) ────────────
--- Uncomment in Supabase Dashboard → Database → Extensions → enable pg_cron,
--- then run this to delete expired rows every hour:
---
--- SELECT cron.schedule('cleanup-expired', '0 * * * *',
---   'DELETE FROM visitor_registrations WHERE expires_at < NOW()');
+-- ── 6. Retention: visitor_registrations is kept for 3 years ─────────────────
+-- Registration history (active + expired) is intentionally NOT deleted on
+-- expiry — Admin > Registration History reads the full history for a plate
+-- or unit. Instead, a scheduled job permanently deletes rows older than
+-- 3 years. See patch-history-retention.sql to set this up (one-time, via
+-- the Supabase SQL Editor).

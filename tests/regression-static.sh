@@ -84,5 +84,17 @@ check_contains manifest.webmanifest '"./index.html"' "manifest start_url points 
 check_contains sw.js "./index.html" "sw.js precache/fallback points to index.html"
 
 echo
+echo "== Enforcement Patrol View markers present =="
+check_contains enforcement.html "panel-patrol" "enforcement.html has the Patrol View panel"
+check_contains enforcement.html "panel-flagged" "enforcement.html has the Flagged Vehicles tab"
+check_contains enforcement.html "patrol-fab" "enforcement.html has the floating Flag button"
+
+echo
+echo "== Admin Registration History markers present =="
+check_contains admin.html "panel-history" "admin.html has the Registration History panel"
+check_contains admin.html "history-mode-plate" "admin.html has the plate/unit history toggle"
+check_status patch-history-retention.sql 200
+
+echo
 echo "== Summary: $PASS passed, $FAIL failed =="
 [ "$FAIL" -eq 0 ]

@@ -66,6 +66,9 @@
     <button class="tab-btn" id="tab-unitcodes" onclick="showTab('unitcodes')">
       🔑 Unit Codes
     </button>
+    <button class="tab-btn" id="tab-history" onclick="showTab('history')">
+      📜 Registration History
+    </button>
     <div class="tab-bar-spacer"></div>
     <button class="btn btn-primary btn-sm" id="add-btn" onclick="handleAddBtn()">+ Add Exemption</button>
   </div>
@@ -126,6 +129,28 @@
       </table>
     </div>
     <div class="table-footer" id="uc-table-footer"></div>
+  </div>
+
+  <!-- ── Registration History Panel ──────────────────────────────────────── -->
+  <div id="panel-history" class="table-section hidden">
+    <div class="table-header-bar">
+      <h2>Registration History</h2>
+    </div>
+    <div class="history-search-box">
+      <div class="history-mode-toggle">
+        <button class="history-mode-btn active" id="history-mode-plate" onclick="setHistoryMode('plate')">By Plate</button>
+        <button class="history-mode-btn" id="history-mode-unit" onclick="setHistoryMode('unit')">By Unit</button>
+      </div>
+      <div class="lookup-row">
+        <input class="form-control lookup-input" id="history-search-input"
+          placeholder="Enter a license plate…" maxlength="10" autocomplete="off"
+          style="text-transform:uppercase;letter-spacing:2px;font-weight:600" />
+        <button class="btn btn-primary" id="history-search-btn">Search</button>
+      </div>
+    </div>
+    <div id="history-results">
+      <p class="patrol-empty">Enter a plate or unit number above to view its full registration history — active and expired, going back up to 3 years.</p>
+    </div>
   </div>
 
 </div><!-- portal-page -->
@@ -287,8 +312,11 @@ function showTab(tab) {
   activeTab = tab;
   document.getElementById('panel-exemptions').classList.toggle('hidden', tab !== 'exemptions');
   document.getElementById('panel-unitcodes').classList.toggle('hidden',  tab !== 'unitcodes');
+  document.getElementById('panel-history').classList.toggle('hidden',   tab !== 'history');
   document.getElementById('tab-exemptions').classList.toggle('active', tab === 'exemptions');
   document.getElementById('tab-unitcodes').classList.toggle('active',  tab === 'unitcodes');
+  document.getElementById('tab-history').classList.toggle('active',    tab === 'history');
+  document.getElementById('add-btn').classList.toggle('hidden', tab === 'history');
   document.getElementById('add-btn').textContent = tab === 'exemptions' ? '+ Add Exemption' : '+ Add Unit Code';
 }
 
@@ -576,6 +604,94 @@ document.getElementById('uc-confirm-delete-btn').addEventListener('click', async
     await loadUnitCodes();
     showAlert('Unit code removed.');
   }
+});
+
+// ════════════════════════════════════════════════════════════
+// REGISTRATION HISTORY
+// ════════════════════════════════════════════════════════════
+let historyMode    = 'plate'; // 'plate' | 'unit'
+let historyResults = [];
+
+function setHistoryMode(mode) {
+  historyMode = mode;
+  document.getElementById('history-mode-plate').classList.toggle('active', mode === 'plate');
+  document.getElementById('history-mode-unit').classList.toggle('active',  mode === 'unit');
+  const input = document.getElementById('history-search-input');
+  input.placeholder = mode === 'plate' ? 'Enter a license plate…' : 'Enter a unit number…';
+  input.value = '';
+  historyResults = [];
+  document.getElementById('history-results').innerHTML =
+    '<p class="patrol-empty">Enter a ' + (mode === 'plate' ? 'license plate' : 'unit number') +
+    ' above to view its full registration history — active and expired, going back up to 3 years.</p>';
+}
+
+async function runHistorySearch() {
+  const raw = document.getElementById('history-search-input').value.trim();
+  const resultsEl = document.getElementById('history-results');
+  if (!raw) return;
+
+  resultsEl.innerHTML = '<p class="patrol-empty">Searching…</p>';
+
+  historyResults = historyMode === 'plate'
+    ? await getPlateHistory(raw, currentAddressId)
+    : await getUnitHistory(raw, currentAddressId);
+
+  renderHistoryResults(raw);
+}
+
+function renderHistoryResults(query) {
+  const resultsEl = document.getElementById('history-results');
+
+  if (historyResults.length === 0) {
+    resultsEl.innerHTML = '<p class="patrol-empty">No registration history found for "' + escapeHtml(query) + '".</p>';
+    return;
+  }
+
+  const rows = historyResults.map(v => {
+    const active = new Date(v.expires_at) > new Date();
+    return '<tr>' +
+      '<td>' + plateBadge(v.visitor_plate) + '</td>' +
+      '<td>' + escapeHtml(v.unit_number) + '</td>' +
+      '<td class="date-cell">' + formatDateTime(v.registered_at) + '</td>' +
+      '<td class="date-cell">' + formatDateTime(v.expires_at) + '</td>' +
+      '<td><span class="status-badge ' + (active ? 'status-active' : 'status-expired') + '">' + (active ? 'Active' : 'Expired') + '</span></td>' +
+      '</tr>';
+  }).join('');
+
+  resultsEl.innerHTML =
+    '<div class="table-header-bar">' +
+      '<h2>' + historyResults.length + ' registration(s) for "' + escapeHtml(query) + '"</h2>' +
+      '<div class="table-actions">' +
+        '<button class="btn btn-secondary" id="history-export-btn">⬇ Export CSV</button>' +
+      '</div>' +
+    '</div>' +
+    '<div class="table-responsive">' +
+      '<table class="data-table">' +
+        '<thead><tr><th>Plate</th><th>Unit</th><th>Registered</th><th>Expires</th><th>Status</th></tr></thead>' +
+        '<tbody>' + rows + '</tbody>' +
+      '</table>' +
+    '</div>';
+
+  document.getElementById('history-export-btn').addEventListener('click', () => {
+    const csvRows = [
+      ['Plate', 'Unit', 'Registered At', 'Expires At', 'Status'],
+      ...historyResults.map(v => {
+        const active = new Date(v.expires_at) > new Date();
+        return [v.visitor_plate, v.unit_number, formatDateTime(v.registered_at), formatDateTime(v.expires_at), active ? 'Active' : 'Expired'];
+      }),
+    ];
+    exportCSV(csvRows, 'history-' + query.replace(/\s/g, '') + '-' + todayStr() + '.csv');
+  });
+}
+
+document.getElementById('history-search-btn').addEventListener('click', runHistorySearch);
+document.getElementById('history-search-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') runHistorySearch();
+});
+document.getElementById('history-search-input').addEventListener('input', function() {
+  const pos = this.selectionStart;
+  this.value = this.value.toUpperCase();
+  this.setSelectionRange(pos, pos);
 });
 
 // ── Modal helpers ─────────────────────────────────────────────────────────────

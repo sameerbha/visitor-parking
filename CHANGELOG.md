@@ -4,6 +4,21 @@ All changes to this project are documented here in reverse chronological order.
 
 ---
 
+## [1.10.0] — 2026-07-23
+
+### Admin: Registration History, with a 3-year retention policy
+
+In response to management's question about surfacing plate/unit permit history (raised alongside the board's original security review), Admin now has a "📜 Registration History" tab.
+
+- **Look up by plate or unit:** a small toggle switches the search between the two; results show every registration for that plate/unit — active and expired — most recent first, with an Export CSV option matching the pattern used elsewhere in the app.
+- **No schema change needed to read it.** Staff accounts already had full read access to `visitor_registrations` regardless of expiry via the existing RLS policy — this was a missing screen, not a missing permission.
+- **3-year retention, not indefinite by default.** Previously nothing deleted expired registrations automatically, so history was being kept forever by omission rather than by decision. `patch-history-retention.sql` (new) enables `pg_cron` and schedules a nightly job that permanently deletes any registration older than 3 years, measured from its registration date. This applies to `visitor_registrations` only — the exemptions log is unaffected, per this round's explicit scope.
+- **Tests extended:** `regression-static.sh` checks the new tab and migration file exist; `regression-functional.mjs` now also verifies a test registration is retrievable through the same plate/unit history queries the new screen uses.
+
+**Files changed:** `admin.html`, `js/app.js`, `css/style.css`, `supabase-schema.sql`, `patch-history-retention.sql` (new), `tests/regression-static.sh`, `tests/regression-functional.mjs`, `README.md`, `CHANGELOG.md`
+
+---
+
 ## [1.9.4] — 2026-07-22
 
 ### Tab bar: 2x2 grid instead of horizontal scroll on mobile

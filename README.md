@@ -177,6 +177,12 @@ The resident registration page enforces:
 
 Each successful registration is valid for 24 hours.
 
+## Registration History & Retention
+
+Admin has a "Registration History" tab that looks up the full history — active and expired — for a given plate or unit. This works with no schema change, since the existing RLS policy already grants authenticated staff full read access to `visitor_registrations` regardless of expiry.
+
+Rows are kept for **3 years** from their registration date, after which a scheduled job permanently deletes them. Run [patch-history-retention.sql](/Users/sameerbhaidani/Documents/VIsitors%20Parking%20App/patch-history-retention.sql) once in the Supabase SQL Editor to set this up (enables `pg_cron` and schedules a nightly purge job). This does not apply to the `exemptions` table.
+
 ## Row Level Security Note
 
 The `visitor_registrations` insert policy should allow both `anon` and `authenticated` roles. This matters because a browser may already have a cached Supabase session when loading the public registration page.

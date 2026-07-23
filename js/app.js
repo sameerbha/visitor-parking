@@ -70,6 +70,36 @@ async function deleteVisitorRegistration(id) {
   if (error) throw error;
 }
 
+// ─── Registration History (Admin) ───────────────────────────────────────────
+// Unlike getActiveVisitors(), these are not filtered by expiry — they return
+// the full history for a plate or unit, active and expired alike, so staff
+// can answer "how has this plate/unit used its permits over time." Backed
+// by the same RLS policy that already grants authenticated staff full read
+// access to visitor_registrations; no schema change needed for this to work.
+
+async function getPlateHistory(plate, addressId) {
+  const norm = plate.replace(/\s/g, '').toUpperCase();
+  const { data, error } = await _sb
+    .from('visitor_registrations')
+    .select('*')
+    .eq('address_id', addressId)
+    .ilike('visitor_plate', norm)
+    .order('registered_at', { ascending: false });
+  if (error) { console.error('getPlateHistory:', error); return []; }
+  return data;
+}
+
+async function getUnitHistory(unitNumber, addressId) {
+  const { data, error } = await _sb
+    .from('visitor_registrations')
+    .select('*')
+    .eq('address_id', addressId)
+    .ilike('unit_number', unitNumber.trim())
+    .order('registered_at', { ascending: false });
+  if (error) { console.error('getUnitHistory:', error); return []; }
+  return data;
+}
+
 // ─── Exemptions ─────────────────────────────────────────────────────────────
 
 async function getExemptions(addressId) {

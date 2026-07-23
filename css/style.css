@@ -219,6 +219,13 @@ select.form-control{cursor:pointer}
 .empty-row{text-align:center;color:var(--muted);padding:40px!important}
 .table-footer{padding:12px 20px;font-size:.82rem;color:var(--muted);border-top:1px solid var(--border)}
 
+/* Registration History (Admin) */
+.history-search-box{padding:24px 20px 4px}
+.history-mode-toggle{display:flex;gap:4px;margin-bottom:16px}
+.history-mode-btn{padding:8px 18px;background:#f1f3f5;border:1px solid var(--border);border-radius:var(--radius);font-size:.85rem;font-weight:600;color:var(--muted);cursor:pointer;transition:background var(--tr),color var(--tr)}
+.history-mode-btn.active{background:var(--navy);border-color:var(--navy);color:#fff}
+#history-results .table-header-bar{border-radius:0}
+
 /* Plate Lookup */
 .lookup-box{padding:24px 20px}
 .lookup-box>p{margin-bottom:20px;color:var(--muted);font-size:.92rem}
