@@ -2,9 +2,9 @@
    Keeps the registration page and its static assets available offline.
    Network-only for cross-origin requests (e.g., Supabase, CDNs). */
 
-const CACHE_VERSION = 'vp-register-v1';
+const CACHE_VERSION = 'vp-register-v2';
 const PRECACHE_URLS = [
-  './register.html',
+  './index.html',
   './css/style.css',
   './js/app.js',
   './js/supabase-config.js',
@@ -52,7 +52,7 @@ self.addEventListener('fetch', (event) => {
           caches.open(CACHE_VERSION).then((c) => c.put(req, copy)).catch(() => {});
           return res;
         })
-        .catch(() => caches.match('./register.html'))
+        .catch(() => caches.match('./index.html'))
     );
     return;
   }

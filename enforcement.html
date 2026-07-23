@@ -11,7 +11,7 @@
 <!-- Header -->
 <header class="app-header">
   <div class="header-inner">
-    <a class="header-logo" href="index.html">
+    <a class="header-logo" href="portal.html">
       <span class="logo-icon">🅿️</span>
       <div class="logo-text">
         <span class="logo-name">Visitors Parking</span>
@@ -21,7 +21,7 @@
     <nav class="header-nav desktop-nav">
       <a href="enforcement.html" class="nav-link active">Enforcement</a>
       <a href="admin.html"  class="nav-link">Admin</a>
-      <a href="register.html"    class="nav-link" target="_blank">Resident Portal ↗</a>
+      <a href="index.html"    class="nav-link" target="_blank">Resident Portal ↗</a>
     </nav>
     <div class="header-right">
       <span class="user-badge desktop-only" id="user-badge"></span>
@@ -35,7 +35,7 @@
   <nav class="mobile-nav" id="mobile-nav">
     <a href="enforcement.html" class="mobile-nav-link">Enforcement Portal</a>
     <a href="admin.html"  class="mobile-nav-link">Admin Portal</a>
-    <a href="register.html" target="_blank" class="mobile-nav-link">Resident Portal ↗</a>
+    <a href="index.html" target="_blank" class="mobile-nav-link">Resident Portal ↗</a>
     <div class="mobile-nav-divider"></div>
     <span class="mobile-nav-user" id="mobile-user"></span>
     <button class="mobile-nav-link logout-link" id="mobile-logout">Sign Out</button>
@@ -64,6 +64,9 @@
     <button class="tab-btn active" id="tab-plates" onclick="showTab('plates')">
       Valid Plates (<span id="plate-count">0</span>)
     </button>
+    <button class="tab-btn" id="tab-patrol" onclick="showTab('patrol')">
+      🚶 Patrol View
+    </button>
     <button class="tab-btn" id="tab-lookup" onclick="showTab('lookup')">
       🔍 Plate Lookup
     </button>
@@ -90,6 +93,22 @@
       </table>
     </div>
     <div class="table-footer" id="table-footer"></div>
+  </div>
+
+  <!-- Patrol View Panel -->
+  <div id="panel-patrol" class="table-section hidden">
+    <div class="table-header-bar">
+      <h2>Patrol View</h2>
+      <div class="table-actions">
+        <input class="search-input" id="patrol-search" placeholder="Search plate or unit…" />
+      </div>
+    </div>
+    <div class="patrol-meta">
+      <span class="patrol-count" id="patrol-count">0 of 0 checked</span>
+      <button class="btn btn-secondary btn-sm" id="patrol-reset-btn">Reset checks</button>
+    </div>
+    <div class="patrol-updated" id="patrol-updated"></div>
+    <div class="patrol-list" id="patrol-list"></div>
   </div>
 
   <!-- Plate Lookup Panel -->
@@ -132,7 +151,9 @@
 let currentAddressId = null;
 let currentAddress   = null;
 let allVisitors      = [];
+let allExemptions    = []; // active exemptions — surfaced in Patrol View only
 let deleteTargetId   = null;
+let checkedIds       = new Set(); // patrol view — plates checked off this session
 
 // ── Page init (async) ────────────────────────────────────────────────────────
 (async () => {
@@ -158,6 +179,7 @@ let deleteTargetId   = null;
   if (addrs.length > 0) {
     currentAddressId = addrs[0].id;
     currentAddress   = addrs[0];
+    loadCheckedFromStorage();
     await loadVisitors();
   }
 
@@ -166,6 +188,7 @@ let deleteTargetId   = null;
     currentAddressId = currentAddress.id;
     document.getElementById('lookup-title').textContent = 'Plate Lookup — ' + currentAddress.name;
     document.getElementById('check-result').innerHTML = '';
+    loadCheckedFromStorage();
     await loadVisitors();
   });
 
@@ -177,11 +200,24 @@ let deleteTargetId   = null;
 // ── Load & render visitors ───────────────────────────────────────────────────
 async function loadVisitors() {
   if (!currentAddressId) return;
-  allVisitors = await getActiveVisitors(currentAddressId);
-  document.getElementById('plate-count').textContent  = allVisitors.length;
-  document.getElementById('table-title').textContent  =
-    (currentAddress ? currentAddress.full_name : '') + ' — 24-Hour Visitor Lot';
-  renderTable();
+  try {
+    allVisitors = await getActiveVisitors(currentAddressId);
+    // getExemptions() already fails soft (returns [] on error), so a hiccup
+    // here just means exempt plates are momentarily missing from the patrol
+    // list rather than the whole view breaking.
+    allExemptions = (await getExemptions(currentAddressId)).filter(isActive);
+    document.getElementById('plate-count').textContent  = allVisitors.length;
+    document.getElementById('table-title').textContent  =
+      (currentAddress ? currentAddress.full_name : '') + ' — 24-Hour Visitor Lot';
+    renderTable();
+    renderPatrol();
+    updatePatrolMeta(true);
+  } catch (err) {
+    // Connection issue (common in underground garages) — keep showing the
+    // last successfully loaded list instead of blanking the screen.
+    console.error('[enforcement.html] loadVisitors failed, keeping last known list:', err);
+    updatePatrolMeta(false);
+  }
 }
 
 function renderTable() {
@@ -246,9 +282,121 @@ document.getElementById('export-btn').addEventListener('click', () => {
 // ── Tabs ─────────────────────────────────────────────────────────────────────
 function showTab(tab) {
   document.getElementById('panel-plates').classList.toggle('hidden', tab !== 'plates');
+  document.getElementById('panel-patrol').classList.toggle('hidden', tab !== 'patrol');
   document.getElementById('panel-lookup').classList.toggle('hidden', tab !== 'lookup');
   document.getElementById('tab-plates').classList.toggle('active', tab === 'plates');
+  document.getElementById('tab-patrol').classList.toggle('active', tab === 'patrol');
   document.getElementById('tab-lookup').classList.toggle('active', tab === 'lookup');
+  if (tab === 'patrol') renderPatrol();
+}
+
+// ── Patrol View ──────────────────────────────────────────────────────────────
+// A stripped-down, mobile-first view for walking the garage: big plate text,
+// tap a row to check it off, nothing else to tap by accident.
+
+function patrolStorageKey() {
+  return 'patrol-checked-' + (currentAddressId || '') + '-' + todayStr();
+}
+
+function loadCheckedFromStorage() {
+  try {
+    const raw = localStorage.getItem(patrolStorageKey());
+    checkedIds = new Set(raw ? JSON.parse(raw) : []);
+  } catch {
+    checkedIds = new Set();
+  }
+}
+
+function saveCheckedToStorage() {
+  try {
+    localStorage.setItem(patrolStorageKey(), JSON.stringify([...checkedIds]));
+  } catch { /* storage unavailable — checks just won't survive a reload */ }
+}
+
+// Combines visitor registrations and active exemptions into one sorted
+// list — the concierge is scanning plates on cars, not caring which table
+// a plate lives in, so both belong in the same walk-the-garage view.
+function getPatrolItems() {
+  const visitorItems = allVisitors.map(v => ({
+    key:       'v-' + v.id,
+    plate:     v.visitor_plate,
+    secondary: v.unit_number,
+    exempt:    false,
+  }));
+  const exemptItems = allExemptions.map(e => ({
+    key:       'e-' + e.id,
+    plate:     e.plate,
+    secondary: e.notes || 'Exempt vehicle',
+    exempt:    true,
+  }));
+  // Valid registrations first (alphabetical), exempt plates grouped at the
+  // bottom (also alphabetical) rather than interleaved — keeps the "plates
+  // I actually need to check" block separate from the "always fine" block.
+  return [...visitorItems, ...exemptItems].sort((a, b) => {
+    if (a.exempt !== b.exempt) return a.exempt ? 1 : -1;
+    return a.plate.localeCompare(b.plate);
+  });
+}
+
+function renderPatrol() {
+  const q     = document.getElementById('patrol-search').value.toLowerCase();
+  const items = getPatrolItems();
+  const filtered = items.filter(it =>
+    !q || it.plate.toLowerCase().includes(q) || it.secondary.toLowerCase().includes(q)
+  );
+
+  const list = document.getElementById('patrol-list');
+  if (filtered.length === 0) {
+    list.innerHTML = '<div class="patrol-empty">' +
+      (q ? 'No results matching your search.' : 'No active registrations or exemptions for this address.') +
+      '</div>';
+  } else {
+    list.innerHTML = filtered.map(it => {
+      const isChecked = checkedIds.has(it.key);
+      // Exempt plates always show the EXEMPT badge, checked or not — the
+      // point is for staff to see "don't ticket this one" at a glance, not
+      // to have it disappear the moment they tap the row.
+      const secondaryHtml = it.exempt
+        ? (isChecked ? '<span class="patrol-check-icon">✓</span> ' : '') + '<span class="patrol-badge-exempt">EXEMPT</span>'
+        : (isChecked ? '<span class="patrol-check-icon">✓</span>' : escapeHtml(it.secondary));
+      return '<div class="patrol-row' + (isChecked ? ' checked' : '') + (it.exempt ? ' exempt' : '') +
+        '" data-key="' + it.key + '">' +
+        '<span class="patrol-plate">' + escapeHtml(it.plate) + '</span>' +
+        '<span class="patrol-unit">' + secondaryHtml + '</span>' +
+        '</div>';
+    }).join('');
+  }
+
+  const totalChecked = items.filter(it => checkedIds.has(it.key)).length;
+  document.getElementById('patrol-count').textContent = totalChecked + ' of ' + items.length + ' checked';
+}
+
+document.getElementById('patrol-list').addEventListener('click', function(e) {
+  const row = e.target.closest('.patrol-row');
+  if (!row) return;
+  const key = row.dataset.key;
+  if (checkedIds.has(key)) checkedIds.delete(key); else checkedIds.add(key);
+  saveCheckedToStorage();
+  renderPatrol();
+});
+
+document.getElementById('patrol-search').addEventListener('input', renderPatrol);
+
+document.getElementById('patrol-reset-btn').addEventListener('click', function() {
+  checkedIds = new Set();
+  saveCheckedToStorage();
+  renderPatrol();
+});
+
+function updatePatrolMeta(ok) {
+  const el = document.getElementById('patrol-updated');
+  if (ok) {
+    el.textContent = 'Updated just now';
+    el.classList.remove('patrol-updated--stale');
+  } else {
+    el.textContent = 'Connection issue — showing the last list that loaded successfully';
+    el.classList.add('patrol-updated--stale');
+  }
 }
 
 // ── Plate Lookup ─────────────────────────────────────────────────────────────

@@ -2,123 +2,409 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Visitors Parking Management</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#1565c0" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <title>Visitor Parking Registration</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
 
-<!-- Header -->
-<header class="app-header">
-  <div class="header-inner">
-    <a class="header-logo" href="index.html">
-      <span class="logo-icon">🅿️</span>
-      <div class="logo-text">
-        <span class="logo-name">Visitors Parking</span>
-        <span class="logo-sub">Management System</span>
+<div class="resident-portal">
+  <div class="resident-topbar">
+    <a href="portal.html" class="staff-link">🔒 Staff</a>
+  </div>
+  <div class="resident-header">
+    <div class="resident-logo">🅿️</div>
+    <h1>Visitor Parking<br>Registration</h1>
+    <p class="resident-subtitle" id="building-subtitle">Register your guest's vehicle for 24-hour parking</p>
+  </div>
+
+  <div class="resident-card">
+
+    <!-- Registration Form -->
+    <div id="form-view">
+      <p class="form-intro">Please enter the following information:</p>
+
+      <form id="reg-form" novalidate>
+
+        <!-- Building is determined by ?lot= URL param — hidden from resident -->
+        <input type="hidden" id="address_id" value="" />
+
+        <div class="form-group">
+          <label for="unit_number">Unit Number</label>
+          <input id="unit_number" type="text" class="form-control"
+            required autocapitalize="characters" autocomplete="off" />
+        </div>
+
+        <div class="form-group">
+          <label for="unit_code">Unit Code</label>
+          <input id="unit_code" type="password" class="form-control"
+            required autocomplete="off"
+            placeholder="Enter your unit's parking code" />
+          <small class="field-hint">Your unit code is provided by building management.</small>
+        </div>
+
+        <div class="form-group">
+          <label for="tenant_phone">Your Phone Number</label>
+          <input id="tenant_phone" type="tel" class="form-control"
+            required inputmode="tel" autocomplete="tel" />
+        </div>
+
+        <div class="form-group">
+          <label for="visitor_plate">Visitor License Plate</label>
+          <input id="visitor_plate" type="text" class="form-control"
+            placeholder="e.g. ABCD 123" required maxlength="10"
+            autocapitalize="characters" autocomplete="off"
+            style="text-transform:uppercase;letter-spacing:2px;font-weight:600" />
+        </div>
+
+        <div class="form-group captcha-group">
+          <label for="captcha_answer">Security Check</label>
+          <div class="captcha-row">
+            <input id="captcha_answer" type="text" class="form-control captcha-input"
+              placeholder="Answer" required inputmode="numeric" maxlength="3" autocomplete="off" />
+            <div class="captcha-display" id="captcha-display"></div>
+          </div>
+        </div>
+
+        <!-- Error banner lives here — directly above Submit so it's always visible -->
+        <div class="alert alert-error hidden" id="form-error"></div>
+
+        <button type="submit" class="btn btn-success btn-block btn-lg" id="submit-btn">Submit</button>
+      </form>
+    </div>
+
+    <!-- Extend View (shown when plate is already active) -->
+    <div id="extend-view" class="hidden">
+      <div class="extend-header">
+        <div class="extend-icon">⏱</div>
+        <h3>Already Registered</h3>
       </div>
-    </a>
-    <nav class="header-nav desktop-nav" id="staff-nav" style="display:none">
-      <a href="enforcement.html" class="nav-link">Enforcement</a>
-      <a href="admin.html"  class="nav-link">Admin</a>
-      <a href="register.html"    class="nav-link" target="_blank">Resident Portal ↗</a>
-    </nav>
-    <div class="header-right">
-      <span class="user-badge desktop-only" id="user-badge"></span>
-      <button class="btn btn-outline btn-sm" id="auth-btn"></button>
-      <button class="hamburger" id="hamburger" aria-label="Menu" style="display:none">
-        <span></span><span></span><span></span>
-      </button>
+      <p id="extend-plate-msg" class="extend-desc"></p>
+      <div class="extend-times">
+        <div class="extend-time-row">
+          <span class="extend-time-label">Current expiry</span>
+          <span class="extend-time-val" id="extend-current-expiry"></span>
+        </div>
+        <div class="extend-arrow">↓ +24 hours</div>
+        <div class="extend-time-row extend-time-new">
+          <span class="extend-time-label">New expiry after extending</span>
+          <span class="extend-time-val" id="extend-new-expiry"></span>
+        </div>
+      </div>
+      <p class="extend-pass-note">This extension uses 1 of your unit's monthly visitor passes.</p>
+      <div class="alert alert-error hidden" id="extend-error"></div>
+      <div class="extend-actions">
+        <button class="btn btn-secondary btn-block" id="extend-cancel-btn">Cancel</button>
+        <button class="btn btn-success btn-block" id="extend-confirm-btn">Extend by 24 Hours</button>
+      </div>
     </div>
-  </div>
-  <nav class="mobile-nav" id="mobile-nav">
-    <a href="enforcement.html" class="mobile-nav-link">Enforcement Portal</a>
-    <a href="admin.html"  class="mobile-nav-link">Admin Portal</a>
-    <a href="register.html" target="_blank" class="mobile-nav-link">Resident Portal ↗</a>
-    <div class="mobile-nav-divider"></div>
-    <span class="mobile-nav-user" id="mobile-user"></span>
-    <button class="mobile-nav-link logout-link" id="mobile-logout">Sign Out</button>
-  </nav>
-</header>
 
-<!-- Landing Content -->
-<div class="landing-page">
-  <div class="landing-hero">
-    <div class="landing-logo">🅿️</div>
-    <h1>Visitors Parking<br>Management System</h1>
-    <p>Select a portal to get started</p>
+    <!-- Success View -->
+    <div id="success-view" class="success-box hidden">
+      <div class="success-icon">✓</div>
+      <p id="success-msg"></p>
+      <div class="pass-stats-box" id="pass-stats-box"></div>
+      <button class="btn btn-primary btn-block mt-16" id="register-again-btn">Register Another Vehicle</button>
+    </div>
+
   </div>
 
-  <div class="portal-cards">
-    <!-- Portal 1 -->
-    <div class="portal-card portal-card-resident">
-      <div class="portal-card-icon">📱</div>
-      <h2>Resident Registration</h2>
-      <p>Register your visitor's license plate for 24-hour parking access. This portal is for building residents and their guests.</p>
-      <a href="register.html" class="btn btn-success btn-block">Register a Visitor →</a>
-      <small class="portal-note">Public — No login required</small>
-    </div>
-
-    <!-- Portal 2 -->
-    <div class="portal-card portal-card-enforcement">
-      <div class="portal-card-icon">🚔</div>
-      <h2>Visitor Enforcement</h2>
-      <p>View all currently registered visitor plates for a given address. For building concierge and security staff.</p>
-      <a href="enforcement.html" class="btn btn-primary btn-block" id="enforcement-link">Enforcement Portal →</a>
-      <small class="portal-note">Staff login required</small>
-    </div>
-
-    <!-- Portal 3 -->
-    <div class="portal-card portal-card-exemptions">
-      <div class="portal-card-icon">📋</div>
-      <h2>Exemptions Management</h2>
-      <p>Add, edit, and remove vehicle exemptions for contractors, realtors, and other authorized visitors.</p>
-      <a href="admin.html" class="btn btn-primary btn-block" id="exemptions-link">Admin Portal →</a>
-      <small class="portal-note">Staff login required</small>
-    </div>
-  </div>
-
-  <p class="landing-login-hint" id="login-hint"></p>
+  <p class="resident-footer">
+    Registration is valid for 24 hours from the time of submission.<br>
+    For assistance, contact your building concierge.
+  </p>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase-config.js"></script>
 <script src="js/app.js"></script>
 <script>
-  (async () => {
-    const authBtn   = document.getElementById('auth-btn');
-    const hamburger = document.getElementById('hamburger');
-    const mobileNav = document.getElementById('mobile-nav');
-    const user      = await getCurrentUser();
-    const displayName = user?.name || user?.email || 'Staff User';
+// ── State ─────────────────────────────────────────────────────────────────────
+let currentAddress = null;
+let captcha        = generateCaptcha();
+let _extendContext = null; // holds data when the extend prompt is showing
 
-    // Hamburger
-    hamburger.addEventListener('click', () => mobileNav.classList.toggle('open'));
+// ── Shared helper: colour-coded progress bar ──────────────────────────────────
+function passBar(label, used, max) {
+  const pct       = Math.min(100, Math.round((used / max) * 100));
+  const remaining = max - used;
+  const colour    = pct > 80 ? 'red' : pct > 50 ? 'amber' : 'green';
+  const remLabel  = remaining === 0
+    ? '<span class="pass-stat-remaining pass-remaining--red">No passes remaining this month</span>'
+    : '<span class="pass-stat-remaining">' + remaining + ' remaining this month</span>';
+  return '<div class="pass-stat-item">' +
+    '<div class="pass-stat-header">' +
+      '<span class="pass-stat-label">' + label + '</span>' +
+      '<span class="pass-stat-count pass-count--' + colour + '">' + used + ' / ' + max + '</span>' +
+    '</div>' +
+    '<div class="pass-stat-track">' +
+      '<div class="pass-stat-fill pass-fill--' + colour + '" style="width:' + pct + '%"></div>' +
+    '</div>' +
+    remLabel +
+  '</div>';
+}
 
-    if (user) {
-      authBtn.textContent = 'Sign Out';
-      authBtn.addEventListener('click', async () => {
-        await logoutUser();
-        location.reload();
-      });
-      document.getElementById('user-badge').textContent = displayName;
-      document.getElementById('staff-nav').style.display = 'flex';
-      document.getElementById('hamburger').style.display = 'flex';
-      document.getElementById('mobile-user').textContent = 'Signed in as ' + displayName;
-      document.getElementById('mobile-logout').addEventListener('click', async () => {
-        await logoutUser();
-        location.reload();
-      });
-      document.getElementById('login-hint').innerHTML = 'Signed in as <strong>' + escapeHtml(displayName) + '</strong>';
+// ── Shared helper: render pass stats box ──────────────────────────────────────
+async function renderPassStats(unitNumber, addressId, plate) {
+  const stats     = await getMonthlyPassStats(unitNumber, addressId);
+  const normPlate = plate.replace(/\s/g, '').toUpperCase();
+  const daysUsed  = (stats.plateDays && stats.plateDays[normPlate]) ? stats.plateDays[normPlate] : 0;
+  document.getElementById('pass-stats-box').innerHTML =
+    '<div class="pass-stats-grid">' +
+      passBar('Monthly passes used', stats.totalPasses, 10) +
+      passBar('Days registered (this plate)', daysUsed, 7) +
+    '</div>';
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function showError(msg) {
+  const errEl = document.getElementById('form-error');
+  errEl.textContent = msg;
+  errEl.classList.remove('hidden');
+  errEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function renderCaptcha() {
+  captcha = generateCaptcha();
+  document.getElementById('captcha-display').textContent = captcha.question + ' = ?';
+  document.getElementById('captcha_answer').value = '';
+}
+
+// Auto-uppercase inputs
+document.getElementById('visitor_plate').addEventListener('input', function() {
+  const pos = this.selectionStart; this.value = this.value.toUpperCase(); this.setSelectionRange(pos,pos);
+});
+document.getElementById('unit_number').addEventListener('input', function() {
+  const pos = this.selectionStart; this.value = this.value.toUpperCase(); this.setSelectionRange(pos,pos);
+});
+
+// ── Page init (async) ─────────────────────────────────────────────────────────
+(async () => {
+  try {
+    renderCaptcha();
+
+    // Determine address from ?lot= URL param
+    const params   = new URLSearchParams(window.location.search);
+    const lotParam = params.get('lot');
+    const addresses = await getAddresses();
+
+    currentAddress = lotParam
+      ? await getAddressByLotCode(lotParam)
+      : (addresses.length > 0 ? addresses[0] : null);
+
+    if (!currentAddress && addresses.length > 0) currentAddress = addresses[0];
+
+    if (currentAddress) {
+      document.getElementById('address_id').value = currentAddress.id;
+      document.getElementById('building-subtitle').textContent =
+        'Registering at ' + currentAddress.name;
+    }
+  } catch (initErr) {
+    console.error('[index.html] Init error:', initErr);
+    showError('Page failed to load. Please refresh and try again.');
+  }
+})();
+
+// ── Form submit ───────────────────────────────────────────────────────────────
+document.getElementById('reg-form').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const errEl     = document.getElementById('form-error');
+  const submitBtn = document.getElementById('submit-btn');
+  errEl.classList.add('hidden');
+
+  const address_id    = document.getElementById('address_id').value;
+  const unit_number   = document.getElementById('unit_number').value.trim().toUpperCase();
+  const unit_code     = document.getElementById('unit_code').value.trim();
+  const tenant_phone  = document.getElementById('tenant_phone').value.trim();
+  const visitor_plate = document.getElementById('visitor_plate').value.trim().toUpperCase();
+  const captchaAns    = document.getElementById('captcha_answer').value.trim();
+
+  // 1. Require a valid address
+  if (!currentAddress) {
+    showError('Building not found. Please use the link provided by your building management.');
+    return;
+  }
+
+  // 2. Validate captcha first (cheap, no server round-trip)
+  if (captchaAns !== captcha.answer) {
+    showError('Incorrect answer to the security question. Please try again.');
+    renderCaptcha();
+    return;
+  }
+
+  // 3. Validate plate format
+  if (!/^[A-Z0-9 ]{2,10}$/.test(visitor_plate)) {
+    showError('Please enter a valid license plate (letters, numbers, spaces, 2–10 characters).');
+    return;
+  }
+
+  submitBtn.textContent = 'Checking…';
+  submitBtn.disabled = true;
+
+  try {
+    // 4. Validate unit code (server-side RPC — never exposes raw codes)
+    const codeCheck = await validateUnitCode(unit_number, unit_code, address_id);
+    if (!codeCheck.valid) {
+      showError(codeCheck.error);
+      document.getElementById('unit_code').value = '';
+      submitBtn.textContent = 'Submit';
+      submitBtn.disabled = false;
       return;
     }
 
-    authBtn.textContent = 'Staff Login';
-    authBtn.addEventListener('click', () => { window.location.href = 'login.html'; });
-    document.getElementById('enforcement-link').href = 'login.html?from=enforcement.html';
-    document.getElementById('exemptions-link').href  = 'login.html?from=admin.html';
-    document.getElementById('login-hint').innerHTML  = 'Building staff? <a href="login.html">Sign in here</a>';
-  })();
+    // 5. Check if plate is already actively registered
+    submitBtn.textContent = 'Checking…';
+    const activeCheck = await checkPlateActive(visitor_plate, address_id);
+    if (activeCheck.active) {
+      // Show extend prompt instead of proceeding with new registration
+      const fmt = { hour:'2-digit', minute:'2-digit', hour12:true, month:'short', day:'numeric' };
+      const currentExpiry = new Date(activeCheck.expires_at);
+      const newExpiry     = new Date(currentExpiry.getTime() + 24 * 3600000);
+
+      document.getElementById('extend-plate-msg').innerHTML =
+        'Plate <strong>' + escapeHtml(visitor_plate) + '</strong> is already registered at ' +
+        escapeHtml(currentAddress.name) + '.';
+      document.getElementById('extend-current-expiry').textContent =
+        currentExpiry.toLocaleString('en-CA', fmt);
+      document.getElementById('extend-new-expiry').textContent =
+        newExpiry.toLocaleString('en-CA', fmt);
+      document.getElementById('extend-error').classList.add('hidden');
+
+      // Store context for the extend confirm handler
+      _extendContext = { plate: visitor_plate, unit_number, unit_code, address_id };
+
+      document.getElementById('form-view').classList.add('hidden');
+      document.getElementById('extend-view').classList.remove('hidden');
+      submitBtn.textContent = 'Submit';
+      submitBtn.disabled = false;
+      return;
+    }
+
+    // 6. Check monthly pass limits (server-side RPC)
+    const passCheck = await canRegisterVisitor(unit_number, visitor_plate, address_id);
+    if (!passCheck.allowed) {
+      showError(passCheck.reason);
+      submitBtn.textContent = 'Submit';
+      submitBtn.disabled = false;
+      return;
+    }
+
+    submitBtn.textContent = 'Registering…';
+
+    // 7. Create the registration
+    await addVisitorRegistration({
+      address_id,
+      lot_code:     currentAddress.lot_code,
+      tenant_phone,
+      unit_number,
+      visitor_plate,
+    });
+
+    // 8. Show success
+    const expires = new Date(Date.now() + 24 * 3600000);
+    document.getElementById('success-msg').innerHTML =
+      'Plate <strong>' + escapeHtml(visitor_plate) + '</strong> has been registered at ' +
+      '<strong>' + escapeHtml(currentAddress.name) + '</strong>.<br>' +
+      'Valid until <strong>' + expires.toLocaleString('en-CA',{hour:'2-digit',minute:'2-digit',hour12:true,month:'short',day:'numeric'}) + '</strong>.';
+
+    await renderPassStats(unit_number, address_id, visitor_plate);
+
+    document.getElementById('form-view').classList.add('hidden');
+    document.getElementById('success-view').classList.remove('hidden');
+    document.getElementById('success-view').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  } catch(err) {
+    console.error('[index.html] Submit error:', err);
+    showError(err?.message || 'Something went wrong. Please try again.');
+    submitBtn.textContent = 'Submit';
+    submitBtn.disabled = false;
+  }
+});
+
+// ── Extend: cancel ───────────────────────────────────────────────────────────
+document.getElementById('extend-cancel-btn').addEventListener('click', function() {
+  document.getElementById('extend-view').classList.add('hidden');
+  document.getElementById('form-view').classList.remove('hidden');
+  document.getElementById('submit-btn').textContent = 'Submit';
+  document.getElementById('submit-btn').disabled = false;
+  _extendContext = null;
+});
+
+// ── Extend: confirm ───────────────────────────────────────────────────────────
+document.getElementById('extend-confirm-btn').addEventListener('click', async function() {
+  const btn   = this;
+  const errEl = document.getElementById('extend-error');
+  btn.disabled = true;
+  btn.textContent = 'Extending…';
+  errEl.classList.add('hidden');
+
+  try {
+    const result = await extendVisitorRegistration(
+      _extendContext.plate,
+      _extendContext.address_id,
+      _extendContext.unit_number,
+      _extendContext.unit_code
+    );
+
+    if (!result.extended) {
+      errEl.textContent = result.error || 'Could not extend. Please try again.';
+      errEl.classList.remove('hidden');
+      btn.disabled = false;
+      btn.textContent = 'Extend by 24 Hours';
+      return;
+    }
+
+    // Show success with extended expiry
+    const newExpiry = new Date(result.new_expires_at);
+    document.getElementById('success-msg').innerHTML =
+      'Registration for plate <strong>' + escapeHtml(_extendContext.plate) + '</strong> at ' +
+      '<strong>' + escapeHtml(currentAddress.name) + '</strong> has been extended.<br>' +
+      'Now valid until <strong>' + newExpiry.toLocaleString('en-CA',{hour:'2-digit',minute:'2-digit',hour12:true,month:'short',day:'numeric'}) + '</strong>.';
+
+    await renderPassStats(_extendContext.unit_number, _extendContext.address_id, _extendContext.plate);
+
+    document.getElementById('extend-view').classList.add('hidden');
+    document.getElementById('success-view').classList.remove('hidden');
+    document.getElementById('success-view').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    _extendContext = null;
+
+  } catch(err) {
+    console.error('[index.html] Extend error:', err);
+    errEl.textContent = 'Something went wrong. Please try again.';
+    errEl.classList.remove('hidden');
+    btn.disabled = false;
+    btn.textContent = 'Extend by 24 Hours';
+  }
+});
+
+// ── Register again ────────────────────────────────────────────────────────────
+document.getElementById('register-again-btn').addEventListener('click', function() {
+  document.getElementById('reg-form').reset();
+  document.getElementById('unit_code').value = '';
+  document.getElementById('submit-btn').textContent = 'Submit';
+  document.getElementById('submit-btn').disabled = false;
+  renderCaptcha();
+  document.getElementById('success-view').classList.add('hidden');
+  document.getElementById('extend-view').classList.add('hidden');
+  document.getElementById('form-view').classList.remove('hidden');
+  _extendContext = null;
+});
+</script>
+<script>
+  // Register the service worker so the registration page can be installed
+  // and opened reliably from the home screen.
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js').catch(() => {});
+    });
+  }
 </script>
 </body>
 </html>

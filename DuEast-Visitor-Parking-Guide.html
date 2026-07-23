@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DuEast Visitor Parking — Resident Guide</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: #f4f6f9;
+      color: #1a1a2e;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .page {
+      max-width: 780px;
+      margin: 32px auto;
+      background: #fff;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 32px rgba(0,0,0,0.10);
+    }
+
+    /* ── Header ── */
+    .header {
+      background: linear-gradient(135deg, #0f2342 0%, #1a3a6b 100%);
+      padding: 40px 48px 32px;
+      position: relative;
+    }
+    .header-logo {
+      font-size: 36px;
+      margin-bottom: 8px;
+    }
+    .header h1 {
+      font-size: 28px;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -0.5px;
+      line-height: 1.2;
+    }
+    .header p {
+      font-size: 15px;
+      color: #a8c4e8;
+      margin-top: 6px;
+    }
+    .header-url {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 20px;
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 8px;
+      padding: 10px 18px;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .header-url .label {
+      font-weight: 400;
+      color: #a8c4e8;
+      font-size: 12px;
+    }
+
+    /* ── Body ── */
+    .body {
+      padding: 40px 48px;
+    }
+
+    /* ── Section headings ── */
+    .section-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: #1a3a6b;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .section-title::after {
+      content: '';
+      flex: 1;
+      height: 1.5px;
+      background: #e4eaf3;
+    }
+
+    /* ── Steps ── */
+    .steps { display: flex; flex-direction: column; gap: 12px; margin-bottom: 36px; }
+
+    .step {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      padding: 16px 20px;
+      border-radius: 12px;
+      background: #f8fafd;
+      border: 1px solid #e4eaf3;
+      transition: background 0.2s;
+    }
+
+    .step-num {
+      min-width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #1a3a6b;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .step-content h3 {
+      font-size: 14px;
+      font-weight: 700;
+      color: #0f2342;
+      margin-bottom: 3px;
+    }
+
+    .step-content p {
+      font-size: 13.5px;
+      color: #4a5568;
+      line-height: 1.6;
+    }
+
+    .step-content p strong {
+      color: #0f2342;
+    }
+
+    /* ── Callout boxes ── */
+    .callout {
+      border-radius: 12px;
+      padding: 18px 22px;
+      margin-bottom: 24px;
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+    }
+    .callout-icon { font-size: 22px; flex-shrink: 0; margin-top: 1px; }
+    .callout-body h4 { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+    .callout-body p  { font-size: 13px; line-height: 1.6; }
+
+    .callout-green  { background: #f0faf1; border: 1px solid #a8d5ab; }
+    .callout-green  .callout-body h4 { color: #1b5e20; }
+    .callout-green  .callout-body p  { color: #2e7d32; }
+
+    .callout-amber  { background: #fffbf0; border: 1px solid #f0d080; }
+    .callout-amber  .callout-body h4 { color: #7c4a00; }
+    .callout-amber  .callout-body p  { color: #6d4200; }
+
+    /* ── Limits grid ── */
+    .limits {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-bottom: 32px;
+    }
+    .limit-card {
+      border-radius: 12px;
+      background: #f8fafd;
+      border: 1px solid #e4eaf3;
+      padding: 20px 16px;
+      text-align: center;
+    }
+    .limit-num {
+      font-size: 38px;
+      font-weight: 800;
+      color: #1a3a6b;
+      line-height: 1;
+    }
+    .limit-unit {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #7a8fac;
+      margin: 4px 0 10px;
+    }
+    .limit-desc {
+      font-size: 12.5px;
+      color: #4a5568;
+      line-height: 1.5;
+    }
+
+    /* ── Tips list ── */
+    .tips-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 36px;
+    }
+    .tips-list li {
+      display: flex;
+      gap: 12px;
+      font-size: 13.5px;
+      color: #4a5568;
+      line-height: 1.6;
+    }
+    .tips-list li .tip-icon {
+      font-size: 16px;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    /* ── Footer ── */
+    .footer {
+      border-top: 1px solid #e4eaf3;
+      padding: 20px 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #f8fafd;
+    }
+    .footer p {
+      font-size: 12px;
+      color: #7a8fac;
+    }
+    .footer strong { color: #0f2342; }
+
+    /* ── Print ── */
+    @media print {
+      body { background: #fff; }
+      .page {
+        margin: 0;
+        border-radius: 0;
+        box-shadow: none;
+        max-width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-logo">🅿️</div>
+    <h1>DuEast Visitor Parking</h1>
+    <p>Resident Registration Guide</p>
+    <a class="header-url" href="https://dueastparking.netlify.app" target="_blank">
+      <span class="label">Register at</span>
+      dueastparking.netlify.app
+    </a>
+  </div>
+
+  <!-- Body -->
+  <div class="body">
+
+    <!-- Steps -->
+    <div class="section-title">How to Register a Visitor</div>
+    <div class="steps">
+
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <h3>Open the registration page</h3>
+          <p>On your phone or computer, go to <strong>dueastparking.netlify.app</strong>. The registration form opens right away — no extra taps needed.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <h3>Enter your unit number</h3>
+          <p>Type your unit number exactly as it appears on your lease — for example <strong>W403</strong> or <strong>E805</strong>.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <h3>Enter your unit code</h3>
+          <p>Enter the unique parking code assigned to your unit by building management. It's case-insensitive. Don't have a code? Contact the concierge.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-content">
+          <h3>Enter your visitor's license plate</h3>
+          <p>Type the plate number exactly as it appears on the vehicle (e.g. <strong>ABCD 123</strong>). Double-check — it must match for enforcement staff.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">5</div>
+        <div class="step-content">
+          <h3>Complete the security check</h3>
+          <p>Answer the simple math question on screen to confirm you're not a bot.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">6</div>
+        <div class="step-content">
+          <h3>Submit</h3>
+          <p>Tap <strong>Register Visitor</strong>. A confirmation screen will show the expiry time and your remaining monthly passes.</p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Extend callout -->
+    <div class="callout callout-green">
+      <div class="callout-icon">⏱</div>
+      <div class="callout-body">
+        <h4>Extending an existing registration</h4>
+        <p>If your visitor's plate is already active, the system will offer to <strong>extend it by 24 hours</strong> instead of creating a duplicate. Just confirm the extension on screen — no need to re-enter your details.</p>
+      </div>
+    </div>
+
+    <!-- Monthly limits -->
+    <div class="section-title">Monthly Limits</div>
+    <div class="limits">
+      <div class="limit-card">
+        <div class="limit-num">10</div>
+        <div class="limit-unit">passes / month</div>
+        <div class="limit-desc">Each unit may register up to 10 visitor passes per calendar month.</div>
+      </div>
+      <div class="limit-card">
+        <div class="limit-num">7</div>
+        <div class="limit-unit">days / plate</div>
+        <div class="limit-desc">A single plate may be registered on no more than 7 distinct days per month.</div>
+      </div>
+      <div class="limit-card">
+        <div class="limit-num">24</div>
+        <div class="limit-unit">hour validity</div>
+        <div class="limit-desc">Each registration is valid for 24 hours from the time of submission.</div>
+      </div>
+    </div>
+
+    <!-- Tips -->
+    <div class="section-title">Tips</div>
+    <ul class="tips-list">
+      <li><span class="tip-icon">📱</span> The registration page is mobile-friendly — works on any phone or browser, no app needed.</li>
+      <li><span class="tip-icon">⏰</span> Register <strong>before</strong> your visitor arrives to avoid any delays at the entrance.</li>
+      <li><span class="tip-icon">📊</span> Your remaining monthly passes are shown on the confirmation screen after each registration.</li>
+      <li><span class="tip-icon">🔒</span> Your unit code is confidential — do not share it with anyone outside your household.</li>
+      <li><span class="tip-icon">🔄</span> Limits reset on the <strong>1st of every month</strong>.</li>
+    </ul>
+
+    <!-- Help callout -->
+    <div class="callout callout-amber">
+      <div class="callout-icon">💬</div>
+      <div class="callout-body">
+        <h4>Need help?</h4>
+        <p>If you don't have a unit code, your registration is being blocked, or you have any questions, please contact the concierge desk or building management.</p>
+      </div>
+    </div>
+
+  </div><!-- /body -->
+
+  <!-- Footer -->
+  <div class="footer">
+    <p>🅿️ <strong>DuEast Visitor Parking</strong> &nbsp;·&nbsp; dueastparking.netlify.app</p>
+    <p>For residents of DuEast</p>
+  </div>
+
+</div>
+</body>
+</html>

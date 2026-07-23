@@ -125,6 +125,9 @@ select.form-control{cursor:pointer}
 
 /* ── Resident Portal ──────────────────────────────────────── */
 .resident-portal{min-height:100vh;background:linear-gradient(160deg,#1565c0 0%,#0a0a6e 100%);padding:calc(24px + env(safe-area-inset-top)) 16px calc(48px + env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center}
+.resident-topbar{width:100%;max-width:440px;display:flex;justify-content:flex-end;margin-bottom:8px}
+.staff-link{color:rgba(255,255,255,.75);font-size:.8rem;text-decoration:none;display:inline-flex;align-items:center;gap:4px}
+.staff-link:hover{color:#fff;text-decoration:underline}
 .resident-header{text-align:center;color:#fff;margin-bottom:28px}
 .resident-logo{font-size:3.5rem;margin-bottom:8px}
 .resident-header h1{font-size:2rem;font-weight:800;line-height:1.2;margin-bottom:6px}
@@ -229,6 +232,25 @@ select.form-control{cursor:pointer}
 .check-reason{font-size:.9rem;opacity:.8}
 .check-detail{font-size:.85rem;opacity:.7;margin-top:4px;font-style:italic}
 
+/* Patrol View — optimized for scanning plates on a phone while walking the garage */
+.patrol-meta{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 20px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.patrol-count{font-weight:600;font-size:.92rem}
+.patrol-updated{padding:8px 20px;font-size:.8rem;color:var(--muted);background:#f8f9fa}
+.patrol-updated--stale{color:var(--amber);background:#fff8e1;font-weight:600}
+.patrol-list{display:flex;flex-direction:column}
+.patrol-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;min-height:56px;border-bottom:1px solid var(--border);cursor:pointer;user-select:none;transition:background var(--tr),opacity var(--tr)}
+.patrol-row:last-child{border-bottom:none}
+.patrol-row:active{background:#f8f9fa}
+.patrol-row.checked{opacity:.4}
+.patrol-plate{font-family:'Courier New',monospace;font-weight:800;font-size:1.35rem;letter-spacing:2px}
+.patrol-row.checked .patrol-plate{text-decoration:line-through}
+.patrol-unit{font-size:.85rem;color:var(--muted);white-space:nowrap;display:flex;align-items:center;gap:4px}
+.patrol-check-icon{color:var(--green);font-weight:800}
+.patrol-empty{text-align:center;color:var(--muted);padding:40px 20px}
+.patrol-row.exempt{background:#eef4ff;border-left:4px solid var(--blue)}
+.patrol-row.exempt.checked{background:#eef4ff}
+.patrol-badge-exempt{display:inline-block;background:#cfe2ff;color:#084298;font-size:.72rem;font-weight:700;padding:3px 9px;border-radius:20px;letter-spacing:.4px;white-space:nowrap}
+
 /* ── Modals ───────────────────────────────────────────────── */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:2000;padding:16px}
 .modal-overlay.open{display:flex;animation:fadeIn .15s ease}
@@ -254,4 +276,6 @@ select.form-control{cursor:pointer}
   .lookup-row{flex-direction:column;align-items:stretch}
   .modal-box{padding:20px}
   .controls-cell{display:flex;flex-wrap:wrap;gap:4px}
+  .patrol-plate{font-size:1.5rem}
+  .patrol-row{padding:18px 16px}
 }

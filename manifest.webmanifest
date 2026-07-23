@@ -2,7 +2,7 @@
   "name": "Visitor Parking Registration",
   "short_name": "Visitor Parking",
   "description": "Register a visitor vehicle for 24-hour parking.",
-  "start_url": "./register.html",
+  "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "background_color": "#f0f2f5",

@@ -1,0 +1,78 @@
+================================================================
+  DUEAST VISITOR PARKING — RESIDENT REGISTRATION GUIDE
+================================================================
+  Register your visitor at: dueastparking.netlify.app
+================================================================
+
+
+HOW TO REGISTER A VISITOR
+--------------------------
+
+Step 1 — Open the registration page
+  Go to dueastparking.netlify.app on your phone or computer.
+  The registration form opens right away — no extra taps needed.
+
+Step 2 — Enter your unit number
+  Type your unit number exactly as it appears on your lease
+  (e.g. W403 or E805).
+
+Step 3 — Enter your unit code
+  Enter the unique parking code assigned to your unit by
+  building management. It is case-insensitive.
+  Don't have a code? Contact the concierge.
+
+Step 4 — Enter your visitor's license plate
+  Type the plate number exactly as it appears on the vehicle
+  (e.g. ABCD 123). Double-check — it must match exactly for
+  enforcement staff.
+
+Step 5 — Complete the security check
+  Answer the simple math question on screen.
+
+Step 6 — Submit
+  Tap "Register Visitor". A confirmation screen will show the
+  expiry time and your remaining monthly passes.
+
+
+EXTENDING AN EXISTING REGISTRATION
+------------------------------------
+If your visitor's plate is already active, the system will
+offer to extend it by 24 hours instead of creating a duplicate.
+Just confirm the extension on screen — no need to re-enter
+your details.
+
+
+MONTHLY LIMITS
+--------------
+  10  passes per unit per calendar month
+   7  days a single plate can be registered per month
+  24  hours each registration is valid for
+
+Limits reset on the 1st of every month.
+
+
+TIPS
+----
+  - The registration page works on any phone or browser.
+    No app needed.
+
+  - Register BEFORE your visitor arrives to avoid delays
+    at the entrance.
+
+  - Your remaining monthly passes are shown on the
+    confirmation screen after each registration.
+
+  - Your unit code is confidential. Do not share it with
+    anyone outside your household.
+
+
+NEED HELP?
+----------
+If you don't have a unit code, your registration is being
+blocked, or you have any questions, please contact the
+concierge desk or building management.
+
+
+================================================================
+  dueastparking.netlify.app  |  For residents of DuEast
+================================================================

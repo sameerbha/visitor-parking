@@ -4,6 +4,39 @@ All changes to this project are documented here in reverse chronological order.
 
 ---
 
+## [1.7.0] — 2026-07-22
+
+### Enforcement: Patrol View
+
+New third tab on `enforcement.html`, alongside Valid Plates and Plate Lookup, built for concierge/security walking the physical garage on a phone rather than working from a desk.
+
+- **Plates only, big and legible.** Strips the dense 7-column table down to just the plate (large monospace text) and unit number — nothing to parse, nothing to accidentally tap.
+- **Tap to check off.** Tapping a row dims it with a strikethrough so staff can track which cars they've already confirmed while walking a row of parked vehicles. A counter shows "X of Y checked" and a "Reset checks" button clears it for the next round.
+- **Persists per building per day.** Checked-off state is saved to `localStorage` keyed by address and date, so a dropped connection or accidental reload mid-patrol doesn't lose progress. It naturally resets the next day.
+- **Same search, no destructive actions.** Carries over the existing plate/unit search but drops the Remove button — that stays a desk-only action.
+- **Handles connection loss gracefully.** Underground garages are common dead zones. `getActiveVisitors()` now surfaces fetch errors instead of silently returning an empty list, so a failed refresh keeps showing the last successfully loaded plates with a "Connection issue — showing the last list that loaded successfully" note, instead of blanking the screen.
+- **Exempt plates are included and clearly flagged.** Active exemptions (from the `exemptions` table, date-filtered client-side) are merged into the same alphabetical list as visitor registrations. Exempt rows get a blue left-accent and a persistent "EXEMPT" badge that stays visible even after the row is checked off, so staff can see at a glance not to ticket that plate — this was previously only checkable one plate at a time via the Plate Lookup tab.
+
+**Files changed:** `enforcement.html`, `css/style.css`, `js/app.js`, `CHANGELOG.md`
+
+---
+
+## [1.6.0] — 2026-07-22
+
+### Landing page restructure: registration form is now the homepage
+
+Residents were landing on a 3-card portal picker and having to tap through to the registration form — an unnecessary step for the overwhelming majority of visitors to the site, who are residents registering a guest. The site is now structured around that primary task:
+
+- **`index.html`** is now the visitor registration form (formerly `register.html`). This is what loads at the site root.
+- **`portal.html`** (formerly `index.html`) now holds the 3-card staff/resident picker, reachable via a small "🔒 Staff" link added to the top-right corner of the registration page.
+- All internal navigation updated to match: header logo links, "Resident Portal" links, and "Back to Home" / post-login redirects across `enforcement.html`, `admin.html`, `login.html`, `change-password.html`, and `portal.html` itself.
+- **PWA updates:** `manifest.webmanifest` `start_url` and `sw.js` precache/offline-fallback references updated from `register.html` to `index.html`; service worker cache version bumped to force clients to pick up the new asset list.
+- **Docs updated:** `DuEast-Visitor-Parking-Guide.html`/`.txt` no longer instruct residents to "tap Register a Visitor" — landing on the site now lands directly on the form.
+
+**Files changed:** `index.html` (new, formerly `register.html`), `portal.html` (new, formerly `index.html`), `enforcement.html`, `admin.html`, `login.html`, `change-password.html`, `css/style.css`, `sw.js`, `manifest.webmanifest`, `DuEast-Visitor-Parking-Guide.html`, `DuEast-Visitor-Parking-Guide.txt`, `CHANGELOG.md`
+
+---
+
 ## [1.5.0] — 2026-03-25
 
 ### Duplicate Plate / Extend Flow

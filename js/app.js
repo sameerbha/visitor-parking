@@ -47,7 +47,11 @@ async function getActiveVisitors(addressId) {
     .eq('address_id', addressId)
     .gt('expires_at', new Date().toISOString())
     .order('registered_at', { ascending: false });
-  if (error) { console.error('getActiveVisitors:', error); return []; }
+  // Throw rather than swallow: callers on flaky connections (e.g. an
+  // underground garage) need to tell "fetch failed" apart from
+  // "genuinely zero active visitors" so they can keep showing the last
+  // known list instead of blanking out.
+  if (error) { console.error('getActiveVisitors:', error); throw error; }
   return data;
 }
 

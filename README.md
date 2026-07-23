@@ -14,9 +14,10 @@ The project includes:
 
 | Portal | File | Access |
 |--------|------|--------|
-| Resident Registration | `register.html` | Public |
+| Resident Registration | `index.html` | Public — this is the site homepage |
+| Staff Portal (picker) | `portal.html` | Small "Staff" link on the registration page |
 | Visitor Enforcement | `enforcement.html` | Staff login required |
-| Exemptions + Unit Codes | `exemptions.html` | Staff login required |
+| Exemptions + Unit Codes | `admin.html` | Staff login required |
 | Staff Login | `login.html` | Public |
 | Change Password | `change-password.html` | Logged-in staff |
 
@@ -44,9 +45,9 @@ Resident validation is handled server-side through Supabase RPCs so raw unit cod
 ```text
 VIsitors Parking App/
 ├── index.html
-├── register.html
+├── portal.html
 ├── enforcement.html
-├── exemptions.html
+├── admin.html
 ├── login.html
 ├── change-password.html
 ├── css/
@@ -140,7 +141,7 @@ This seeds 380 units for lot code `10001`:
 Create staff accounts in Supabase Auth for anyone who should access:
 
 - `enforcement.html`
-- `exemptions.html`
+- `admin.html`
 - `change-password.html`
 
 The app uses `supabase.auth.signInWithPassword()`.

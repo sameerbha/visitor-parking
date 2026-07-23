@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DuEast Visitor Parking — Concierge Guide</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: #f0f2f5;
+      color: #1a1a2e;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .page {
+      max-width: 820px;
+      margin: 32px auto;
+      background: #fff;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 32px rgba(0,0,0,0.10);
+    }
+
+    /* ── Header ── */
+    .header {
+      background: linear-gradient(135deg, #1b2838 0%, #2c3e6b 100%);
+      padding: 40px 48px 32px;
+    }
+    .header-logo { font-size: 34px; margin-bottom: 8px; }
+    .header h1 {
+      font-size: 28px; font-weight: 800; color: #fff;
+      letter-spacing: -0.5px; line-height: 1.2;
+    }
+    .header p { font-size: 15px; color: #a8b8d8; margin-top: 6px; }
+
+    .portal-chips {
+      display: flex; gap: 10px; margin-top: 22px; flex-wrap: wrap;
+    }
+    .chip {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600;
+    }
+    .chip-blue  { background: rgba(255,255,255,0.12); color: #fff; border: 1px solid rgba(255,255,255,0.2); }
+    .chip-url   { font-size: 11px; font-weight: 400; color: #a8b8d8; margin-left: 2px; }
+
+    /* ── Body ── */
+    .body { padding: 40px 48px; }
+
+    /* ── Section headings ── */
+    .section-title {
+      font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
+      text-transform: uppercase; color: #2c3e6b; margin-bottom: 16px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .section-title::after {
+      content: ''; flex: 1; height: 1.5px; background: #e4eaf3;
+    }
+
+    /* ── Portal cards ── */
+    .portal-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 36px;
+    }
+    .portal-card {
+      border-radius: 12px; border: 1px solid #e4eaf3;
+      overflow: hidden;
+    }
+    .portal-card-header {
+      padding: 14px 18px; display: flex; align-items: center; gap: 10px;
+    }
+    .portal-card-header .icon { font-size: 20px; }
+    .portal-card-header h3 { font-size: 14px; font-weight: 700; }
+    .portal-card-header p  { font-size: 11px; margin-top: 1px; }
+    .portal-card-body { padding: 14px 18px; background: #f8fafd; }
+    .portal-card-body ul { list-style: none; display: flex; flex-direction: column; gap: 7px; }
+    .portal-card-body ul li {
+      font-size: 12.5px; color: #4a5568; display: flex; align-items: flex-start; gap: 8px; line-height: 1.5;
+    }
+    .portal-card-body ul li::before { content: '→'; color: #7a8fac; flex-shrink: 0; font-size: 12px; margin-top: 1px; }
+
+    .card-enforcement .portal-card-header { background: #eef2ff; }
+    .card-enforcement .portal-card-header h3 { color: #1a237e; }
+    .card-enforcement .portal-card-header p  { color: #5c6bc0; }
+
+    .card-admin .portal-card-header { background: #e8f5e9; }
+    .card-admin .portal-card-header h3 { color: #1b5e20; }
+    .card-admin .portal-card-header p  { color: #388e3c; }
+
+    /* ── Steps ── */
+    .steps { display: flex; flex-direction: column; gap: 10px; margin-bottom: 28px; }
+    .step {
+      display: flex; align-items: flex-start; gap: 14px;
+      padding: 14px 18px; border-radius: 10px;
+      background: #f8fafd; border: 1px solid #e4eaf3;
+    }
+    .step-num {
+      min-width: 32px; height: 32px; border-radius: 50%;
+      font-size: 13px; font-weight: 700; color: #fff;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .step-num-blue  { background: #2c3e6b; }
+    .step-num-green { background: #2e7d32; }
+    .step-content h3  { font-size: 13.5px; font-weight: 700; color: #0f2342; margin-bottom: 2px; }
+    .step-content p   { font-size: 13px; color: #4a5568; line-height: 1.6; }
+    .step-content p strong { color: #0f2342; }
+
+    /* ── Scenario cards ── */
+    .scenarios { display: flex; flex-direction: column; gap: 12px; margin-bottom: 32px; }
+    .scenario {
+      border-radius: 12px; border: 1px solid #e4eaf3; overflow: hidden;
+    }
+    .scenario-q {
+      padding: 13px 18px; background: #f0f4ff;
+      font-size: 13.5px; font-weight: 600; color: #1a237e;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .scenario-q .q-icon { font-size: 16px; flex-shrink: 0; }
+    .scenario-a {
+      padding: 13px 18px; background: #f8fafd;
+      font-size: 13px; color: #4a5568; line-height: 1.6;
+    }
+    .scenario-a strong { color: #0f2342; }
+
+    /* ── Callout boxes ── */
+    .callout {
+      border-radius: 12px; padding: 16px 20px; margin-bottom: 24px;
+      display: flex; gap: 14px; align-items: flex-start;
+    }
+    .callout-icon { font-size: 20px; flex-shrink: 0; margin-top: 2px; }
+    .callout-body h4 { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+    .callout-body p  { font-size: 13px; line-height: 1.6; }
+    .callout-body ul { margin-top: 6px; padding-left: 16px; font-size: 13px; line-height: 1.8; color: inherit; }
+
+    .callout-red   { background: #fff5f5; border: 1px solid #ffcdd2; }
+    .callout-red   .callout-body h4 { color: #b71c1c; }
+    .callout-red   .callout-body p, .callout-red .callout-body ul { color: #7f1d1d; }
+
+    .callout-blue  { background: #f0f4ff; border: 1px solid #c5cae9; }
+    .callout-blue  .callout-body h4 { color: #1a237e; }
+    .callout-blue  .callout-body p  { color: #283593; }
+
+    .callout-amber { background: #fffbf0; border: 1px solid #f0d080; }
+    .callout-amber .callout-body h4 { color: #7c4a00; }
+    .callout-amber .callout-body p  { color: #6d4200; }
+
+    /* ── Divider ── */
+    .divider { height: 1px; background: #e4eaf3; margin: 32px 0; }
+
+    /* ── Permissions table ── */
+    .perm-table { width: 100%; border-collapse: collapse; margin-bottom: 28px; font-size: 13px; }
+    .perm-table th {
+      background: #f0f4ff; color: #1a237e; font-weight: 700;
+      padding: 10px 14px; text-align: left; font-size: 11.5px;
+      text-transform: uppercase; letter-spacing: 0.8px;
+    }
+    .perm-table td { padding: 10px 14px; border-bottom: 1px solid #e4eaf3; color: #4a5568; vertical-align: top; }
+    .perm-table tr:last-child td { border-bottom: none; }
+    .perm-table td:first-child { font-weight: 600; color: #0f2342; width: 28%; }
+    .badge {
+      display: inline-block; padding: 2px 8px; border-radius: 10px;
+      font-size: 11px; font-weight: 600; margin-right: 4px;
+    }
+    .badge-green { background: #e8f5e9; color: #2e7d32; }
+    .badge-blue  { background: #e8eaf6; color: #303f9f; }
+    .badge-red   { background: #ffebee; color: #c62828; }
+
+    /* ── Footer ── */
+    .footer {
+      border-top: 1px solid #e4eaf3; padding: 20px 48px;
+      display: flex; align-items: center; justify-content: space-between;
+      background: #f8fafd;
+    }
+    .footer p { font-size: 12px; color: #7a8fac; }
+    .footer strong { color: #0f2342; }
+
+    /* ── Print ── */
+    @media print {
+      body { background: #fff; }
+      .page { margin: 0; border-radius: 0; box-shadow: none; max-width: 100%; }
+      .portal-grid { page-break-inside: avoid; }
+      .scenario { page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-logo">🅿️</div>
+    <h1>DuEast Visitor Parking</h1>
+    <p>Concierge &amp; Staff Guide</p>
+    <div class="portal-chips">
+      <span class="chip chip-blue">🚔 Enforcement Portal <span class="chip-url">dueastparking.netlify.app/enforcement.html</span></span>
+      <span class="chip chip-blue">⚙️ Admin Portal <span class="chip-url">dueastparking.netlify.app/admin.html</span></span>
+    </div>
+  </div>
+
+  <div class="body">
+
+    <!-- Portal overview -->
+    <div class="section-title">Your Two Portals</div>
+    <div class="portal-grid">
+      <div class="portal-card card-enforcement">
+        <div class="portal-card-header">
+          <span class="icon">🚔</span>
+          <div>
+            <h3>Enforcement Portal</h3>
+            <p>Day-to-day plate lookups</p>
+          </div>
+        </div>
+        <div class="portal-card-body">
+          <ul>
+            <li>View all active visitor registrations</li>
+            <li>Search any plate instantly</li>
+            <li>See registration expiry times</li>
+            <li>Export current registrations as CSV</li>
+          </ul>
+        </div>
+      </div>
+      <div class="portal-card card-admin">
+        <div class="portal-card-header">
+          <span class="icon">⚙️</span>
+          <div>
+            <h3>Admin Portal</h3>
+            <p>Exemptions &amp; unit codes</p>
+          </div>
+        </div>
+        <div class="portal-card-body">
+          <ul>
+            <li>Add / edit / remove plate exemptions</li>
+            <li>Set date ranges for exempt vehicles</li>
+            <li>Create and reset resident unit codes</li>
+            <li>Manage unit codes for all suites</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Signing in -->
+    <div class="section-title">Signing In</div>
+    <div class="steps" style="margin-bottom: 16px;">
+      <div class="step">
+        <div class="step-num step-num-blue">1</div>
+        <div class="step-content">
+          <h3>Go to either portal URL</h3>
+          <p>Both portals redirect you to the login page automatically if you're not signed in.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num step-num-blue">2</div>
+        <div class="step-content">
+          <h3>Enter your staff credentials</h3>
+          <p>Use the email and password provided by building management. Contact management if you don't have an account.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num step-num-blue">3</div>
+        <div class="step-content">
+          <h3>Change your password on first login</h3>
+          <p>Click <strong>🔒 Password</strong> in the top-right nav to set a personal password.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout callout-amber" style="margin-bottom: 32px;">
+      <div class="callout-icon">⚠️</div>
+      <div class="callout-body">
+        <h4>Session tip</h4>
+        <p>Your session stays active in the browser. If you share a computer, always click <strong>Sign Out</strong> when you're done.</p>
+      </div>
+    </div>
+
+    <!-- Enforcement portal -->
+    <div class="section-title">Using the Enforcement Portal</div>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num step-num-blue">1</div>
+        <div class="step-content">
+          <h3>View active registrations</h3>
+          <p>The table loads automatically and shows all plates currently registered with their unit, registration time, and expiry time. It auto-refreshes periodically.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num step-num-blue">2</div>
+        <div class="step-content">
+          <h3>Look up a specific plate</h3>
+          <p>Type any part of a plate number into the <strong>search box</strong> — the table filters instantly.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num step-num-blue">3</div>
+        <div class="step-content">
+          <h3>Export a record</h3>
+          <p>Click <strong>⬇ Export CSV</strong> to download the current registrations as a spreadsheet — useful for shift handovers or incident reports.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Admin portal -->
+    <div class="section-title">Using the Admin Portal</div>
+
+    <p style="font-size: 13.5px; color: #4a5568; line-height: 1.6; margin-bottom: 20px;">
+      The Admin Portal has two tabs: <strong>Vehicle Exemptions</strong> and <strong>Unit Codes</strong>. Use the tabs to switch between them. The <strong>+ Add</strong> button in the top-right of the tab bar changes based on the active tab.
+    </p>
+
+    <!-- Exemptions -->
+    <p style="font-size: 12px; font-weight: 700; color: #2e7d32; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;">Vehicle Exemptions tab</p>
+    <div class="steps" style="margin-bottom: 24px;">
+      <div class="step">
+        <div class="step-num step-num-green">+</div>
+        <div class="step-content">
+          <h3>Adding an exemption</h3>
+          <p>Click <strong>+ Add Exemption</strong>. Enter the plate, an optional note (e.g. "HVAC Contractor"), and a start and end date. The vehicle will not be ticketed during that date range.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num step-num-green">✏</div>
+        <div class="step-content">
+          <h3>Editing an exemption</h3>
+          <p>Click the <strong>✏ pencil</strong> button on any row to update the plate, notes, or dates.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num step-num-green">🗑</div>
+        <div class="step-content">
+          <h3>Removing an exemption</h3>
+          <p>Click the <strong>🗑 trash</strong> button and confirm. Expired exemptions remain visible but are greyed out — use the <strong>Active only</strong> filter to hide them.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Unit codes -->
+    <p style="font-size: 12px; font-weight: 700; color: #1a237e; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;">Unit Codes tab</p>
+    <div class="steps" style="margin-bottom: 32px;">
+      <div class="step">
+        <div class="step-num step-num-blue">+</div>
+        <div class="step-content">
+          <h3>Adding a unit code</h3>
+          <p>Click <strong>+ Add Unit Code</strong>. Enter the unit number and a code, or hit <strong>⚄ Generate</strong> for a random one. Share the code privately with the resident.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num step-num-blue">↺</div>
+        <div class="step-content">
+          <h3>Resetting a unit code</h3>
+          <p>Click <strong>✏ Edit</strong> on the unit, type a new code (or generate one), and save. The old code stops working immediately. Give the new code to the resident.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num step-num-blue">🗑</div>
+        <div class="step-content">
+          <h3>Removing a unit code</h3>
+          <p>Click <strong>🗑</strong> and confirm. The resident will be unable to register visitors until a new code is assigned.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Common scenarios -->
+    <div class="section-title">Common Scenarios</div>
+    <div class="scenarios">
+
+      <div class="scenario">
+        <div class="scenario-q"><span class="q-icon">❓</span>A resident says their visitor is registered but it's not showing in the enforcement portal</div>
+        <div class="scenario-a">Search the plate in the enforcement portal. If it doesn't appear, the registration may have expired. Ask the resident to register again — each pass is only valid for <strong>24 hours</strong>. If they just registered, try refreshing the page.</div>
+      </div>
+
+      <div class="scenario">
+        <div class="scenario-q"><span class="q-icon">❓</span>A resident says their unit code isn't working</div>
+        <div class="scenario-a">Go to the Admin Portal → Unit Codes tab and search for their unit. Confirm the code matches what they're entering. If needed, use <strong>✏ Edit</strong> to reset it and give them the new code. Codes are case-insensitive.</div>
+      </div>
+
+      <div class="scenario">
+        <div class="scenario-q"><span class="q-icon">❓</span>A resident is blocked because they've hit their monthly limit</div>
+        <div class="scenario-a">Monthly limits are enforced by the system and <strong>cannot be overridden</strong> from the portal. The limit resets on the 1st of the month. If it's a legitimate exception, escalate to building management.</div>
+      </div>
+
+      <div class="scenario">
+        <div class="scenario-q"><span class="q-icon">❓</span>A contractor or vendor needs parking for multiple days</div>
+        <div class="scenario-a">Add a <strong>Vehicle Exemption</strong> in the Admin Portal with the appropriate start and end dates. Exempt vehicles bypass the resident registration flow entirely and will not be flagged by enforcement staff.</div>
+      </div>
+
+      <div class="scenario">
+        <div class="scenario-q"><span class="q-icon">❓</span>A new resident has moved in and needs a unit code</div>
+        <div class="scenario-a">Go to the Admin Portal → Unit Codes tab → <strong>+ Add Unit Code</strong>. Enter their unit number, generate a code, and share it with them privately. If a code already exists for that unit (previous tenant), reset it first.</div>
+      </div>
+
+    </div>
+
+    <!-- Security note -->
+    <div class="callout callout-red">
+      <div class="callout-icon">🔐</div>
+      <div class="callout-body">
+        <h4>Security reminders</h4>
+        <ul>
+          <li>Never share your staff login credentials with residents or other unauthorized individuals.</li>
+          <li>Unit codes should only be shared directly with the resident of that unit — not posted publicly.</li>
+          <li>If you suspect a unit code has been compromised, reset it immediately from the Admin Portal.</li>
+          <li>Always sign out when leaving a shared workstation.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Permissions summary -->
+    <div class="divider"></div>
+    <div class="section-title">What Staff Can Do</div>
+    <table class="perm-table">
+      <thead>
+        <tr>
+          <th>Feature</th>
+          <th>Portal</th>
+          <th>Permissions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Visitor registrations</td>
+          <td>Enforcement</td>
+          <td><span class="badge badge-blue">View</span><span class="badge badge-red">Delete</span></td>
+        </tr>
+        <tr>
+          <td>Vehicle exemptions</td>
+          <td>Admin</td>
+          <td><span class="badge badge-blue">View</span><span class="badge badge-green">Add</span><span class="badge badge-green">Edit</span><span class="badge badge-red">Delete</span></td>
+        </tr>
+        <tr>
+          <td>Unit codes</td>
+          <td>Admin</td>
+          <td><span class="badge badge-blue">View</span><span class="badge badge-green">Add</span><span class="badge badge-green">Reset</span><span class="badge badge-red">Delete</span></td>
+        </tr>
+        <tr>
+          <td>Staff accounts</td>
+          <td>Supabase</td>
+          <td>Managed by building management only</td>
+        </tr>
+      </tbody>
+    </table>
+
+  </div><!-- /body -->
+
+  <!-- Footer -->
+  <div class="footer">
+    <p>🅿️ <strong>DuEast Visitor Parking</strong> &nbsp;·&nbsp; Staff &amp; Concierge Guide</p>
+    <p>dueastparking.netlify.app</p>
+  </div>
+
+</div>
+</body>
+</html>
