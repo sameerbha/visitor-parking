@@ -4,6 +4,16 @@ All changes to this project are documented here in reverse chronological order.
 
 ---
 
+## [1.9.4] — 2026-07-22
+
+### Tab bar: 2x2 grid instead of horizontal scroll on mobile
+
+With four tabs (Valid Plates, Patrol View, Flagged, Plate Lookup), a horizontally-scrolling tab bar on phones in the iPhone SE/12/13/14 or Galaxy S22/S23 range hid at least one tab off-screen with only a sliver visible — easy to miss entirely, and scrolling isn't an expected gesture for primary navigation. Replaced with a 2x2 wrapped grid: all four tabs visible at once, no scrolling, ~44px minimum tap height maintained.
+
+**Files changed:** `css/style.css`, `CHANGELOG.md`
+
+---
+
 ## [1.9.3] — 2026-07-22
 
 ### Bug fix: other pages silently loading index.html
