@@ -115,7 +115,6 @@ async function main() {
     body: JSON.stringify({
       address_id: addressId,
       lot_code: lotCode,
-      tenant_phone: '555-0100',
       unit_number: unitNumber,
       visitor_plate: testPlate,
     }),

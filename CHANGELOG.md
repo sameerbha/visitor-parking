@@ -4,6 +4,80 @@ All changes to this project are documented here in reverse chronological order.
 
 ---
 
+## [1.9.3] — 2026-07-22
+
+### Bug fix: other pages silently loading index.html
+
+`sw.js` registers with site-wide scope (registered from `index.html`, but a service worker's scope is the whole origin by default), and its navigation fallback didn't check which page it was falling back for — any failed fetch on any page fell back to serving the cached `index.html`. In practice this meant `enforcement.html` (and potentially `admin.html`, `login.html`, `portal.html`, `change-password.html`) could silently render the resident registration form instead of themselves on any network hiccup, looking exactly like an unexplained redirect back to the main screen.
+
+- The navigate handler in `sw.js` now only applies its offline fallback when the request is actually for the app entry point (`/` or `index.html`). Every other page now behaves like a normal page load with no service worker interference if its fetch fails, instead of substituting a different page's content.
+- Bumped `CACHE_VERSION` to force browsers carrying the old worker to install the fixed one.
+
+**If you still see this after pulling the fix:** the old service worker may still be active in your browser. Hard-refresh, or clear it manually via DevTools → Application → Service Workers → Unregister (or just test in a private/incognito window), then reload.
+
+**Files changed:** `sw.js`, `CHANGELOG.md`
+
+---
+
+## [1.9.2] — 2026-07-22
+
+### Mobile readability pass
+
+- **Flagged Vehicles:** plate and spot now render on their own lines with a clear size hierarchy (plate largest, spot second, description smallest), bumped further under the mobile breakpoint (plate 1.7rem, spot 1.25rem on phones) — legible at a glance instead of one small combined line.
+- **Search inputs** (Valid Plates and Patrol View both use the same component): mobile padding/font-size increased and a minimum 48px height added, since the previous size carried over unchanged from desktop and was cramped on an iPhone 12/14 Pro Max.
+
+**Files changed:** `enforcement.html`, `css/style.css`, `CHANGELOG.md`
+
+---
+
+## [1.9.1] — 2026-07-22
+
+### Patrol View: mobile ergonomics rework
+
+The first pass at making Flag Vehicle/Reset checks thumb-friendly overcorrected — full-width 48px buttons plus the inline flagged list pushed the actual plate list below the fold, defeating the point of a view meant for quickly scanning plates. Restructured instead of just resizing:
+
+- **Flagged Vehicles is now its own tab** ("🚩 Flagged (N)"), not an inline section in Patrol View. Reviewing/copying/clearing flagged vehicles happens at the desk, not mid-walk, so it no longer competes with the scanning list for screen space.
+- **Flag button is now a floating action button**, pinned to the bottom-right corner via `position:fixed`. It's reachable at any scroll position without taking up space in the content flow.
+- **Reset checks is now a small text link** next to the counter — sized for an easy tap (~44px target via padding) without visually dominating the screen for an action used once per patrol.
+- **Tab bar scrolls horizontally on mobile** rather than wrapping or clipping, now that there are four tabs.
+
+**Files changed:** `enforcement.html`, `css/style.css`, `CHANGELOG.md`
+
+---
+
+## [1.9.0] — 2026-07-22
+
+### Patrol View: flag unregistered vehicles
+
+New "🚩 Flag Vehicle" action in Patrol View for logging cars found in the garage that aren't on the valid or exempt list, so staff can call it in to the city from the desk without relying on a paper notebook.
+
+- **Quick-entry modal:** plate (required), spot/location (required), and an optional vehicle description (e.g. "Black SUV") — each entry is timestamped automatically.
+- **Flagged list:** shown inline in Patrol View once at least one vehicle is flagged, most recent first, each with a one-tap Remove in case a car leaves before the sweep is done.
+- **Copy list:** formats the flagged list as plain text (plate — spot — description — time) to the clipboard, meant to be read straight off the phone during the call to the city.
+- **Local and session-only, by design:** flagged vehicles are stored in `localStorage` keyed by address and day — never sent to Supabase. Same data-minimization reasoning as the phone number removal above: there's no ongoing need to retain a log of strangers' plates once they've been called in, so the simplest thing is to not create a new place that data lives. A "Clear flagged list" button (with a confirmation prompt, since this one holds data staff may still need) resets it after the call.
+
+**Files changed:** `enforcement.html`, `css/style.css`, `CHANGELOG.md`
+
+---
+
+## [1.8.0] — 2026-07-22
+
+### Removed phone number collection entirely
+
+We no longer ask residents for a phone number when registering a visitor, and no longer store one. This wasn't just a form field — the underlying column is being dropped from the database, so no phone numbers persist anywhere in the system going forward.
+
+**Why:** data minimization — collecting personal information you don't have a clear operational need for is exactly the kind of thing a PIPEDA-style privacy review flags. Removing a field entirely is simpler than trying to secure, retain-limit, and eventually justify data nobody actually uses day to day.
+
+- **`index.html`** — removed the "Your Phone Number" field, its validation, and its inclusion in the registration payload.
+- **`enforcement.html`** — removed the Phone column from the Valid Plates table, the CSV export, and the search filter.
+- **`supabase-schema.sql`** — `tenant_phone` removed from the `visitor_registrations` table definition (source of truth for new installs).
+- **`patch-remove-tenant-phone.sql`** (new) — migration to run in the Supabase SQL Editor on existing databases: `ALTER TABLE visitor_registrations DROP COLUMN IF EXISTS tenant_phone;`. This permanently deletes any phone numbers already stored.
+- **`tests/regression-functional.mjs`** — updated to stop sending a phone number in its test registration.
+
+**Files changed:** `index.html`, `enforcement.html`, `supabase-schema.sql`, `patch-remove-tenant-phone.sql` (new), `tests/regression-functional.mjs`, `CHANGELOG.md`
+
+---
+
 ## [1.7.0] — 2026-07-22
 
 ### Enforcement: Patrol View

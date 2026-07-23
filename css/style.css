@@ -251,6 +251,31 @@ select.form-control{cursor:pointer}
 .patrol-row.exempt.checked{background:#eef4ff}
 .patrol-badge-exempt{display:inline-block;background:#cfe2ff;color:#084298;font-size:.72rem;font-weight:700;padding:3px 9px;border-radius:20px;letter-spacing:.4px;white-space:nowrap}
 
+/* Compact reset control — a link-sized tap target, not a competing button,
+   since it's used once at the start of a patrol, not repeatedly. Padding
+   keeps the tappable area comfortably above the ~44px touch-target minimum
+   without visually ballooning next to the counter text. */
+.patrol-reset-link{background:none;border:none;color:var(--muted);font-size:.85rem;font-weight:600;cursor:pointer;padding:12px 4px;white-space:nowrap}
+.patrol-reset-link:hover{color:var(--text);text-decoration:underline}
+
+/* Floating "Flag" button — the one action worth reaching for mid-scroll
+   while walking, so it stays pinned instead of pushing the plate list
+   down the page. */
+.patrol-fab{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom));right:20px;background:var(--red);color:#fff;border:none;border-radius:28px;padding:14px 22px;font-size:1rem;font-weight:700;box-shadow:var(--shadow-lg);z-index:500;cursor:pointer}
+.patrol-fab:active{background:var(--red-dark);transform:scale(.96)}
+/* Leaves room so the fixed button never permanently covers the last row */
+.patrol-list{padding-bottom:84px}
+
+/* Flagged Vehicles (its own tab — reviewed at the desk, not mid-patrol) */
+.flagged-list{display:flex;flex-direction:column;gap:8px;padding:16px 20px}
+.flagged-item{background:#fcebeb;border:1px solid #f7c1c1;border-radius:var(--radius);padding:10px 12px}
+.flagged-item-top{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.flagged-plate{font-family:'Courier New',monospace;font-weight:800;font-size:1.4rem;letter-spacing:1px;color:#501313}
+.flagged-time{font-size:.8rem;color:#791f1f;white-space:nowrap}
+.flagged-spot{font-size:1.1rem;font-weight:700;color:#501313;margin-top:4px}
+.flagged-description{font-size:.9rem;color:#791f1f;margin-top:2px}
+.flagged-remove{background:none;border:none;color:#791f1f;font-size:.85rem;cursor:pointer;padding:6px 0;text-decoration:underline;margin-top:4px}
+
 /* ── Modals ───────────────────────────────────────────────── */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:2000;padding:16px}
 .modal-overlay.open{display:flex;animation:fadeIn .15s ease}
@@ -268,9 +293,10 @@ select.form-control{cursor:pointer}
   .portal-page{padding:12px}
   .table-header-bar{flex-direction:column;align-items:flex-start}
   .table-actions{width:100%}
-  .search-input{width:100%}
+  .search-input{width:100%;padding:14px 16px;font-size:1.05rem;border-width:2px;min-height:48px}
   .data-table th,.data-table td{padding:8px 10px}
-  .tab-btn{padding:8px 14px;font-size:.82rem}
+  .tab-btn{padding:8px 14px;font-size:.82rem;flex-shrink:0}
+  .tab-bar{overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;margin:0 -12px 16px;padding:0 12px}
   .toolbar-row{flex-direction:column;align-items:stretch}
   .field-group{flex-direction:column;align-items:flex-start}
   .lookup-row{flex-direction:column;align-items:stretch}
@@ -278,4 +304,10 @@ select.form-control{cursor:pointer}
   .controls-cell{display:flex;flex-wrap:wrap;gap:4px}
   .patrol-plate{font-size:1.5rem}
   .patrol-row{padding:18px 16px}
+  .patrol-fab{bottom:calc(16px + env(safe-area-inset-bottom));right:16px;padding:16px 24px;font-size:1.05rem}
+  .table-actions .btn{flex:1;min-height:44px}
+  .flagged-plate{font-size:1.7rem}
+  .flagged-spot{font-size:1.25rem}
+  .flagged-description{font-size:.95rem}
+  .flagged-item{padding:14px 16px}
 }

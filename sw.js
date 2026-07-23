@@ -2,7 +2,7 @@
    Keeps the registration page and its static assets available offline.
    Network-only for cross-origin requests (e.g., Supabase, CDNs). */
 
-const CACHE_VERSION = 'vp-register-v2';
+const CACHE_VERSION = 'vp-register-v3';
 const PRECACHE_URLS = [
   './index.html',
   './css/style.css',
@@ -45,6 +45,15 @@ self.addEventListener('fetch', (event) => {
   if (!isSameOrigin(url)) return;
 
   if (req.mode === 'navigate') {
+    // Only index.html is the installable PWA entry point — only it should
+    // fall back to a cached copy when offline. Every other page
+    // (enforcement.html, admin.html, login.html, portal.html,
+    // change-password.html) is a staff/desk tool with no offline story, so a
+    // failed fetch there should behave like a normal failed page load, not
+    // silently substitute the resident registration form.
+    const isAppEntry = url.pathname === '/' || url.pathname.endsWith('/index.html');
+    if (!isAppEntry) return;
+
     event.respondWith(
       fetch(req)
         .then((res) => {

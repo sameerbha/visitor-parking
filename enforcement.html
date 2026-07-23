@@ -67,6 +67,9 @@
     <button class="tab-btn" id="tab-patrol" onclick="showTab('patrol')">
       🚶 Patrol View
     </button>
+    <button class="tab-btn" id="tab-flagged" onclick="showTab('flagged')">
+      🚩 Flagged (<span id="flagged-tab-count">0</span>)
+    </button>
     <button class="tab-btn" id="tab-lookup" onclick="showTab('lookup')">
       🔍 Plate Lookup
     </button>
@@ -85,7 +88,7 @@
       <table class="data-table">
         <thead>
           <tr>
-            <th>Plate</th><th>Unit</th><th>Phone</th>
+            <th>Plate</th><th>Unit</th>
             <th>Registered</th><th>Expires</th><th>Time Left</th><th>Actions</th>
           </tr>
         </thead>
@@ -105,10 +108,28 @@
     </div>
     <div class="patrol-meta">
       <span class="patrol-count" id="patrol-count">0 of 0 checked</span>
-      <button class="btn btn-secondary btn-sm" id="patrol-reset-btn">Reset checks</button>
+      <button class="patrol-reset-link" id="patrol-reset-btn">↺ Reset checks</button>
     </div>
     <div class="patrol-updated" id="patrol-updated"></div>
     <div class="patrol-list" id="patrol-list"></div>
+
+    <!-- Floating action button — the one thing worth reaching for while
+         walking, so it stays fixed on screen instead of competing with the
+         plate list for scroll space. -->
+    <button class="patrol-fab" id="flag-vehicle-btn">🚩 Flag</button>
+  </div>
+
+  <!-- Flagged Vehicles Panel — reviewed at the desk, not during the walk,
+       so it gets its own tab instead of crowding Patrol View. -->
+  <div id="panel-flagged" class="table-section hidden">
+    <div class="table-header-bar">
+      <h2>Flagged Vehicles</h2>
+      <div class="table-actions">
+        <button class="btn btn-secondary" id="flagged-copy-btn">⧉ Copy list</button>
+        <button class="btn btn-secondary" id="flagged-clear-btn">Clear list</button>
+      </div>
+    </div>
+    <div class="flagged-list" id="flagged-list"></div>
   </div>
 
   <!-- Plate Lookup Panel -->
@@ -143,6 +164,33 @@
   </div>
 </div>
 
+<!-- Flag Unregistered Vehicle Modal -->
+<div class="modal-overlay" id="flag-modal">
+  <div class="modal-box">
+    <h3>Flag Unregistered Vehicle</h3>
+    <p>Not on the valid list or exempt — log it here to call in from the desk.</p>
+    <div class="form-group">
+      <label for="flag-plate">License Plate</label>
+      <input id="flag-plate" type="text" class="form-control" maxlength="10"
+        style="text-transform:uppercase;letter-spacing:2px;font-weight:600"
+        autocapitalize="characters" autocomplete="off" placeholder="e.g. ABCD 123" />
+    </div>
+    <div class="form-group">
+      <label for="flag-spot">Spot / Location</label>
+      <input id="flag-spot" type="text" class="form-control" autocomplete="off" placeholder="e.g. P2 - Row C, #14" />
+    </div>
+    <div class="form-group" style="margin-bottom:0">
+      <label for="flag-desc">Vehicle Description (optional)</label>
+      <input id="flag-desc" type="text" class="form-control" autocomplete="off" placeholder="e.g. Black SUV" />
+    </div>
+    <div class="alert alert-error hidden" id="flag-error" style="margin-top:16px"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('flag-modal')">Cancel</button>
+      <button class="btn btn-danger" id="flag-save-btn">Add to Flagged List</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase-config.js"></script>
 <script src="js/app.js"></script>
@@ -154,6 +202,7 @@ let allVisitors      = [];
 let allExemptions    = []; // active exemptions — surfaced in Patrol View only
 let deleteTargetId   = null;
 let checkedIds       = new Set(); // patrol view — plates checked off this session
+let flaggedVehicles  = []; // patrol view — unregistered vehicles logged this session
 
 // ── Page init (async) ────────────────────────────────────────────────────────
 (async () => {
@@ -180,6 +229,7 @@ let checkedIds       = new Set(); // patrol view — plates checked off this ses
     currentAddressId = addrs[0].id;
     currentAddress   = addrs[0];
     loadCheckedFromStorage();
+    loadFlaggedFromStorage();
     await loadVisitors();
   }
 
@@ -189,6 +239,7 @@ let checkedIds       = new Set(); // patrol view — plates checked off this ses
     document.getElementById('lookup-title').textContent = 'Plate Lookup — ' + currentAddress.name;
     document.getElementById('check-result').innerHTML = '';
     loadCheckedFromStorage();
+    loadFlaggedFromStorage();
     await loadVisitors();
   });
 
@@ -224,13 +275,12 @@ function renderTable() {
   const q        = document.getElementById('search-input').value.toLowerCase();
   const filtered = allVisitors.filter(v =>
     !q || v.visitor_plate.toLowerCase().includes(q) ||
-          v.unit_number.toLowerCase().includes(q)   ||
-          v.tenant_phone.includes(q)
+          v.unit_number.toLowerCase().includes(q)
   );
 
   const tbody = document.getElementById('plates-tbody');
   if (filtered.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" class="empty-row">' + (q ? 'No results matching your search.' : 'No active registrations for this address.') + '</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" class="empty-row">' + (q ? 'No results matching your search.' : 'No active registrations for this address.') + '</td></tr>';
   } else {
     tbody.innerHTML = filtered.map(v => {
       const expiring = (new Date(v.expires_at) - new Date()) < 2 * 3600000;
@@ -238,7 +288,6 @@ function renderTable() {
       return '<tr class="' + (expiring ? 'row-warning' : '') + '">' +
         '<td>' + plateBadge(v.visitor_plate) + '</td>' +
         '<td>' + escapeHtml(v.unit_number) + '</td>' +
-        '<td>' + escapeHtml(v.tenant_phone) + '</td>' +
         '<td class="date-cell">' + formatDateTime(v.registered_at) + '</td>' +
         '<td class="date-cell">' + formatDateTime(v.expires_at) + '</td>' +
         '<td><span class="time-badge ' + (expiring ? 'expiring' : 'active') + '">' + rem + '</span></td>' +
@@ -273,8 +322,8 @@ document.getElementById('confirm-remove-btn').addEventListener('click', async ()
 // ── Export CSV ───────────────────────────────────────────────────────────────
 document.getElementById('export-btn').addEventListener('click', () => {
   const rows = [
-    ['Plate', 'Unit', 'Phone', 'Registered At', 'Expires At'],
-    ...allVisitors.map(v => [v.visitor_plate, v.unit_number, v.tenant_phone, formatDateTime(v.registered_at), formatDateTime(v.expires_at)])
+    ['Plate', 'Unit', 'Registered At', 'Expires At'],
+    ...allVisitors.map(v => [v.visitor_plate, v.unit_number, formatDateTime(v.registered_at), formatDateTime(v.expires_at)])
   ];
   exportCSV(rows, 'valid-plates-' + (currentAddress?.lot_code || '') + '-' + todayStr() + '.csv');
 });
@@ -283,11 +332,14 @@ document.getElementById('export-btn').addEventListener('click', () => {
 function showTab(tab) {
   document.getElementById('panel-plates').classList.toggle('hidden', tab !== 'plates');
   document.getElementById('panel-patrol').classList.toggle('hidden', tab !== 'patrol');
+  document.getElementById('panel-flagged').classList.toggle('hidden', tab !== 'flagged');
   document.getElementById('panel-lookup').classList.toggle('hidden', tab !== 'lookup');
   document.getElementById('tab-plates').classList.toggle('active', tab === 'plates');
   document.getElementById('tab-patrol').classList.toggle('active', tab === 'patrol');
+  document.getElementById('tab-flagged').classList.toggle('active', tab === 'flagged');
   document.getElementById('tab-lookup').classList.toggle('active', tab === 'lookup');
   if (tab === 'patrol') renderPatrol();
+  if (tab === 'flagged') renderFlagged();
 }
 
 // ── Patrol View ──────────────────────────────────────────────────────────────
@@ -339,6 +391,7 @@ function getPatrolItems() {
 }
 
 function renderPatrol() {
+  renderFlagged();
   const q     = document.getElementById('patrol-search').value.toLowerCase();
   const items = getPatrolItems();
   const filtered = items.filter(it =>
@@ -398,6 +451,140 @@ function updatePatrolMeta(ok) {
     el.classList.add('patrol-updated--stale');
   }
 }
+
+// ── Flagged Vehicles (Patrol View) ────────────────────────────────────────────
+// Unregistered vehicles found in the garage — logged locally on this device
+// for this address/day only, never sent to Supabase. Meant to be read off
+// during the call to the city and cleared afterward, not kept long-term.
+
+function flaggedStorageKey() {
+  return 'flagged-vehicles-' + (currentAddressId || '') + '-' + todayStr();
+}
+
+function loadFlaggedFromStorage() {
+  try {
+    const raw = localStorage.getItem(flaggedStorageKey());
+    flaggedVehicles = raw ? JSON.parse(raw) : [];
+  } catch {
+    flaggedVehicles = [];
+  }
+}
+
+function saveFlaggedToStorage() {
+  try {
+    localStorage.setItem(flaggedStorageKey(), JSON.stringify(flaggedVehicles));
+  } catch { /* storage unavailable — flags just won't survive a reload */ }
+}
+
+function timeOnly(iso) {
+  return new Date(iso).toLocaleTimeString('en-CA', { hour: '2-digit', minute: '2-digit', hour12: true });
+}
+
+function renderFlagged() {
+  document.getElementById('flagged-tab-count').textContent = flaggedVehicles.length;
+
+  const list = document.getElementById('flagged-list');
+  if (flaggedVehicles.length === 0) {
+    list.innerHTML = '<div class="patrol-empty">No vehicles flagged yet. Use the 🚩 Flag button in Patrol View to log one.</div>';
+    return;
+  }
+
+  list.innerHTML = [...flaggedVehicles].reverse().map(f => {
+    return '<div class="flagged-item" data-id="' + f.id + '">' +
+      '<div class="flagged-item-top">' +
+        '<span class="flagged-plate">' + escapeHtml(f.plate) + '</span>' +
+        '<span class="flagged-time">' + timeOnly(f.foundAt) + '</span>' +
+      '</div>' +
+      '<div class="flagged-spot">' + escapeHtml(f.spot) + '</div>' +
+      (f.description ? '<div class="flagged-description">' + escapeHtml(f.description) + '</div>' : '') +
+      '<button class="flagged-remove" data-remove="' + f.id + '">Remove</button>' +
+    '</div>';
+  }).join('');
+}
+
+function openFlagModal() {
+  document.getElementById('flag-plate').value = '';
+  document.getElementById('flag-spot').value = '';
+  document.getElementById('flag-desc').value = '';
+  document.getElementById('flag-error').classList.add('hidden');
+  document.getElementById('flag-modal').classList.add('open');
+  document.getElementById('flag-plate').focus();
+}
+
+document.getElementById('flag-vehicle-btn').addEventListener('click', openFlagModal);
+
+document.getElementById('flag-plate').addEventListener('input', function() {
+  const pos = this.selectionStart;
+  this.value = this.value.toUpperCase();
+  this.setSelectionRange(pos, pos);
+});
+
+document.getElementById('flag-save-btn').addEventListener('click', function() {
+  const plate       = document.getElementById('flag-plate').value.trim().toUpperCase();
+  const spot        = document.getElementById('flag-spot').value.trim();
+  const description = document.getElementById('flag-desc').value.trim();
+  const errEl       = document.getElementById('flag-error');
+
+  if (!plate || !spot) {
+    errEl.textContent = 'Plate and spot/location are required.';
+    errEl.classList.remove('hidden');
+    return;
+  }
+
+  flaggedVehicles.push({
+    id: 'f-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7),
+    plate,
+    spot,
+    description,
+    foundAt: new Date().toISOString(),
+  });
+  saveFlaggedToStorage();
+  renderFlagged();
+  closeModal('flag-modal');
+});
+
+document.getElementById('flag-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal('flag-modal');
+});
+
+document.getElementById('flagged-list').addEventListener('click', function(e) {
+  const btn = e.target.closest('[data-remove]');
+  if (!btn) return;
+  flaggedVehicles = flaggedVehicles.filter(f => f.id !== btn.dataset.remove);
+  saveFlaggedToStorage();
+  renderFlagged();
+});
+
+document.getElementById('flagged-clear-btn').addEventListener('click', function() {
+  if (flaggedVehicles.length === 0) return;
+  if (!confirm('Clear all ' + flaggedVehicles.length + ' flagged vehicle(s) for today? Do this after you\'ve called them in.')) return;
+  flaggedVehicles = [];
+  saveFlaggedToStorage();
+  renderFlagged();
+});
+
+document.getElementById('flagged-copy-btn').addEventListener('click', async function() {
+  const btn = this;
+  const lines = [...flaggedVehicles].reverse().map(f => {
+    const parts = [f.plate, f.spot];
+    if (f.description) parts.push(f.description);
+    parts.push(timeOnly(f.foundAt));
+    return parts.join(' — ');
+  });
+  const text = lines.join('\n');
+
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch {
+    // Clipboard API unavailable/blocked — fall back to a selectable prompt.
+    window.prompt('Copy this list manually:', text);
+    return;
+  }
+
+  const original = btn.textContent;
+  btn.textContent = 'Copied!';
+  setTimeout(() => { btn.textContent = original; }, 1500);
+});
 
 // ── Plate Lookup ─────────────────────────────────────────────────────────────
 const lookupInput = document.getElementById('lookup-plate');

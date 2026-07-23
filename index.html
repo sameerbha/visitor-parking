@@ -51,12 +51,6 @@
         </div>
 
         <div class="form-group">
-          <label for="tenant_phone">Your Phone Number</label>
-          <input id="tenant_phone" type="tel" class="form-control"
-            required inputmode="tel" autocomplete="tel" />
-        </div>
-
-        <div class="form-group">
           <label for="visitor_plate">Visitor License Plate</label>
           <input id="visitor_plate" type="text" class="form-control"
             placeholder="e.g. ABCD 123" required maxlength="10"
@@ -222,7 +216,6 @@ document.getElementById('reg-form').addEventListener('submit', async function(e)
   const address_id    = document.getElementById('address_id').value;
   const unit_number   = document.getElementById('unit_number').value.trim().toUpperCase();
   const unit_code     = document.getElementById('unit_code').value.trim();
-  const tenant_phone  = document.getElementById('tenant_phone').value.trim();
   const visitor_plate = document.getElementById('visitor_plate').value.trim().toUpperCase();
   const captchaAns    = document.getElementById('captcha_answer').value.trim();
 
@@ -302,7 +295,6 @@ document.getElementById('reg-form').addEventListener('submit', async function(e)
     await addVisitorRegistration({
       address_id,
       lot_code:     currentAddress.lot_code,
-      tenant_phone,
       unit_number,
       visitor_plate,
     });

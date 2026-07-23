@@ -17,12 +17,14 @@ CREATE TABLE visitor_registrations (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   address_id    UUID REFERENCES addresses(id) ON DELETE CASCADE,
   lot_code      TEXT NOT NULL,
-  tenant_phone  TEXT NOT NULL,
   unit_number   TEXT NOT NULL,
   visitor_plate TEXT NOT NULL,
   registered_at TIMESTAMPTZ DEFAULT NOW(),
   expires_at    TIMESTAMPTZ NOT NULL DEFAULT (NOW() + INTERVAL '24 hours')
 );
+-- Note: no phone number field, by design — we don't collect or store
+-- visitor/tenant phone numbers. See patch-remove-tenant-phone.sql for the
+-- migration that dropped this column from earlier installs.
 
 CREATE TABLE exemptions (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
