@@ -331,6 +331,18 @@ function isActive(exemption) {
   return exemption.start_date <= t && exemption.end_date >= t;
 }
 
+// Three-state version for display purposes (Admin exemptions table).
+// isActive() above stays a strict boolean — it's used at the gate
+// (enforcement.html Patrol View) where "not active today" is all that
+// matters. This distinguishes "hasn't started yet" from "already ended"
+// so future-dated exemptions aren't mislabeled "Expired".
+function getExemptionStatus(exemption) {
+  const t = todayStr();
+  if (exemption.start_date > t) return 'upcoming';
+  if (exemption.end_date < t) return 'expired';
+  return 'active';
+}
+
 function formatDateTime(iso) {
   return new Date(iso).toLocaleString('en-CA', {
     year: 'numeric', month: 'short', day: 'numeric',

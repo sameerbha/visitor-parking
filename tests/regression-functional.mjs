@@ -162,6 +162,28 @@ async function main() {
     JSON.stringify(extend.data)
   );
 
+  // 7b. get_monthly_pass_stats must reflect the extension too (regression
+  // check for the "extend doesn't move the counters" bug — an extension
+  // should count as a pass, same as the original registration).
+  const statsAfterExtend = await rpc('get_monthly_pass_stats', {
+    p_unit_number: unitNumber,
+    p_address_id: addressId,
+  });
+  const beforeTotal = stats.data?.totalPasses ?? 0;
+  const beforePlateDays = stats.data?.plateDays?.[testPlate.replace(/\s/g, '').toUpperCase()] ?? 0;
+  const afterTotal = statsAfterExtend.data?.totalPasses ?? 0;
+  const afterPlateDays = statsAfterExtend.data?.plateDays?.[testPlate.replace(/\s/g, '').toUpperCase()] ?? 0;
+  report(
+    'get_monthly_pass_stats totalPasses increments after extend',
+    statsAfterExtend.ok && afterTotal === beforeTotal + 1,
+    `before ${beforeTotal}, after ${afterTotal}`
+  );
+  report(
+    'get_monthly_pass_stats plateDays increments after extend',
+    statsAfterExtend.ok && afterPlateDays === beforePlateDays + 1,
+    `before ${beforePlateDays}, after ${afterPlateDays}`
+  );
+
   // 8. Registration History (Admin) — same query shape as getPlateHistory()
   // and getUnitHistory(), no expiry filter, should find this registration.
   const plateHistRes = await fetch(

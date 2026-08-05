@@ -96,5 +96,14 @@ check_contains admin.html "history-mode-plate" "admin.html has the plate/unit hi
 check_status patch-history-retention.sql 200
 
 echo
+echo "== Bug-fix markers present (exemption status + pass-count fix) =="
+check_contains admin.html "getExemptionStatus" "admin.html uses the 3-state exemption status helper"
+check_contains admin.html "upcoming: 'Upcoming'" "admin.html renders an Upcoming status badge"
+check_contains admin.html 'value="upcoming"' "admin.html filter dropdown has an Upcoming option"
+check_contains js/app.js "function getExemptionStatus" "app.js defines getExemptionStatus"
+check_contains css/style.css ".status-upcoming" "style.css has the Upcoming badge style"
+check_status patch-fix-pass-counting.sql 200
+
+echo
 echo "== Summary: $PASS passed, $FAIL failed =="
 [ "$FAIL" -eq 0 ]

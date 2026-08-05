@@ -1,55 +1,70 @@
 -- ═══════════════════════════════════════════════════════════════════
--- Patch: Duplicate Plate / Extend Flow
+-- Patch: Fix extend not counting toward monthly passes
 -- Run this in Supabase → SQL Editor → New query
+--
+-- Bug: extend_visitor_registration() only updated expires_at on the
+-- existing row. get_monthly_pass_stats() counts passes by COUNT(*) of
+-- rows registered this month, so an extension — which doesn't insert a
+-- new row — was invisible to that count. Result: "Monthly passes used"
+-- and "Days registered (this plate)" never moved after an extension,
+-- and nothing actually capped how many times a plate could be extended.
+--
+-- Fix: add an extension_count column, increment it on each extend, and
+-- have get_monthly_pass_stats() count (1 + extension_count) per row
+-- instead of just counting rows. This matches the behavior the code
+-- already claimed ("this extension uses 1 of your unit's monthly
+-- visitor passes") and the existing 7-day-per-plate cap in
+-- can_register_visitor() now applies to extensions too.
 -- ═══════════════════════════════════════════════════════════════════
 
--- ── 1. check_plate_active ─────────────────────────────────────────
--- Called when a resident submits the registration form.
--- Returns the current active registration for a plate (if any)
--- so the UI can show the extend prompt with the current expiry time.
--- SECURITY DEFINER lets anon query registrations without a SELECT policy.
+-- ── 1. Add the column ─────────────────────────────────────────────
+ALTER TABLE visitor_registrations
+  ADD COLUMN IF NOT EXISTS extension_count INT NOT NULL DEFAULT 0;
 
-CREATE OR REPLACE FUNCTION check_plate_active(
-  p_plate      TEXT,
-  p_address_id UUID
+-- ── 2. Replace get_monthly_pass_stats to count extensions ─────────
+CREATE OR REPLACE FUNCTION get_monthly_pass_stats(
+  p_unit_number TEXT,
+  p_address_id  UUID
 )
 RETURNS JSON
 LANGUAGE plpgsql SECURITY DEFINER
 AS $$
 DECLARE
-  v_reg RECORD;
+  v_month_start TIMESTAMPTZ := date_trunc('month', NOW());
+  v_month_end   TIMESTAMPTZ := date_trunc('month', NOW()) + INTERVAL '1 month';
+  v_total       INT;
+  v_plate_days  JSON;
 BEGIN
-  SELECT id, unit_number, expires_at
-  INTO v_reg
+  SELECT COALESCE(SUM(1 + extension_count), 0) INTO v_total
   FROM visitor_registrations
   WHERE address_id = p_address_id
-    AND UPPER(REPLACE(visitor_plate, ' ', '')) = UPPER(REPLACE(p_plate, ' ', ''))
-    AND expires_at > NOW()
-  ORDER BY expires_at DESC
-  LIMIT 1;
+    AND UPPER(unit_number) = UPPER(p_unit_number)
+    AND registered_at >= v_month_start
+    AND registered_at <  v_month_end;
 
-  IF v_reg.id IS NULL THEN
-    RETURN json_build_object('active', FALSE);
-  END IF;
+  SELECT json_object_agg(plate, day_count) INTO v_plate_days
+  FROM (
+    SELECT
+      UPPER(REPLACE(visitor_plate, ' ', ''))    AS plate,
+      SUM(1 + extension_count)::INT             AS day_count
+    FROM visitor_registrations
+    WHERE address_id = p_address_id
+      AND UPPER(unit_number) = UPPER(p_unit_number)
+      AND registered_at >= v_month_start
+      AND registered_at <  v_month_end
+    GROUP BY UPPER(REPLACE(visitor_plate, ' ', ''))
+  ) sub;
 
   RETURN json_build_object(
-    'active',       TRUE,
-    'unit_number',  v_reg.unit_number,
-    'expires_at',   v_reg.expires_at
+    'totalPasses',       v_total,
+    'maxPassesReached',  v_total >= 10,
+    'plateDays',         COALESCE(v_plate_days, '{}'::JSON)
   );
 END;
 $$;
-GRANT EXECUTE ON FUNCTION check_plate_active TO anon;
+GRANT EXECUTE ON FUNCTION get_monthly_pass_stats TO anon;
 
-
--- ── 2. extend_visitor_registration ───────────────────────────────
--- Called when a resident confirms they want to extend.
--- Validates:
---   (a) the unit code is correct
---   (b) the active registration belongs to the same unit (only original unit can extend)
---   (c) the unit still has monthly passes available (extension counts as a new pass)
--- If all pass: extends expires_at by 24 hours on the existing row.
-
+-- ── 3. Replace extend_visitor_registration to increment the count ──
 CREATE OR REPLACE FUNCTION extend_visitor_registration(
   p_plate       TEXT,
   p_address_id  UUID,
@@ -118,3 +133,8 @@ BEGIN
 END;
 $$;
 GRANT EXECUTE ON FUNCTION extend_visitor_registration TO anon;
+
+-- ── 4. Verify ───────────────────────────────────────────────────────
+-- SELECT visitor_plate, registered_at, expires_at, extension_count
+-- FROM visitor_registrations
+-- ORDER BY registered_at DESC LIMIT 10;

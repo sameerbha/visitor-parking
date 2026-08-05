@@ -4,6 +4,31 @@ All changes to this project are documented here in reverse chronological order.
 
 ---
 
+## [1.10.1] — 2026-08-04
+
+### Bug fix: extending a registration didn't move the pass counters
+
+Board feedback caught that extending a plate's registration left "Monthly passes used" and "Days registered (this plate)" unchanged, even though the app's own copy said an extension uses one of the unit's passes.
+
+- **Root cause:** `extend_visitor_registration()` only updated `expires_at` on the existing row — it never inserted a new row and never touched `registered_at`, so `get_monthly_pass_stats()` (which counts rows registered this month) had nothing new to count. In practice this also meant nothing capped how many times a plate could be extended.
+- **Fix:** added an `extension_count` column to `visitor_registrations`, incremented on each extend. `get_monthly_pass_stats()` now counts `(1 + extension_count)` per row instead of a flat row count, so each extension counts as a pass — and the existing 7-day-per-plate cap in `can_register_visitor()` now actually applies to extensions, not just new registrations. `patch-fix-pass-counting.sql` (new) migrates existing installs.
+- **Tests extended:** `regression-functional.mjs` now compares pass stats before and after an extend and fails if the counters don't move.
+
+**Files changed:** `supabase-schema.sql`, `patch-extend-registration.sql`, `patch-fix-pass-counting.sql` (new), `tests/regression-functional.mjs`, `CHANGELOG.md`
+
+---
+
+### Bug fix: exemptions with a future start date showed as "Expired"
+
+Board feedback flagged two exemptions with date ranges entirely in the future showing a red "Expired" badge in Admin.
+
+- **Root cause:** `isActive()` only ever returns true/false (`start_date <= today && end_date >= today`). The exemptions table collapsed both "not started yet" and "already ended" into the same "Expired" label — there was no third state.
+- **Fix:** added `getExemptionStatus()`, a three-state version (`active` / `upcoming` / `expired`) used only for display in Admin's exemptions table, filter dropdown, and CSV export. `isActive()` itself is unchanged and still gates enforcement.html's Patrol View, where "not active today" is the only thing that should matter.
+
+**Files changed:** `js/app.js`, `admin.html`, `css/style.css`, `tests/regression-static.sh`, `CHANGELOG.md`
+
+---
+
 ## [1.10.0] — 2026-07-23
 
 ### Admin: Registration History, with a 3-year retention policy

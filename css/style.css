@@ -215,6 +215,7 @@ select.form-control{cursor:pointer}
 .time-badge.expiring{background:#fff3cd;color:#856404}
 .status-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:.78rem;font-weight:600}
 .status-active{background:#d1e7dd;color:#0f5132}
+.status-upcoming{background:#cfe2ff;color:#084298}
 .status-expired{background:#f8d7da;color:#842029}
 .empty-row{text-align:center;color:var(--muted);padding:40px!important}
 .table-footer{padding:12px 20px;font-size:.82rem;color:var(--muted);border-top:1px solid var(--border)}

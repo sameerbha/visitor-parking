@@ -183,6 +183,13 @@ Admin has a "Registration History" tab that looks up the full history — active
 
 Rows are kept for **3 years** from their registration date, after which a scheduled job permanently deletes them. Run [patch-history-retention.sql](/Users/sameerbhaidani/Documents/VIsitors%20Parking%20App/patch-history-retention.sql) once in the Supabase SQL Editor to set this up (enables `pg_cron` and schedules a nightly purge job). This does not apply to the `exemptions` table.
 
+## Known-Issue Fixes (2026-08-04)
+
+Two fixes from board feedback — run [patch-fix-pass-counting.sql](/Users/sameerbhaidani/Documents/VIsitors%20Parking%20App/patch-fix-pass-counting.sql) once in the Supabase SQL Editor on any existing install:
+
+- **Extending a registration now counts toward monthly passes.** Previously an extension silently didn't move "Monthly passes used" or "Days registered (this plate)," and nothing capped repeat extensions. The patch adds an `extension_count` column and updates `get_monthly_pass_stats()`/`extend_visitor_registration()` accordingly.
+- **Admin exemptions now show "Upcoming" for future-dated rows** instead of "Expired" — this one is a frontend-only fix (`js/app.js`, `admin.html`), no SQL to run.
+
 ## Row Level Security Note
 
 The `visitor_registrations` insert policy should allow both `anon` and `authenticated` roles. This matters because a browser may already have a cached Supabase session when loading the public registration page.

@@ -14,17 +14,23 @@ CREATE TABLE addresses (
 );
 
 CREATE TABLE visitor_registrations (
-  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  address_id    UUID REFERENCES addresses(id) ON DELETE CASCADE,
-  lot_code      TEXT NOT NULL,
-  unit_number   TEXT NOT NULL,
-  visitor_plate TEXT NOT NULL,
-  registered_at TIMESTAMPTZ DEFAULT NOW(),
-  expires_at    TIMESTAMPTZ NOT NULL DEFAULT (NOW() + INTERVAL '24 hours')
+  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  address_id       UUID REFERENCES addresses(id) ON DELETE CASCADE,
+  lot_code         TEXT NOT NULL,
+  unit_number      TEXT NOT NULL,
+  visitor_plate    TEXT NOT NULL,
+  registered_at    TIMESTAMPTZ DEFAULT NOW(),
+  expires_at       TIMESTAMPTZ NOT NULL DEFAULT (NOW() + INTERVAL '24 hours'),
+  extension_count  INT NOT NULL DEFAULT 0
 );
 -- Note: no phone number field, by design — we don't collect or store
 -- visitor/tenant phone numbers. See patch-remove-tenant-phone.sql for the
 -- migration that dropped this column from earlier installs.
+-- extension_count: incremented each time extend_visitor_registration() grants
+-- another 24 hours on this same row. get_monthly_pass_stats() counts each
+-- extension as its own pass, same as the original registration — see
+-- patch-fix-pass-counting.sql for the migration that added this on existing
+-- installs.
 
 CREATE TABLE exemptions (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -139,7 +145,9 @@ DECLARE
   v_total       INT;
   v_plate_days  JSON;
 BEGIN
-  SELECT COUNT(*) INTO v_total
+  -- Each row counts as (1 + its extension_count) passes — an extension
+  -- consumes a pass just like the original registration did.
+  SELECT COALESCE(SUM(1 + extension_count), 0) INTO v_total
   FROM visitor_registrations
   WHERE address_id = p_address_id
     AND UPPER(unit_number) = UPPER(p_unit_number)
@@ -149,8 +157,8 @@ BEGIN
   SELECT json_object_agg(plate, day_count) INTO v_plate_days
   FROM (
     SELECT
-      UPPER(REPLACE(visitor_plate, ' ', '')) AS plate,
-      COUNT(DISTINCT registered_at::DATE)    AS day_count
+      UPPER(REPLACE(visitor_plate, ' ', ''))    AS plate,
+      SUM(1 + extension_count)::INT             AS day_count
     FROM visitor_registrations
     WHERE address_id = p_address_id
       AND UPPER(unit_number) = UPPER(p_unit_number)

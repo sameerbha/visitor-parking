@@ -81,6 +81,7 @@
         <select class="filter-select" id="filter-select">
           <option value="all">All exemptions</option>
           <option value="active">Active only</option>
+          <option value="upcoming">Upcoming only</option>
           <option value="expired">Expired only</option>
         </select>
         <input class="search-input" id="search-input" placeholder="Search plate, notes…" />
@@ -347,24 +348,26 @@ function renderExemptionsTable() {
       (e.notes||'').toLowerCase().includes(q) ||
       e.entered_by.toLowerCase().includes(q)
     );
-    const active = isActive(e);
-    const matchFilter = filter === 'all' ? true : filter === 'active' ? active : !active;
+    const status = getExemptionStatus(e);
+    const matchFilter = filter === 'all' ? true : filter === status;
     return matchSearch && matchFilter;
   });
+
+  const statusLabels = { active: 'Active', upcoming: 'Upcoming', expired: 'Expired' };
 
   const tbody = document.getElementById('exemptions-tbody');
   tbody.innerHTML = filtered.length === 0
     ? '<tr><td colspan="8" class="empty-row">' + (q || filter !== 'all' ? 'No results matching your filters.' : 'No exemptions on file.') + '</td></tr>'
     : filtered.map(e => {
-        const active = isActive(e);
-        return '<tr class="' + (active ? '' : 'row-expired') + '">' +
+        const status = getExemptionStatus(e);
+        return '<tr class="' + (status === 'expired' ? 'row-expired' : '') + '">' +
           '<td>' + plateBadge(e.plate) + '</td>' +
           '<td>' + (e.notes ? escapeHtml(e.notes) : '<span class="muted">—</span>') + '</td>' +
           '<td class="date-cell">' + e.start_date + '</td>' +
           '<td class="date-cell">' + e.end_date + '</td>' +
           '<td>' + escapeHtml(e.entered_by) + '</td>' +
           '<td class="date-cell">' + e.entry_date + '</td>' +
-          '<td><span class="status-badge ' + (active ? 'status-active' : 'status-expired') + '">' + (active ? 'Active' : 'Expired') + '</span></td>' +
+          '<td><span class="status-badge status-' + status + '">' + statusLabels[status] + '</span></td>' +
           '<td class="controls-cell">' +
             '<button class="btn btn-warning btn-sm" onclick="openEditModal(\'' + e.id + '\')" title="Edit">✏</button>' +
             '<button class="btn btn-danger btn-sm"  onclick="confirmDelete(\'' + e.id + '\',\'' + escapeHtml(e.plate) + '\',\'' + escapeHtml(e.notes||'') + '\')" title="Delete">🗑</button>' +
@@ -383,7 +386,10 @@ document.getElementById('filter-select').addEventListener('change', renderExempt
 document.getElementById('export-btn').addEventListener('click', () => {
   const rows = [
     ['Plate','Notes','Start Date','End Date','Entered By','Entry Date','Status'],
-    ...allExemptions.map(e => [e.plate, e.notes, e.start_date, e.end_date, e.entered_by, e.entry_date, isActive(e)?'Active':'Expired'])
+    ...allExemptions.map(e => {
+      const status = getExemptionStatus(e);
+      return [e.plate, e.notes, e.start_date, e.end_date, e.entered_by, e.entry_date, status.charAt(0).toUpperCase() + status.slice(1)];
+    })
   ];
   exportCSV(rows, 'exemptions-' + (currentAddress?.lot_code||'') + '-' + todayStr() + '.csv');
 });
