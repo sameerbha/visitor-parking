@@ -63,6 +63,7 @@ check_not_contains() {
 
 echo "== Pages and assets return 200 =="
 for f in index.html portal.html enforcement.html admin.html login.html change-password.html \
+         platform-admin.html \
          manifest.webmanifest sw.js css/style.css js/app.js js/supabase-config.js icons/icon-192.png; do
   check_status "$f" 200
 done
@@ -103,6 +104,28 @@ check_contains admin.html 'value="upcoming"' "admin.html filter dropdown has an 
 check_contains js/app.js "function getExemptionStatus" "app.js defines getExemptionStatus"
 check_contains css/style.css ".status-upcoming" "style.css has the Upcoming badge style"
 check_status patch-fix-pass-counting.sql 200
+
+echo
+echo "== Multi-tenant markers present =="
+check_contains platform-admin.html "isPlatformAdmin" "platform-admin.html gates access with isPlatformAdmin()"
+check_contains platform-admin.html "getTenants" "platform-admin.html lists tenants"
+check_contains platform-admin.html "assignStaffToTenant" "platform-admin.html can assign staff to a tenant"
+check_contains js/app.js "function getTenantBySubdomain" "app.js defines getTenantBySubdomain"
+check_contains js/app.js "function isPlatformAdmin" "app.js defines isPlatformAdmin"
+check_contains index.html "resolveTenantSubdomain" "index.html resolves tenant from hostname"
+check_status patch-multi-tenant-schema.sql 200
+check_status patch-multi-tenant-cutover.sql 200
+check_contains enforcement.html "assigned to a building yet" "enforcement.html has a no-tenant empty state"
+check_contains admin.html "assigned to a building yet" "admin.html has a no-tenant empty state"
+
+echo
+echo "== Configurable pass limits markers present =="
+check_contains admin.html "panel-settings" "admin.html has the Settings panel"
+check_contains admin.html "updateTenantLimits" "admin.html can save tenant pass limits"
+check_contains js/app.js "function updateTenantLimits" "app.js defines updateTenantLimits"
+check_contains js/app.js "function getTenantById" "app.js defines getTenantById"
+check_contains index.html "monthlyLimit" "index.html reads the dynamic monthly limit"
+check_status patch-tenant-limits.sql 200
 
 echo
 echo "== Summary: $PASS passed, $FAIL failed =="

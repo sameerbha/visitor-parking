@@ -1,14 +1,17 @@
-# Visitors Parking Management System
+# Regent Parking — Visitor Registration
 
-A static multi-portal visitor parking app backed by Supabase.
+A static, multi-tenant visitor parking app backed by Supabase. "Regent Parking" is the product's public name — shown consistently to every tenant, not white-labeled per building.
 
 The project includes:
 
 - A public resident registration page
 - A staff enforcement portal for plate lookup and active registrations
 - A staff exemptions and unit-code management portal
+- A platform admin portal for managing tenants across the whole system (see [Multi-Tenancy](#multi-tenancy))
 - Supabase Auth for staff login
 - Supabase RPC functions for secure resident validation and pass-limit checks
+
+The Regent Parking marketing site (`regentparking.ca`, no subdomain) is a separate deploy — see `regent-parking-marketing/` — and is not part of this app.
 
 ## Portals
 
@@ -18,6 +21,7 @@ The project includes:
 | Staff Portal (picker) | `portal.html` | Small "Staff" link on the registration page |
 | Visitor Enforcement | `enforcement.html` | Staff login required |
 | Exemptions + Unit Codes | `admin.html` | Staff login required |
+| Platform Admin | `platform-admin.html` | Platform admin login required — see [Multi-Tenancy](#multi-tenancy) |
 | Staff Login | `login.html` | Public |
 | Change Password | `change-password.html` | Logged-in staff |
 
@@ -48,6 +52,7 @@ VIsitors Parking App/
 ├── portal.html
 ├── enforcement.html
 ├── admin.html
+├── platform-admin.html
 ├── login.html
 ├── change-password.html
 ├── css/
@@ -117,12 +122,17 @@ Run [supabase-schema.sql](/Users/sameerbhaidani/Documents/VIsitors%20Parking%20A
 
 This creates:
 
+- `tenants`
 - `addresses`
+- `staff_access`
+- `platform_admins`
 - `visitor_registrations`
 - `exemptions`
 - `unit_codes`
-- Row Level Security policies
+- Row Level Security policies (tenant-scoped for staff, public for anon)
 - RPC functions:
+  - `is_platform_admin`, `is_tenant_member`, `has_tenant_access` — multi-tenant access checks
+  - `get_tenant_staff`, `get_tenant_usage_stats` — Platform Admin portal
   - `validate_unit_code`
   - `get_monthly_pass_stats`
   - `can_register_visitor`
@@ -172,10 +182,14 @@ The resident registration page enforces:
 - CAPTCHA
 - Correct unit code
 - Valid plate format
-- Monthly unit limit of 10 visitor passes
-- Per-plate limit of 7 registered days per month
+- A monthly unit pass limit (10 by default — configurable per tenant, see below)
+- A per-plate day limit (7 by default — configurable per tenant, see below)
 
 Each successful registration is valid for 24 hours.
+
+## Configurable Pass Limits
+
+The monthly-passes-per-unit and days-per-plate limits are per-tenant settings, not fixed values — editable from Admin's "⚙️ Settings" tab by any staff member of that tenant (any building's staff can change it, consistent with the flat access decision — there's no separate property-manager tier). They apply across every building under that tenant's account, not per-building. Existing tenants default to 10/7, matching the original fixed behavior, until changed. Run [patch-tenant-limits.sql](/Users/sameerbhaidani/Documents/VIsitors%20Parking%20App/patch-tenant-limits.sql) once in the Supabase SQL Editor to add this to an existing install.
 
 ## Registration History & Retention
 
@@ -189,6 +203,22 @@ Two fixes from board feedback — run [patch-fix-pass-counting.sql](/Users/samee
 
 - **Extending a registration now counts toward monthly passes.** Previously an extension silently didn't move "Monthly passes used" or "Days registered (this plate)," and nothing capped repeat extensions. The patch adds an `extension_count` column and updates `get_monthly_pass_stats()`/`extend_visitor_registration()` accordingly.
 - **Admin exemptions now show "Upcoming" for future-dated rows** instead of "Expired" — this one is a frontend-only fix (`js/app.js`, `admin.html`), no SQL to run.
+
+## Multi-Tenancy
+
+As of 2026-08-05 this app supports more than one customer ("tenant") sharing the same Supabase project. A **tenant** is the paying customer (a condo corporation or management company) and can own multiple **addresses** (buildings/towers). DuEast is tenant #1.
+
+**Migrating an existing single-tenant install:**
+
+1. Run [patch-multi-tenant-schema.sql](/Users/sameerbhaidani/Documents/VIsitors%20Parking%20App/patch-multi-tenant-schema.sql) — additive only, creates the `tenants`, `staff_access`, and `platform_admins` tables, adds `tenant_id` to `addresses`, and backfills a "DuEast" tenant. This does not change any existing RLS policy or affect current staff logins.
+2. Follow the instructions at the bottom of that file to make yourself a platform admin and backfill every existing staff login into `staff_access` — this must happen before step 3, or existing staff will see empty screens once tenant scoping is enforced.
+3. Run [patch-multi-tenant-cutover.sql](/Users/sameerbhaidani/Documents/VIsitors%20Parking%20App/patch-multi-tenant-cutover.sql) — this is the step that actually enforces tenant scoping on `addresses`, `visitor_registrations`, `exemptions`, and `unit_codes`. Log in as an existing staff account immediately after and confirm you still see the expected data.
+
+**Platform Admin (`platform-admin.html`):** for managing tenants across the whole system — create a tenant, add buildings under it, assign staff (by Supabase user ID — account creation itself is still done manually in the Supabase dashboard), and view basic usage per tenant. Gated by the `platform_admins` allow-list table, checked via `is_platform_admin()`.
+
+**Resident-facing tenant resolution:** `index.html` resolves which tenant a visit belongs to from the hostname (`dueastparking.netlify.app` is mapped explicitly; `<subdomain>.regentparking.ca` resolves from the subdomain itself), then defaults to that tenant's first address. The `?lot=` URL parameter still works as a manual override for a specific building, same as before.
+
+**What's intentionally not built yet:** self-service tenant signup, automated billing, and any permission tier between "platform admin" and "any staff member of a tenant can do everything that tenant's staff can do." All straightforward to add later on top of this foundation, not blockers to running a second tenant today.
 
 ## Row Level Security Note
 

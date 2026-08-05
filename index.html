@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="mobile-web-app-capable" content="yes" />
-  <title>Visitor Parking Registration</title>
+  <title>Regent Parking — Visitor Registration</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
   <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
@@ -21,7 +21,8 @@
   </div>
   <div class="resident-header">
     <div class="resident-logo">🅿️</div>
-    <h1>Visitor Parking<br>Registration</h1>
+    <h1>Regent Parking</h1>
+    <p class="resident-tagline">Visitor Registration</p>
     <p class="resident-subtitle" id="building-subtitle">Register your guest's vehicle for 24-hour parking</p>
   </div>
 
@@ -147,13 +148,15 @@ function passBar(label, used, max) {
 
 // ── Shared helper: render pass stats box ──────────────────────────────────────
 async function renderPassStats(unitNumber, addressId, plate) {
-  const stats     = await getMonthlyPassStats(unitNumber, addressId);
-  const normPlate = plate.replace(/\s/g, '').toUpperCase();
-  const daysUsed  = (stats.plateDays && stats.plateDays[normPlate]) ? stats.plateDays[normPlate] : 0;
+  const stats       = await getMonthlyPassStats(unitNumber, addressId);
+  const normPlate    = plate.replace(/\s/g, '').toUpperCase();
+  const daysUsed      = (stats.plateDays && stats.plateDays[normPlate]) ? stats.plateDays[normPlate] : 0;
+  const monthlyLimit = stats.monthlyLimit || 10;
+  const plateLimit   = stats.plateLimit   || 7;
   document.getElementById('pass-stats-box').innerHTML =
     '<div class="pass-stats-grid">' +
-      passBar('Monthly passes used', stats.totalPasses, 10) +
-      passBar('Days registered (this plate)', daysUsed, 7) +
+      passBar('Monthly passes used', stats.totalPasses, monthlyLimit) +
+      passBar('Days registered (this plate)', daysUsed, plateLimit) +
     '</div>';
 }
 
@@ -179,21 +182,42 @@ document.getElementById('unit_number').addEventListener('input', function() {
   const pos = this.selectionStart; this.value = this.value.toUpperCase(); this.setSelectionRange(pos,pos);
 });
 
+// Resolve which tenant this hostname belongs to. dueastparking.netlify.app
+// is mapped explicitly since it predates the regentparking.ca domain;
+// any host of the form <subdomain>.regentparking.ca resolves from the
+// subdomain itself. Everything else (localhost, a bare custom domain, etc.)
+// returns null and falls back to "first address overall" below, so local
+// dev keeps working without any tenant set up.
+function resolveTenantSubdomain() {
+  const host = window.location.hostname;
+  if (host === 'dueastparking.netlify.app') return 'dueast';
+  const match = host.match(/^([^.]+)\.regentparking\.ca$/);
+  return match ? match[1] : null;
+}
+
 // ── Page init (async) ─────────────────────────────────────────────────────────
 (async () => {
   try {
     renderCaptcha();
 
-    // Determine address from ?lot= URL param
+    // ?lot= always wins if present — an explicit manual override, same as
+    // before. Otherwise resolve the tenant from the hostname and default to
+    // that tenant's first address (alphabetically) rather than picking from
+    // every address on the system, which is what caused a DuEast resident to
+    // sometimes see the wrong building's name before tenants existed.
     const params   = new URLSearchParams(window.location.search);
     const lotParam = params.get('lot');
-    const addresses = await getAddresses();
 
-    currentAddress = lotParam
-      ? await getAddressByLotCode(lotParam)
-      : (addresses.length > 0 ? addresses[0] : null);
-
-    if (!currentAddress && addresses.length > 0) currentAddress = addresses[0];
+    if (lotParam) {
+      currentAddress = await getAddressByLotCode(lotParam);
+    } else {
+      const subdomain = resolveTenantSubdomain();
+      const tenant     = subdomain ? await getTenantBySubdomain(subdomain) : null;
+      const addresses  = tenant
+        ? await getAddressesByTenantId(tenant.id)
+        : await getAddresses();
+      currentAddress = addresses.length > 0 ? addresses[0] : null;
+    }
 
     if (currentAddress) {
       document.getElementById('address_id').value = currentAddress.id;

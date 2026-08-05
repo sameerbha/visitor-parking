@@ -1,15 +1,51 @@
 -- ═══════════════════════════════════════════════════════════════════
--- Visitors Parking Management — Supabase Schema  (v1.2.0)
+-- Visitors Parking Management — Supabase Schema  (v2.0.0 — multi-tenant)
 -- Run this entire file in the Supabase SQL Editor (Project → SQL Editor).
 -- ═══════════════════════════════════════════════════════════════════
 
 -- ── 1. Tables ───────────────────────────────────────────────────────────────
 
+-- A tenant is a paying customer — a condo corporation or management company.
+-- A tenant can own multiple addresses (e.g. one tenant, two towers).
+-- See patch-multi-tenant-schema.sql / patch-multi-tenant-cutover.sql for the
+-- migration that added multi-tenancy to earlier single-tenant installs.
+CREATE TABLE tenants (
+  id                 UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name               TEXT NOT NULL,
+  subdomain          TEXT UNIQUE NOT NULL,
+  contact_text       TEXT,
+  status             TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active','suspended','trial')),
+  -- Configurable per tenant — see Admin's Settings tab. Defaults match the
+  -- original fixed limits so nothing changes until a tenant edits them.
+  monthly_pass_limit INT NOT NULL DEFAULT 10 CHECK (monthly_pass_limit >= 1),
+  plate_day_limit    INT NOT NULL DEFAULT 7  CHECK (plate_day_limit >= 1),
+  created_at         TIMESTAMPTZ DEFAULT NOW()
+);
+
 CREATE TABLE addresses (
   id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id  UUID REFERENCES tenants(id) ON DELETE CASCADE,
   name       TEXT NOT NULL,
   lot_code   TEXT UNIQUE NOT NULL,
   full_name  TEXT GENERATED ALWAYS AS (name || ' (' || lot_code || ')') STORED,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Which staff logins belong to which tenant. A join table so one login could
+-- belong to more than one tenant (e.g. a management company running several
+-- buildings under Regent Parking).
+CREATE TABLE staff_access (
+  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id    UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  tenant_id  UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE (user_id, tenant_id)
+);
+
+-- Platform admins (Regent Parking staff) see and manage every tenant. A
+-- simple allow-list — rows are only ever added manually in the SQL Editor.
+CREATE TABLE platform_admins (
+  user_id    UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -67,41 +103,171 @@ CREATE INDEX idx_unitcode_addr   ON unit_codes(address_id, unit_number);
 
 -- ── 3. Seed data ────────────────────────────────────────────────────────────
 
-INSERT INTO addresses (name, lot_code) VALUES
-  ('225 Sumach Street', '10001');
+INSERT INTO tenants (name, subdomain) VALUES ('DuEast', 'dueast');
 
--- ── 4. Row Level Security ────────────────────────────────────────────────────
+INSERT INTO addresses (tenant_id, name, lot_code) VALUES
+  ((SELECT id FROM tenants WHERE subdomain = 'dueast'), '225 Sumach Street', '10001');
 
+-- ── 4. Multi-tenant helper functions ────────────────────────────────────────
+-- Used by the RLS policies below and callable directly by the app. All
+-- SECURITY DEFINER so they can read staff_access/platform_admins/addresses
+-- regardless of the calling user's own RLS visibility into those tables —
+-- otherwise checking access would itself require access (circular).
+
+CREATE OR REPLACE FUNCTION is_platform_admin()
+RETURNS BOOLEAN
+LANGUAGE sql SECURITY DEFINER STABLE
+AS $$
+  SELECT EXISTS (SELECT 1 FROM platform_admins WHERE user_id = auth.uid());
+$$;
+GRANT EXECUTE ON FUNCTION is_platform_admin TO authenticated;
+
+CREATE OR REPLACE FUNCTION is_tenant_member(p_tenant_id UUID)
+RETURNS BOOLEAN
+LANGUAGE sql SECURITY DEFINER STABLE
+AS $$
+  SELECT is_platform_admin() OR EXISTS (
+    SELECT 1 FROM staff_access WHERE user_id = auth.uid() AND tenant_id = p_tenant_id
+  );
+$$;
+GRANT EXECUTE ON FUNCTION is_tenant_member TO authenticated;
+
+CREATE OR REPLACE FUNCTION has_tenant_access(p_address_id UUID)
+RETURNS BOOLEAN
+LANGUAGE sql SECURITY DEFINER STABLE
+AS $$
+  SELECT is_platform_admin() OR EXISTS (
+    SELECT 1 FROM addresses a
+    JOIN staff_access sa ON sa.tenant_id = a.tenant_id
+    WHERE a.id = p_address_id AND sa.user_id = auth.uid()
+  );
+$$;
+GRANT EXECUTE ON FUNCTION has_tenant_access TO authenticated;
+
+-- get_tenant_staff: lists a tenant's staff with their email, for the
+-- platform admin portal. staff_access only stores user_id — email lives in
+-- auth.users, which the client can never query directly.
+CREATE OR REPLACE FUNCTION get_tenant_staff(p_tenant_id UUID)
+RETURNS TABLE (staff_access_id UUID, user_id UUID, email TEXT, created_at TIMESTAMPTZ)
+LANGUAGE plpgsql SECURITY DEFINER
+AS $$
+BEGIN
+  IF NOT is_tenant_member(p_tenant_id) THEN
+    RAISE EXCEPTION 'Not authorized for this tenant';
+  END IF;
+
+  RETURN QUERY
+    SELECT sa.id, sa.user_id, u.email::TEXT, sa.created_at
+    FROM staff_access sa
+    JOIN auth.users u ON u.id = sa.user_id
+    WHERE sa.tenant_id = p_tenant_id
+    ORDER BY u.email;
+END;
+$$;
+GRANT EXECUTE ON FUNCTION get_tenant_staff TO authenticated;
+
+-- get_tenant_usage_stats: for the platform admin portal — registrations
+-- this month, active units, and address count for one tenant.
+CREATE OR REPLACE FUNCTION get_tenant_usage_stats(p_tenant_id UUID)
+RETURNS JSON
+LANGUAGE plpgsql SECURITY DEFINER
+AS $$
+DECLARE
+  v_month_start TIMESTAMPTZ := date_trunc('month', NOW());
+  v_registrations_this_month INT;
+  v_active_units INT;
+  v_address_count INT;
+BEGIN
+  IF NOT is_tenant_member(p_tenant_id) THEN
+    RAISE EXCEPTION 'Not authorized for this tenant';
+  END IF;
+
+  SELECT COUNT(*) INTO v_registrations_this_month
+  FROM visitor_registrations vr
+  JOIN addresses a ON a.id = vr.address_id
+  WHERE a.tenant_id = p_tenant_id
+    AND vr.registered_at >= v_month_start;
+
+  SELECT COUNT(*) INTO v_active_units
+  FROM unit_codes uc
+  JOIN addresses a ON a.id = uc.address_id
+  WHERE a.tenant_id = p_tenant_id;
+
+  SELECT COUNT(*) INTO v_address_count
+  FROM addresses WHERE tenant_id = p_tenant_id;
+
+  RETURN json_build_object(
+    'registrationsThisMonth', v_registrations_this_month,
+    'activeUnits',            v_active_units,
+    'addressCount',           v_address_count
+  );
+END;
+$$;
+GRANT EXECUTE ON FUNCTION get_tenant_usage_stats TO authenticated;
+
+-- ── 5. Row Level Security ────────────────────────────────────────────────────
+
+ALTER TABLE tenants                ENABLE ROW LEVEL SECURITY;
+ALTER TABLE staff_access           ENABLE ROW LEVEL SECURITY;
+ALTER TABLE platform_admins        ENABLE ROW LEVEL SECURITY;
 ALTER TABLE addresses              ENABLE ROW LEVEL SECURITY;
 ALTER TABLE visitor_registrations  ENABLE ROW LEVEL SECURITY;
 ALTER TABLE exemptions             ENABLE ROW LEVEL SECURITY;
 ALTER TABLE unit_codes             ENABLE ROW LEVEL SECURITY;
 
--- Addresses: readable by everyone (needed by the resident registration form)
-CREATE POLICY "Addresses are public"
-  ON addresses FOR SELECT TO anon, authenticated USING (true);
+-- Tenants: anon needs name/subdomain to resolve which tenant a hostname
+-- belongs to before anyone logs in. Nothing in this table is sensitive.
+CREATE POLICY "Anon can read tenants for subdomain resolution"
+  ON tenants FOR SELECT TO anon USING (true);
+CREATE POLICY "Staff can read their own tenant"
+  ON tenants FOR SELECT TO authenticated USING (is_tenant_member(id));
+CREATE POLICY "Platform admins manage tenants"
+  ON tenants FOR ALL TO authenticated USING (is_platform_admin()) WITH CHECK (is_platform_admin());
+
+-- staff_access / platform_admins: platform admins only. Regular staff never
+-- read these tables directly — they go through SECURITY DEFINER functions.
+CREATE POLICY "Platform admins manage staff access"
+  ON staff_access FOR ALL TO authenticated USING (is_platform_admin()) WITH CHECK (is_platform_admin());
+CREATE POLICY "Platform admins manage platform admins"
+  ON platform_admins FOR ALL TO authenticated USING (is_platform_admin()) WITH CHECK (is_platform_admin());
+
+-- Addresses: anon reads every address (needed by the resident registration
+-- form before it knows which tenant it's on). Staff only see their own
+-- tenant's addresses. Only platform admins create/edit/delete addresses.
+CREATE POLICY "Anon can read addresses"
+  ON addresses FOR SELECT TO anon USING (true);
+CREATE POLICY "Staff can read their tenant addresses"
+  ON addresses FOR SELECT TO authenticated USING (is_tenant_member(tenant_id));
+CREATE POLICY "Platform admins manage addresses"
+  ON addresses FOR ALL TO authenticated USING (is_platform_admin()) WITH CHECK (is_platform_admin());
 
 -- Visitor registrations: public page inserts may run as either anon or
 -- authenticated if the browser already has a Supabase session cached.
+-- Staff can only see/remove registrations belonging to their own tenant.
 CREATE POLICY "Public can register visitors"
   ON visitor_registrations FOR INSERT TO anon, authenticated WITH CHECK (true);
+CREATE POLICY "Staff can view their tenant registrations"
+  ON visitor_registrations FOR SELECT TO authenticated USING (has_tenant_access(address_id));
+CREATE POLICY "Staff can remove their tenant registrations"
+  ON visitor_registrations FOR DELETE TO authenticated USING (has_tenant_access(address_id));
 
--- Staff can read and delete registrations
-CREATE POLICY "Staff can view registrations"
-  ON visitor_registrations FOR SELECT TO authenticated USING (true);
-CREATE POLICY "Staff can remove registrations"
-  ON visitor_registrations FOR DELETE TO authenticated USING (true);
+-- Exemptions: staff can only manage exemptions for their own tenant.
+CREATE POLICY "Staff can view their tenant exemptions"
+  ON exemptions FOR SELECT TO authenticated USING (has_tenant_access(address_id));
+CREATE POLICY "Staff can add their tenant exemptions"
+  ON exemptions FOR INSERT TO authenticated WITH CHECK (has_tenant_access(address_id));
+CREATE POLICY "Staff can update their tenant exemptions"
+  ON exemptions FOR UPDATE TO authenticated USING (has_tenant_access(address_id));
+CREATE POLICY "Staff can delete their tenant exemptions"
+  ON exemptions FOR DELETE TO authenticated USING (has_tenant_access(address_id));
 
--- Exemptions: staff only
-CREATE POLICY "Staff can view exemptions"   ON exemptions FOR SELECT TO authenticated USING (true);
-CREATE POLICY "Staff can add exemptions"    ON exemptions FOR INSERT TO authenticated WITH CHECK (true);
-CREATE POLICY "Staff can update exemptions" ON exemptions FOR UPDATE TO authenticated USING (true);
-CREATE POLICY "Staff can delete exemptions" ON exemptions FOR DELETE TO authenticated USING (true);
+-- Unit codes: staff only for direct table access (residents use the RPC
+-- below), scoped to their own tenant.
+CREATE POLICY "Staff can manage their tenant unit codes"
+  ON unit_codes FOR ALL TO authenticated
+  USING (has_tenant_access(address_id)) WITH CHECK (has_tenant_access(address_id));
 
--- Unit codes: staff only for direct table access (residents use the RPC below)
-CREATE POLICY "Staff can manage unit codes" ON unit_codes FOR ALL TO authenticated USING (true) WITH CHECK (true);
-
--- ── 5. RPC Functions ─────────────────────────────────────────────────────────
+-- ── 6. Resident-facing RPC Functions ────────────────────────────────────────
 -- These run with SECURITY DEFINER so they can bypass RLS when called by anon.
 
 -- validate_unit_code: returns TRUE if the code matches, FALSE otherwise.
@@ -131,7 +297,9 @@ END;
 $$;
 GRANT EXECUTE ON FUNCTION validate_unit_code TO anon;
 
--- get_monthly_pass_stats: returns pass usage stats for a unit this month.
+-- get_monthly_pass_stats: returns pass usage stats for a unit this month,
+-- using that unit's tenant's configured limits (Admin's Settings tab),
+-- defaulting to 10/7 if an address somehow has no tenant.
 CREATE OR REPLACE FUNCTION get_monthly_pass_stats(
   p_unit_number TEXT,
   p_address_id  UUID
@@ -144,7 +312,18 @@ DECLARE
   v_month_end   TIMESTAMPTZ := date_trunc('month', NOW()) + INTERVAL '1 month';
   v_total       INT;
   v_plate_days  JSON;
+  v_monthly_limit INT;
+  v_plate_limit   INT;
 BEGIN
+  SELECT t.monthly_pass_limit, t.plate_day_limit
+  INTO v_monthly_limit, v_plate_limit
+  FROM addresses a
+  JOIN tenants t ON t.id = a.tenant_id
+  WHERE a.id = p_address_id;
+
+  v_monthly_limit := COALESCE(v_monthly_limit, 10);
+  v_plate_limit   := COALESCE(v_plate_limit, 7);
+
   -- Each row counts as (1 + its extension_count) passes — an extension
   -- consumes a pass just like the original registration did.
   SELECT COALESCE(SUM(1 + extension_count), 0) INTO v_total
@@ -168,10 +347,12 @@ BEGIN
   ) t;
 
   RETURN json_build_object(
-    'totalPasses',     v_total,
-    'plateDays',       COALESCE(v_plate_days, '{}'::JSON),
-    'remainingPasses', GREATEST(0, 10 - v_total),
-    'maxPassesReached', v_total >= 10
+    'totalPasses',      v_total,
+    'plateDays',        COALESCE(v_plate_days, '{}'::JSON),
+    'remainingPasses',  GREATEST(0, v_monthly_limit - v_total),
+    'maxPassesReached', v_total >= v_monthly_limit,
+    'monthlyLimit',     v_monthly_limit,
+    'plateLimit',       v_plate_limit
   );
 END;
 $$;
@@ -187,25 +368,29 @@ RETURNS JSON
 LANGUAGE plpgsql SECURITY DEFINER
 AS $$
 DECLARE
-  v_stats      JSON;
-  v_norm_plate TEXT;
-  v_days_used  INT;
+  v_stats       JSON;
+  v_norm_plate  TEXT;
+  v_days_used   INT;
+  v_plate_limit INT;
 BEGIN
-  v_stats      := get_monthly_pass_stats(p_unit_number, p_address_id);
-  v_norm_plate := UPPER(REPLACE(p_plate, ' ', ''));
+  v_stats       := get_monthly_pass_stats(p_unit_number, p_address_id);
+  v_norm_plate  := UPPER(REPLACE(p_plate, ' ', ''));
+  v_plate_limit := COALESCE((v_stats->>'plateLimit')::INT, 7);
 
   IF (v_stats->>'maxPassesReached')::BOOLEAN THEN
     RETURN json_build_object(
       'allowed', FALSE,
-      'reason',  'Your unit has used all 10 visitor parking passes for this month. Passes reset on the 1st of next month.'
+      'reason',  'Your unit has used all ' || (v_stats->>'monthlyLimit') ||
+                 ' visitor parking passes for this month. Passes reset on the 1st of next month.'
     );
   END IF;
 
   v_days_used := COALESCE((v_stats->'plateDays'->>v_norm_plate)::INT, 0);
-  IF v_days_used >= 7 THEN
+  IF v_days_used >= v_plate_limit THEN
     RETURN json_build_object(
       'allowed', FALSE,
-      'reason',  'Plate ' || p_plate || ' has already been registered for 7 days this month and cannot be registered again until next month.'
+      'reason',  'Plate ' || p_plate || ' has already been registered for ' || v_plate_limit ||
+                 ' days this month and cannot be registered again until next month.'
     );
   END IF;
 
@@ -214,7 +399,45 @@ END;
 $$;
 GRANT EXECUTE ON FUNCTION can_register_visitor TO anon;
 
--- ── 6. Retention: visitor_registrations is kept for 3 years ─────────────────
+-- update_tenant_limits: the only way to change a tenant's pass limits.
+-- Any staff member of the tenant can call this — matches the existing
+-- flat-access decision (no property-manager-vs-concierge tier). Bounded to
+-- sane ranges so a typo can't accidentally disable registration entirely.
+CREATE OR REPLACE FUNCTION update_tenant_limits(
+  p_tenant_id          UUID,
+  p_monthly_pass_limit INT,
+  p_plate_day_limit    INT
+)
+RETURNS JSON
+LANGUAGE plpgsql SECURITY DEFINER
+AS $$
+BEGIN
+  IF NOT is_tenant_member(p_tenant_id) THEN
+    RAISE EXCEPTION 'Not authorized for this tenant';
+  END IF;
+
+  IF p_monthly_pass_limit < 1 OR p_monthly_pass_limit > 500 THEN
+    RAISE EXCEPTION 'Monthly pass limit must be between 1 and 500';
+  END IF;
+
+  IF p_plate_day_limit < 1 OR p_plate_day_limit > 31 THEN
+    RAISE EXCEPTION 'Plate day limit must be between 1 and 31';
+  END IF;
+
+  UPDATE tenants
+  SET monthly_pass_limit = p_monthly_pass_limit,
+      plate_day_limit    = p_plate_day_limit
+  WHERE id = p_tenant_id;
+
+  RETURN json_build_object(
+    'monthlyPassLimit', p_monthly_pass_limit,
+    'plateDayLimit',    p_plate_day_limit
+  );
+END;
+$$;
+GRANT EXECUTE ON FUNCTION update_tenant_limits TO authenticated;
+
+-- ── 7. Retention: visitor_registrations is kept for 3 years ─────────────────
 -- Registration history (active + expired) is intentionally NOT deleted on
 -- expiry — Admin > Registration History reads the full history for a plate
 -- or unit. Instead, a scheduled job permanently deletes rows older than

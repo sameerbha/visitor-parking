@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Regent Parking — Platform Admin</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<!-- Header -->
+<header class="app-header">
+  <div class="header-inner">
+    <a class="header-logo" href="portal.html">
+      <span class="logo-icon">🅿️</span>
+      <div class="logo-text">
+        <span class="logo-name">Regent Parking</span>
+        <span class="logo-sub">Platform Admin</span>
+      </div>
+    </a>
+    <nav class="header-nav desktop-nav">
+      <a href="enforcement.html" class="nav-link">Enforcement</a>
+      <a href="admin.html" class="nav-link">Admin</a>
+      <a href="platform-admin.html" class="nav-link active">Platform Admin</a>
+    </nav>
+    <div class="header-right">
+      <span class="user-badge desktop-only" id="user-badge"></span>
+      <button class="btn btn-outline btn-sm" id="logout-btn">Sign Out</button>
+      <button class="hamburger" id="hamburger" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+  <nav class="mobile-nav" id="mobile-nav">
+    <a href="enforcement.html" class="mobile-nav-link">Enforcement Portal</a>
+    <a href="admin.html" class="mobile-nav-link">Admin Portal</a>
+    <a href="platform-admin.html" class="mobile-nav-link">Platform Admin</a>
+    <div class="mobile-nav-divider"></div>
+    <span class="mobile-nav-user" id="mobile-user"></span>
+    <button class="mobile-nav-link logout-link" id="mobile-logout">Sign Out</button>
+  </nav>
+</header>
+
+<!-- Flash message -->
+<div class="alert alert-success flash-msg" id="flash-msg"></div>
+
+<div class="portal-page">
+
+  <!-- Shown if the logged-in user is not a platform admin -->
+  <div id="not-authorized" class="hidden">
+    <div class="alert alert-error">
+      This page is for Regent Parking platform admins only. If you believe you should have
+      access, contact your platform administrator.
+    </div>
+  </div>
+
+  <div id="platform-content" class="hidden">
+
+    <!-- ── Tenants ────────────────────────────────────────────────────── -->
+    <div class="table-section">
+      <div class="table-header-bar">
+        <h2>Tenants</h2>
+        <div class="table-actions">
+          <button class="btn btn-primary btn-sm" id="add-tenant-btn">+ Add Tenant</button>
+        </div>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Subdomain</th>
+            <th>Status</th>
+            <th>Buildings</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tenants-tbody">
+          <tr><td colspan="5" class="empty-row">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ── Selected tenant detail ─────────────────────────────────────── -->
+    <div id="tenant-detail" class="hidden">
+
+      <div class="table-header-bar" style="margin-top:8px">
+        <h2 id="detail-title">—</h2>
+      </div>
+
+      <!-- Usage stats -->
+      <div class="stat-cards" id="usage-stats"></div>
+
+      <!-- Addresses -->
+      <div class="table-section">
+        <div class="table-header-bar">
+          <h2>Buildings</h2>
+          <div class="table-actions">
+            <button class="btn btn-primary btn-sm" id="add-address-btn">+ Add Building</button>
+          </div>
+        </div>
+        <table class="data-table">
+          <thead><tr><th>Name</th><th>Lot Code</th></tr></thead>
+          <tbody id="addresses-tbody"></tbody>
+        </table>
+      </div>
+
+      <!-- Staff -->
+      <div class="table-section">
+        <div class="table-header-bar">
+          <h2>Staff</h2>
+          <div class="table-actions">
+            <button class="btn btn-primary btn-sm" id="add-staff-btn">+ Assign Staff</button>
+          </div>
+        </div>
+        <table class="data-table">
+          <thead><tr><th>Email</th><th>Assigned</th><th></th></tr></thead>
+          <tbody id="staff-tbody"></tbody>
+        </table>
+      </div>
+
+    </div><!-- /tenant-detail -->
+
+  </div><!-- /platform-content -->
+
+</div><!-- /portal-page -->
+
+<!-- ═══════════════════ Add Tenant Modal ═══════════════════ -->
+<div class="modal-overlay" id="tenant-modal">
+  <div class="modal-box modal-lg">
+    <h3>Add Tenant</h3>
+    <p class="modal-subtitle">A tenant is a paying customer — the condo corporation or management company. Its subdomain is how the resident-facing page resolves which tenant a URL belongs to (e.g. "dueast" for dueast.regentparking.ca).</p>
+    <div class="alert alert-error hidden" id="tenant-form-error"></div>
+    <form id="tenant-form" novalidate>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Tenant Name *</label>
+          <input type="text" id="t-name" class="form-control" placeholder="e.g. DuEast" required maxlength="80" />
+        </div>
+        <div class="form-group">
+          <label>Subdomain *</label>
+          <input type="text" id="t-subdomain" class="form-control" placeholder="e.g. dueast" required maxlength="40"
+            pattern="[a-z0-9-]+" title="Lowercase letters, numbers, and hyphens only" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Contact Text (optional)</label>
+        <input type="text" id="t-contact" class="form-control" placeholder="e.g. Contact Property Management at ..." maxlength="200" />
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('tenant-modal')">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="tenant-submit-btn">Add Tenant</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ═══════════════════ Add Building Modal ═══════════════════ -->
+<div class="modal-overlay" id="address-modal">
+  <div class="modal-box modal-lg">
+    <h3>Add Building</h3>
+    <p class="modal-subtitle" id="address-modal-subtitle">Adding a building to this tenant.</p>
+    <div class="alert alert-error hidden" id="address-form-error"></div>
+    <form id="address-form" novalidate>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Building Name *</label>
+          <input type="text" id="a-name" class="form-control" placeholder="e.g. West Tower — 225 Sumach Street" required maxlength="120" />
+        </div>
+        <div class="form-group">
+          <label>Lot Code *</label>
+          <input type="text" id="a-lotcode" class="form-control" placeholder="e.g. 10002" required maxlength="20" />
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('address-modal')">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="address-submit-btn">Add Building</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ═══════════════════ Assign Staff Modal ═══════════════════ -->
+<div class="modal-overlay" id="staff-modal">
+  <div class="modal-box modal-lg">
+    <h3>Assign Staff</h3>
+    <p class="modal-subtitle">Staff accounts are still created manually in the Supabase dashboard (Authentication → Users). Paste that user's ID here to give them access to this tenant's Enforcement and Admin portals.</p>
+    <div class="alert alert-error hidden" id="staff-form-error"></div>
+    <form id="staff-form" novalidate>
+      <div class="form-group">
+        <label>Supabase User ID *</label>
+        <input type="text" id="s-userid" class="form-control" placeholder="e.g. 3fa85f64-5717-4562-b3fc-2c963f66afa6" required />
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('staff-modal')">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="staff-submit-btn">Assign</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ═══════════════════ Remove Staff Confirm ═══════════════════ -->
+<div class="modal-overlay" id="staff-remove-modal">
+  <div class="modal-box">
+    <h3>Remove Staff Access?</h3>
+    <p id="staff-remove-body">Are you sure?</p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('staff-remove-modal')">Cancel</button>
+      <button class="btn btn-danger" id="confirm-staff-remove-btn">Remove</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-config.js"></script>
+<script src="js/app.js"></script>
+<script>
+// ── State ────────────────────────────────────────────────────────────────────
+let allTenants        = [];
+let currentTenant      = null;
+let currentTenantStaff = [];
+let staffRemoveTargetId = null;
+
+// ── Page init (async) ────────────────────────────────────────────────────────
+(async () => {
+  const user = await requireAuth('platform-admin.html');
+  if (!user) return;
+
+  document.getElementById('user-badge').textContent  = user.name;
+  document.getElementById('mobile-user').textContent = 'Signed in as ' + user.name;
+
+  function doLogout() { logoutUser().then(() => { window.location.href = 'login.html'; }); }
+  document.getElementById('logout-btn').addEventListener('click', doLogout);
+  document.getElementById('mobile-logout').addEventListener('click', doLogout);
+  document.getElementById('hamburger').addEventListener('click', () =>
+    document.getElementById('mobile-nav').classList.toggle('open'));
+
+  const admin = await isPlatformAdmin();
+  if (!admin) {
+    document.getElementById('not-authorized').classList.remove('hidden');
+    return;
+  }
+  document.getElementById('platform-content').classList.remove('hidden');
+
+  await loadTenants();
+})();
+
+// ── Tenants ──────────────────────────────────────────────────────────────────
+async function loadTenants() {
+  allTenants = await getTenants();
+  const tbody = document.getElementById('tenants-tbody');
+
+  if (allTenants.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" class="empty-row">No tenants yet. Click "+ Add Tenant" to create one.</td></tr>';
+    return;
+  }
+
+  // Address counts, fetched once per render.
+  const counts = await Promise.all(allTenants.map(t => getAddressesByTenantId(t.id)));
+
+  tbody.innerHTML = allTenants.map((t, i) =>
+    '<tr>' +
+      '<td>' + escapeHtml(t.name) + '</td>' +
+      '<td><code>' + escapeHtml(t.subdomain) + '</code></td>' +
+      '<td><span class="status-badge ' + (t.status === 'active' ? 'status-active' : 'status-expired') + '">' +
+        escapeHtml(t.status) + '</span></td>' +
+      '<td>' + counts[i].length + '</td>' +
+      '<td class="controls-cell"><button class="btn btn-secondary btn-sm" onclick="selectTenant(\'' + t.id + '\')">Manage</button></td>' +
+    '</tr>'
+  ).join('');
+}
+
+async function selectTenant(tenantId) {
+  currentTenant = allTenants.find(t => t.id === tenantId);
+  if (!currentTenant) return;
+
+  document.getElementById('tenant-detail').classList.remove('hidden');
+  document.getElementById('detail-title').textContent = currentTenant.name;
+  document.getElementById('address-modal-subtitle').textContent =
+    'Adding a building to ' + currentTenant.name + '.';
+
+  await Promise.all([loadAddresses(), loadStaff(), loadUsage()]);
+  document.getElementById('tenant-detail').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+async function loadUsage() {
+  const stats = await getTenantUsageStats(currentTenant.id);
+  const el = document.getElementById('usage-stats');
+  if (!stats) { el.innerHTML = ''; return; }
+  el.innerHTML =
+    '<div class="stat-card"><div class="stat-value">' + stats.registrationsThisMonth + '</div><div class="stat-label">Registrations this month</div></div>' +
+    '<div class="stat-card"><div class="stat-value">' + stats.activeUnits + '</div><div class="stat-label">Units with a code</div></div>' +
+    '<div class="stat-card"><div class="stat-value">' + stats.addressCount + '</div><div class="stat-label">Buildings</div></div>';
+}
+
+async function loadAddresses() {
+  const addrs = await getAddressesByTenantId(currentTenant.id);
+  const tbody = document.getElementById('addresses-tbody');
+  tbody.innerHTML = addrs.length === 0
+    ? '<tr><td colspan="2" class="empty-row">No buildings yet.</td></tr>'
+    : addrs.map(a => '<tr><td>' + escapeHtml(a.name) + '</td><td><code>' + escapeHtml(a.lot_code) + '</code></td></tr>').join('');
+}
+
+async function loadStaff() {
+  currentTenantStaff = await getTenantStaff(currentTenant.id);
+  const tbody = document.getElementById('staff-tbody');
+  tbody.innerHTML = currentTenantStaff.length === 0
+    ? '<tr><td colspan="3" class="empty-row">No staff assigned yet.</td></tr>'
+    : currentTenantStaff.map(s =>
+        '<tr>' +
+          '<td>' + escapeHtml(s.email) + '</td>' +
+          '<td class="date-cell">' + formatDateTime(s.created_at) + '</td>' +
+          '<td class="controls-cell"><button class="btn btn-danger btn-sm" onclick="confirmRemoveStaff(\'' + s.staff_access_id + '\',\'' + escapeHtml(s.email) + '\')" title="Remove">🗑</button></td>' +
+        '</tr>'
+      ).join('');
+}
+
+function confirmRemoveStaff(staffAccessId, email) {
+  staffRemoveTargetId = staffAccessId;
+  document.getElementById('staff-remove-body').innerHTML =
+    'Remove <strong>' + escapeHtml(email) + '</strong>\'s access to ' + escapeHtml(currentTenant.name) + '?';
+  document.getElementById('staff-remove-modal').classList.add('open');
+}
+
+document.getElementById('confirm-staff-remove-btn').addEventListener('click', async () => {
+  if (!staffRemoveTargetId) return;
+  await removeStaffAccess(staffRemoveTargetId);
+  closeModal('staff-remove-modal');
+  showAlert('Staff access removed.');
+  await loadStaff();
+});
+
+// ── Add Tenant ───────────────────────────────────────────────────────────────
+document.getElementById('add-tenant-btn').addEventListener('click', () => {
+  document.getElementById('tenant-form').reset();
+  document.getElementById('tenant-form-error').classList.add('hidden');
+  document.getElementById('tenant-modal').classList.add('open');
+});
+
+document.getElementById('tenant-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const name      = document.getElementById('t-name').value.trim();
+  const subdomain = document.getElementById('t-subdomain').value.trim().toLowerCase();
+  const contact   = document.getElementById('t-contact').value.trim();
+  const errEl     = document.getElementById('tenant-form-error');
+  const btn       = document.getElementById('tenant-submit-btn');
+
+  if (!name || !subdomain) return;
+  btn.disabled = true;
+  try {
+    await createTenant({ name, subdomain, contact_text: contact || null });
+    closeModal('tenant-modal');
+    showAlert('Tenant "' + name + '" created.');
+    await loadTenants();
+  } catch (err) {
+    errEl.textContent = err.message && err.message.includes('duplicate')
+      ? 'That subdomain is already in use.' : (err.message || 'Could not create tenant.');
+    errEl.classList.remove('hidden');
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+// ── Add Address ──────────────────────────────────────────────────────────────
+document.getElementById('add-address-btn').addEventListener('click', () => {
+  document.getElementById('address-form').reset();
+  document.getElementById('address-form-error').classList.add('hidden');
+  document.getElementById('address-modal').classList.add('open');
+});
+
+document.getElementById('address-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const name    = document.getElementById('a-name').value.trim();
+  const lotCode = document.getElementById('a-lotcode').value.trim();
+  const errEl   = document.getElementById('address-form-error');
+  const btn     = document.getElementById('address-submit-btn');
+
+  if (!name || !lotCode || !currentTenant) return;
+  btn.disabled = true;
+  try {
+    await createAddress({ tenant_id: currentTenant.id, name, lot_code: lotCode });
+    closeModal('address-modal');
+    showAlert('Building added.');
+    await loadAddresses();
+    await loadTenants();
+  } catch (err) {
+    errEl.textContent = err.message && err.message.includes('duplicate')
+      ? 'That lot code is already in use.' : (err.message || 'Could not add building.');
+    errEl.classList.remove('hidden');
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+// ── Assign Staff ─────────────────────────────────────────────────────────────
+document.getElementById('add-staff-btn').addEventListener('click', () => {
+  document.getElementById('staff-form').reset();
+  document.getElementById('staff-form-error').classList.add('hidden');
+  document.getElementById('staff-modal').classList.add('open');
+});
+
+document.getElementById('staff-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const userId = document.getElementById('s-userid').value.trim();
+  const errEl   = document.getElementById('staff-form-error');
+  const btn     = document.getElementById('staff-submit-btn');
+
+  if (!userId || !currentTenant) return;
+  btn.disabled = true;
+  try {
+    await assignStaffToTenant(userId, currentTenant.id);
+    closeModal('staff-modal');
+    showAlert('Staff assigned.');
+    await loadStaff();
+  } catch (err) {
+    errEl.textContent = err.message && err.message.includes('duplicate')
+      ? 'That user already has access to this tenant.'
+      : err.message && err.message.includes('foreign key')
+      ? 'No Supabase user with that ID exists.'
+      : (err.message || 'Could not assign staff.');
+    errEl.classList.remove('hidden');
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+// ── Modal helpers ─────────────────────────────────────────────────────────────
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+['tenant-modal','address-modal','staff-modal','staff-remove-modal'].forEach(id => {
+  document.getElementById(id).addEventListener('click', function(e) {
+    if (e.target === this) closeModal(id);
+  });
+});
+</script>
+</body>
+</html>

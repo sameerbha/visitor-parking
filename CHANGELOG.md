@@ -4,6 +4,64 @@ All changes to this project are documented here in reverse chronological order.
 
 ---
 
+## [2.2.1] — 2026-08-05
+
+### Domain correction: regentparking.ca, not .net
+
+The registered domain is `regentparking.ca`. Updated `index.html`'s hostname-based tenant resolution (`resolveTenantSubdomain()`) and related comments/docs accordingly. Earlier changelog entries in this file referencing `.net` reflect what was true when written and are left as historical record.
+
+**Files changed:** `index.html`, `patch-multi-tenant-schema.sql`, `platform-admin.html`, `README.md`, `CHANGELOG.md`
+
+---
+
+## [2.2.0] — 2026-08-05
+
+### Configurable per-tenant pass limits
+
+The monthly-passes-per-unit (10) and days-per-plate (7) limits were hardcoded across every tenant. They're now per-tenant settings.
+
+- **New `⚙️ Settings` tab in Admin** — any staff member of a tenant can view and change their own account's `monthly_pass_limit` and `plate_day_limit`. Applies across every building under that tenant, not per-building. Bounded server-side (1–500 and 1–31 respectively) so a typo can't accidentally disable registration.
+- **`get_monthly_pass_stats()` and `can_register_visitor()`** now read the calling address's tenant's configured limits instead of hardcoded values, and the "limit reached" messages interpolate the tenant's actual numbers instead of always saying "10" or "7."
+- **`index.html`'s pass-usage bars** now render against the tenant's actual limit (via new `monthlyLimit`/`plateLimit` fields on the stats response) instead of assuming 10/7.
+- **New RPC `update_tenant_limits`** is the only way to change these — checks tenant membership and validates ranges before writing.
+- Existing tenants default to 10/7 (the original fixed values) until they change it — `patch-tenant-limits.sql` backfills this with zero behavior change on existing installs.
+
+**Files changed:** `supabase-schema.sql`, `patch-tenant-limits.sql` (new), `js/app.js`, `index.html`, `admin.html`, `tests/regression-static.sh`, `tests/regression-functional.mjs`, `README.md`, `CHANGELOG.md`
+
+---
+
+## [2.1.0] — 2026-08-05
+
+### Rebrand: Regent Parking
+
+The product now has a public name — "Regent Parking" — consistent across every tenant, not white-labeled per building. Updated page titles and header branding on `index.html`, `portal.html`, `enforcement.html`, `admin.html`, `platform-admin.html`, `login.html`, `change-password.html`, and `manifest.webmanifest`. The resident registration page now shows "Regent Parking" as the product name with "Visitor Registration" as a tagline, followed by the existing dynamic building line ("Registering at 225 Sumach Street") — the tenant's own building context is unchanged, it now just sits under the product's brand instead of a generic "Visitor Parking" label.
+
+A separate marketing site for regentparking.net (the bare domain, no subdomain) is being built as its own deploy — see `regent-parking-marketing/` — and is intentionally decoupled from this app; nothing about how tenants or residents use this app changes.
+
+**Files changed:** `index.html`, `portal.html`, `enforcement.html`, `admin.html`, `platform-admin.html`, `login.html`, `change-password.html`, `manifest.webmanifest`, `css/style.css`, `CHANGELOG.md`, `README.md`
+
+---
+
+## [2.0.0] — 2026-08-05
+
+### Multi-tenant foundation: tenants, tenant-scoped staff access, Platform Admin portal
+
+DuEast's owner is planning to sell this app to other condo buildings under a new brand (Regent Parking), with each customer on its own subdomain (e.g. `dueast.regentparking.net`). This release makes the single-tenant app safe to run for more than one unrelated customer on the same Supabase project — the previous architecture had no boundary preventing one building's staff from seeing another's residents' plates.
+
+- **New `tenants` table**, sitting above `addresses`. A tenant is the paying customer (a condo corporation or management company); a tenant can own multiple addresses (e.g. DuEast's two towers). DuEast becomes tenant #1 via backfill.
+- **New `staff_access` table** maps a staff login to the tenant(s) they belong to. **New `platform_admins` table** is a simple allow-list for cross-tenant management — seeded manually via the SQL Editor, same as the very first staff account ever was.
+- **RLS rewrite:** `addresses`, `visitor_registrations`, `exemptions`, and `unit_codes` policies for the `authenticated` role now check tenant membership (`has_tenant_access()` / `is_tenant_member()`) instead of "any logged-in staff sees everything." The anon-facing resident flow is untouched — those policies were never tenant-restricted.
+- **New `platform-admin.html`:** create tenants, add buildings under a tenant, assign staff (by Supabase user ID — account creation stays manual in the Supabase dashboard for now), and view basic per-tenant usage (registrations this month, active units, building count). Gated by `is_platform_admin()`.
+- **Hostname-based tenant resolution** on `index.html`: resolves the tenant from the URL's hostname (`dueastparking.netlify.app` mapped explicitly; `<subdomain>.regentparking.net` resolved from the subdomain) instead of always defaulting to "the first address in the whole system," which was a latent bug once more than one address could exist. `?lot=` still works as a manual override.
+- **Graceful empty state:** a staff login with no tenant assigned now sees a clear "contact your administrator" message in Enforcement/Admin instead of silently empty tables.
+- **Two-step migration** (`patch-multi-tenant-schema.sql` then `patch-multi-tenant-cutover.sql`) so existing staff logins are backfilled into `staff_access` before tenant-scoped RLS is actually turned on — additive first, enforcement second, to avoid locking anyone out mid-migration.
+- **Known test gap:** the functional regression script runs entirely as the anon role and can't exercise the new tenant-scoped staff policies. Verifying tenant isolation after the cutover requires a manual check — log in as an existing staff account and confirm the expected data still shows.
+- **Deliberately not built yet:** self-service tenant signup, automated billing, and any permission tier between "platform admin" and "any staff member of a tenant." Both are reasonable additions on top of this foundation later, not blockers today.
+
+**Files changed:** `supabase-schema.sql`, `patch-multi-tenant-schema.sql` (new), `patch-multi-tenant-cutover.sql` (new), `platform-admin.html` (new), `js/app.js`, `index.html`, `enforcement.html`, `admin.html`, `css/style.css`, `tests/regression-static.sh`, `tests/regression-functional.mjs`, `README.md`, `CHANGELOG.md`
+
+---
+
 ## [1.10.1] — 2026-08-04
 
 ### Bug fix: extending a registration didn't move the pass counters

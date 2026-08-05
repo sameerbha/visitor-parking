@@ -38,6 +38,21 @@ async function getAddressByLotCode(lotCode) {
   return data;
 }
 
+// Resident-facing tenant resolution: given a subdomain (e.g. 'dueast'),
+// return that tenant's addresses. Anon-readable — used before anyone logs
+// in, to figure out which building(s) a hostname belongs to.
+async function getTenantBySubdomain(subdomain) {
+  const { data, error } = await _sb.from('tenants').select('*').eq('subdomain', subdomain).single();
+  if (error) return null;
+  return data;
+}
+
+async function getAddressesByTenantId(tenantId) {
+  const { data, error } = await _sb.from('addresses').select('*').eq('tenant_id', tenantId).order('name');
+  if (error) { console.error('getAddressesByTenantId:', error); return []; }
+  return data;
+}
+
 // ─── Visitor Registrations ──────────────────────────────────────────────────
 
 async function getActiveVisitors(addressId) {
@@ -320,6 +335,75 @@ async function requireAuth(redirectBack) {
     return null;
   }
   return user;
+}
+
+// ─── Platform Admin (Regent Parking — cross-tenant management) ──────────────
+
+async function isPlatformAdmin() {
+  const { data, error } = await _sb.rpc('is_platform_admin');
+  if (error) return false;
+  return data === true;
+}
+
+async function getTenants() {
+  const { data, error } = await _sb.from('tenants').select('*').order('name');
+  if (error) { console.error('getTenants:', error); return []; }
+  return data;
+}
+
+async function getTenantById(tenantId) {
+  const { data, error } = await _sb.from('tenants').select('*').eq('id', tenantId).single();
+  if (error) { console.error('getTenantById:', error); return null; }
+  return data;
+}
+
+// Used by Admin's Settings tab (tenant-scoped, any staff member of the
+// tenant can call this — RLS/the RPC itself enforces that).
+async function updateTenantLimits(tenantId, monthlyPassLimit, plateDayLimit) {
+  const { data, error } = await _sb.rpc('update_tenant_limits', {
+    p_tenant_id: tenantId,
+    p_monthly_pass_limit: monthlyPassLimit,
+    p_plate_day_limit: plateDayLimit,
+  });
+  if (error) throw error;
+  return data;
+}
+
+async function createTenant(data) {
+  const { data: row, error } = await _sb.from('tenants').insert(data).select().single();
+  if (error) throw error;
+  return row;
+}
+
+async function createAddress(data) {
+  const { data: row, error } = await _sb.from('addresses').insert(data).select().single();
+  if (error) throw error;
+  return row;
+}
+
+async function getTenantStaff(tenantId) {
+  const { data, error } = await _sb.rpc('get_tenant_staff', { p_tenant_id: tenantId });
+  if (error) { console.error('getTenantStaff:', error); return []; }
+  return data;
+}
+
+async function assignStaffToTenant(userId, tenantId) {
+  const { data, error } = await _sb.from('staff_access')
+    .insert({ user_id: userId, tenant_id: tenantId }).select().single();
+  if (error) throw error;
+  return data;
+}
+
+async function removeStaffAccess(staffAccessId) {
+  const { error } = await _sb.from('staff_access').delete().eq('id', staffAccessId);
+  if (error) throw error;
+  return true;
+}
+
+async function getTenantUsageStats(tenantId) {
+  const { data, error } = await _sb.rpc('get_tenant_usage_stats', { p_tenant_id: tenantId });
+  if (error) { console.error('getTenantUsageStats:', error); return null; }
+  return data;
 }
 
 // ─── Utilities ───────────────────────────────────────────────────────────────

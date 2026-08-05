@@ -1,6 +1,6 @@
 {
-  "name": "Visitor Parking Registration",
-  "short_name": "Visitor Parking",
+  "name": "Regent Parking — Visitor Registration",
+  "short_name": "Regent Parking",
   "description": "Register a visitor vehicle for 24-hour parking.",
   "start_url": "./index.html",
   "scope": "./",

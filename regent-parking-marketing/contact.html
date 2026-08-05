@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contact — Regent Parking</title>
+  <meta name="description" content="Get in touch with Regent Parking to see a demo of visitor parking management for your condo building." />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<nav class="site-nav">
+  <div class="wrap">
+    <a href="index.html" class="nav-brand">Regent<span>Parking</span></a>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="pricing.html">Pricing</a>
+      <a href="contact.html" class="active">Contact</a>
+    </div>
+    <a href="contact.html" class="nav-cta">Request a Demo</a>
+  </div>
+</nav>
+
+<header class="hero" style="padding:64px 0 80px">
+  <div class="wrap">
+    <span class="hero-eyebrow">Contact</span>
+    <h1 style="font-size:2.3rem">Let's talk about your building.</h1>
+    <p class="lead">Tell us a bit about your property and we'll follow up to set up a demo.</p>
+  </div>
+</header>
+
+<section>
+  <div class="wrap contact-grid">
+    <div class="contact-info">
+      <h3>Reach out directly</h3>
+      <p>Prefer email or a call? Here's how to reach us.</p>
+
+      <div class="contact-detail">
+        <span class="label">Contact</span>
+        <span class="value">Sameer Bhaidani</span>
+      </div>
+      <div class="contact-detail">
+        <span class="label">Email</span>
+        <span class="value"><a href="mailto:sameer.bhaidani@gmail.com">sameer.bhaidani@gmail.com</a></span>
+      </div>
+      <div class="contact-detail">
+        <span class="label">Response time</span>
+        <span class="value">Within 1–2 business days</span>
+      </div>
+    </div>
+
+    <div class="contact-form">
+      <!--
+        Netlify Forms: no backend needed. Once this site is deployed on
+        Netlify, submissions to this form show up automatically under
+        Site → Forms in the Netlify dashboard, and can be forwarded to
+        email from there (Site settings → Forms → Form notifications).
+      -->
+      <form name="contact" method="POST" data-netlify="true" netlify-honeypot="bot-field">
+        <input type="hidden" name="form-name" value="contact" />
+        <p class="hidden" style="display:none">
+          <label>Don't fill this out: <input name="bot-field" /></label>
+        </p>
+
+        <div class="form-group">
+          <label for="name">Name *</label>
+          <input type="text" id="name" name="name" required />
+        </div>
+        <div class="form-group">
+          <label for="building">Building / Condo Corporation *</label>
+          <input type="text" id="building" name="building" required />
+        </div>
+        <div class="form-group">
+          <label for="email">Email *</label>
+          <input type="email" id="email" name="email" required />
+        </div>
+        <div class="form-group">
+          <label for="units">Approximate Number of Units</label>
+          <input type="text" id="units" name="units" placeholder="e.g. 180" />
+        </div>
+        <div class="form-group">
+          <label for="message">Message</label>
+          <textarea id="message" name="message" rows="4" placeholder="Tell us a bit about your current visitor parking process"></textarea>
+        </div>
+        <button type="submit" class="btn btn-gold" style="width:100%">Send</button>
+        <p class="form-note">We'll reply from sameer.bhaidani@gmail.com.</p>
+      </form>
+    </div>
+  </div>
+</section>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <span>© 2026 Regent Parking. All rights reserved.</span>
+    <span><a href="index.html">Home</a> · <a href="pricing.html">Pricing</a></span>
+  </div>
+</footer>
+
+</body>
+</html>

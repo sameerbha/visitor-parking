@@ -20,6 +20,15 @@
 //
 // Example:
 //   node tests/regression-functional.mjs 10001 W403 JVJJLG QATEST01
+//
+// NOTE on multi-tenant RLS (patch-multi-tenant-schema.sql / -cutover.sql):
+// every request this script makes runs as the anon role, which the tenant
+// scoping doesn't touch (residents were never tenant-restricted — only
+// staff logins are). This script can't verify tenant isolation for that
+// reason. Verifying that staff only see their own tenant's data — and that
+// a second tenant genuinely can't see it — needs a real logged-in check,
+// done manually: log in as an existing staff account after the cutover and
+// confirm Enforcement/Admin still show the expected building's data.
 
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -136,6 +145,11 @@ async function main() {
     'get_monthly_pass_stats reflects the new registration',
     stats.ok && stats.data?.totalPasses >= 1,
     JSON.stringify(stats.data)
+  );
+  report(
+    'get_monthly_pass_stats reports the tenant\'s configured limits',
+    stats.ok && Number.isInteger(stats.data?.monthlyLimit) && Number.isInteger(stats.data?.plateLimit),
+    `monthlyLimit=${stats.data?.monthlyLimit}, plateLimit=${stats.data?.plateLimit}`
   );
 
   // 6. check_plate_active — resubmitting the same plate should show it active
