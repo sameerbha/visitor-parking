@@ -14,10 +14,11 @@
     <a class="header-logo" href="portal.html">
       <span class="logo-icon">🅿️</span>
       <div class="logo-text">
-        <span class="logo-name">Regent Parking</span>
+        <span class="logo-name">Regent <span class="gold-accent">Parking</span></span>
         <span class="logo-sub">Visitor Enforcement Portal</span>
       </div>
     </a>
+    <span class="tenant-badge hidden" id="header-tenant-badge"></span>
     <nav class="header-nav desktop-nav">
       <a href="enforcement.html" class="nav-link active">Enforcement</a>
       <a href="admin.html"  class="nav-link">Admin</a>
@@ -204,6 +205,17 @@ let deleteTargetId   = null;
 let checkedIds       = new Set(); // patrol view — plates checked off this session
 let flaggedVehicles  = []; // patrol view — unregistered vehicles logged this session
 
+// ── Header tenant badge — shows which building the current selection is for
+function updateHeaderTenantBadge(address) {
+  const badge = document.getElementById('header-tenant-badge');
+  if (address && address.name) {
+    badge.textContent = address.name;
+    badge.classList.remove('hidden');
+  } else {
+    badge.classList.add('hidden');
+  }
+}
+
 // ── Page init (async) ────────────────────────────────────────────────────────
 (async () => {
   const user = await requireAuth('enforcement.html');
@@ -228,6 +240,7 @@ let flaggedVehicles  = []; // patrol view — unregistered vehicles logged this 
   if (addrs.length > 0) {
     currentAddressId = addrs[0].id;
     currentAddress   = addrs[0];
+    updateHeaderTenantBadge(currentAddress);
     loadCheckedFromStorage();
     loadFlaggedFromStorage();
     await loadVisitors();
@@ -240,6 +253,7 @@ let flaggedVehicles  = []; // patrol view — unregistered vehicles logged this 
   addrSelect.addEventListener('change', async () => {
     currentAddress   = await getAddressById(addrSelect.value);
     currentAddressId = currentAddress.id;
+    updateHeaderTenantBadge(currentAddress);
     document.getElementById('lookup-title').textContent = 'Plate Lookup — ' + currentAddress.name;
     document.getElementById('check-result').innerHTML = '';
     loadCheckedFromStorage();

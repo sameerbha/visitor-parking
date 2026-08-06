@@ -14,10 +14,11 @@
     <a class="header-logo" href="portal.html">
       <span class="logo-icon">🅿️</span>
       <div class="logo-text">
-        <span class="logo-name">Regent Parking</span>
+        <span class="logo-name">Regent <span class="gold-accent">Parking</span></span>
         <span class="logo-sub">Exemptions Management Portal</span>
       </div>
     </a>
+    <span class="tenant-badge hidden" id="header-tenant-badge"></span>
     <nav class="header-nav desktop-nav">
       <a href="enforcement.html" class="nav-link">Enforcement</a>
       <a href="admin.html"  class="nav-link active">Admin</a>
@@ -300,6 +301,17 @@ let ucDeleteTargetId  = null;
 let activeTab         = 'exemptions';
 let _currentUser      = null;
 
+// ── Header tenant badge — shows which building the current selection is for
+function updateHeaderTenantBadge(address) {
+  const badge = document.getElementById('header-tenant-badge');
+  if (address && address.name) {
+    badge.textContent = address.name;
+    badge.classList.remove('hidden');
+  } else {
+    badge.classList.add('hidden');
+  }
+}
+
 // ── Page init (async) ────────────────────────────────────────────────────────
 (async () => {
   const user = await requireAuth('admin.html');
@@ -325,6 +337,7 @@ let _currentUser      = null;
   if (addrs.length > 0) {
     currentAddress   = addrs[0];
     currentAddressId = addrs[0].id;
+    updateHeaderTenantBadge(currentAddress);
     await loadAll();
   } else {
     document.querySelector('.portal-toolbar').insertAdjacentHTML('beforebegin',
@@ -335,6 +348,7 @@ let _currentUser      = null;
   addrSelect.addEventListener('change', async () => {
     currentAddress   = await getAddressById(addrSelect.value);
     currentAddressId = currentAddress.id;
+    updateHeaderTenantBadge(currentAddress);
     await loadAll();
   });
 })();

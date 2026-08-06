@@ -21,8 +21,9 @@
   </div>
   <div class="resident-header">
     <div class="resident-logo">🅿️</div>
-    <h1>Regent Parking</h1>
+    <h1>Regent <span class="gold-accent">Parking</span></h1>
     <p class="resident-tagline">Visitor Registration</p>
+    <span class="tenant-badge hidden" id="tenant-badge"></span>
     <p class="resident-subtitle" id="building-subtitle">Register your guest's vehicle for 24-hour parking</p>
   </div>
 
@@ -221,8 +222,9 @@ function resolveTenantSubdomain() {
 
     if (currentAddress) {
       document.getElementById('address_id').value = currentAddress.id;
-      document.getElementById('building-subtitle').textContent =
-        'Registering at ' + currentAddress.name;
+      const badge = document.getElementById('tenant-badge');
+      badge.textContent = currentAddress.name;
+      badge.classList.remove('hidden');
     }
   } catch (initErr) {
     console.error('[index.html] Init error:', initErr);

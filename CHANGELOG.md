@@ -4,6 +4,20 @@ All changes to this project are documented here in reverse chronological order.
 
 ---
 
+## [2.2.2] — 2026-08-06
+
+### Gold brand accent + tenant badge across the app
+
+Connects the app's own UI to the marketing site's navy/gold identity without a full reskin of the resident registration or staff pages, which stay task-focused rather than "landing page" styled.
+
+- **Wordmark:** every "Regent Parking" logo/heading across `index.html`, `portal.html`, `login.html`, `change-password.html`, `enforcement.html`, `admin.html`, and `platform-admin.html` now renders "Parking" in the marketing site's gold (`--gold`/`--gold-light`, matching `regent-parking-marketing/css/style.css` exactly, not the separate navy/gold mockup that was proposed).
+- **Tenant badge:** a small pill next to the wordmark shows which building the current session is for — on `index.html` (the resident registration page) and `enforcement.html`/`admin.html` (staff, next to the header logo), reusing each page's existing `currentAddress` context. Not added to `platform-admin.html`, `portal.html`, `login.html`, or `change-password.html`, since none of those pages have a single-building context to show.
+- New CSS: `--gold`/`--gold-light` variables, `.gold-accent`/`.gold-accent-dark` (light gold for dark backgrounds, darker gold for white backgrounds), `.tenant-badge`.
+
+**Files changed:** `css/style.css`, `index.html`, `enforcement.html`, `admin.html`, `portal.html`, `login.html`, `change-password.html`, `platform-admin.html`, `CHANGELOG.md`
+
+---
+
 ## [2.2.1] — 2026-08-05
 
 ### Domain correction: regentparking.ca, not .net

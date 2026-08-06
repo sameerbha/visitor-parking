@@ -14,6 +14,13 @@
   --amber:     #e07800;
   --blue:      #0d6efd;
   --blue-dark: #0a58ca;
+  /* Brand accent — matches the Regent Parking marketing site's gold, so the
+     product and the pitch read as the same brand without reskinning every
+     screen. --gold-light is for gold text on navy/dark backgrounds;
+     --gold is for gold text on white/light backgrounds (needs the extra
+     contrast). */
+  --gold:       #B8912F;
+  --gold-light: #D4AF5A;
   --bg:        #f0f2f5;
   --surface:   #ffffff;
   --border:    #dee2e6;
@@ -24,6 +31,16 @@
   --shadow-lg: 0 4px 20px rgba(0,0,0,.18);
   --tr:        150ms ease;
 }
+
+/* ── Brand wordmark accent + tenant badge ──────────────────────────
+   Used to split "Regent" / "Parking" across every header so the product
+   carries the same gold accent as the marketing site, without redoing
+   each page's hero/background. */
+.gold-accent{color:var(--gold-light)}
+.gold-accent-dark{color:var(--gold)}
+.tenant-badge{display:inline-flex;align-items:center;background:rgba(255,255,255,.12);border:1px solid rgba(212,175,90,.5);color:#fff;font-size:.72rem;font-weight:600;padding:4px 12px;border-radius:20px;letter-spacing:.3px;white-space:nowrap}
+.resident-header .tenant-badge{margin-bottom:10px}
+.header-inner .tenant-badge{flex-shrink:0}
 
 html{font-size:16px;scroll-behavior:smooth}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.5}
