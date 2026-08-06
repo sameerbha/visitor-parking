@@ -4,6 +4,16 @@ All changes to this project are documented here in reverse chronological order.
 
 ---
 
+## [2.2.4] — 2026-08-06
+
+### Pricing update: $139/month, billed annually
+
+Changed the marketing site's pricing from $109/month (billed monthly) to $139/month, billed as a single annual payment of $1,668. Updated the price card, meta descriptions, and FAQ on `pricing.html`, and the pricing stat on `index.html`. Added a new FAQ item on `pricing.html` clarifying there's no month-to-month option at this time.
+
+**Files changed:** `regent-parking-marketing/pricing.html`, `regent-parking-marketing/index.html`, `CHANGELOG.md`
+
+---
+
 ## [2.2.3] — 2026-08-06
 
 ### regentparking.ca/dueast vanity path
