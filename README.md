@@ -220,6 +220,8 @@ As of 2026-08-05 this app supports more than one customer ("tenant") sharing the
 
 **What's intentionally not built yet:** self-service tenant signup, automated billing, and any permission tier between "platform admin" and "any staff member of a tenant can do everything that tenant's staff can do." All straightforward to add later on top of this foundation, not blockers to running a second tenant today.
 
+**`regentparking.ca/<tenant>` vanity paths:** `regent-parking-marketing/_redirects` 301-redirects `regentparking.ca/<tenant>` to `https://<tenant>.regentparking.ca`, for anyone who types the bare domain plus a building name instead of the real subdomain. This is a separate, manual step from creating a tenant — Platform Admin only writes to the database, so add a line to `_redirects` and push/redeploy the marketing site whenever you add a new tenant that should have one.
+
 ## Row Level Security Note
 
 The `visitor_registrations` insert policy should allow both `anon` and `authenticated` roles. This matters because a browser may already have a cached Supabase session when loading the public registration page.

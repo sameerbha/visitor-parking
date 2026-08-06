@@ -4,6 +4,16 @@ All changes to this project are documented here in reverse chronological order.
 
 ---
 
+## [2.2.3] — 2026-08-06
+
+### regentparking.ca/dueast vanity path
+
+Added `regent-parking-marketing/_redirects` with a 301 redirect from `regentparking.ca/dueast` to `https://dueast.regentparking.ca`, so someone who types the bare domain plus a building name still lands in the right place. Deliberately a redirect (URL bar changes), not a proxy — keeps `index.html`'s hostname-based tenant resolution as the only place "which tenant is this" is decided, rather than serving the same content from two URLs. Adding a tenant in Platform Admin does not update this file automatically; add one line per tenant here and redeploy the marketing site separately.
+
+**Files changed:** `regent-parking-marketing/_redirects` (new), `README.md`, `CHANGELOG.md`
+
+---
+
 ## [2.2.2] — 2026-08-06
 
 ### Gold brand accent + tenant badge across the app

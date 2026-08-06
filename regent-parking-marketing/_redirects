@@ -1,0 +1,18 @@
+# Netlify redirect rules for regentparking.ca (this marketing site's own
+# apex domain — a separate Netlify project from the app itself).
+#
+# These are 301 redirects, not proxies: a visitor going to
+# regentparking.ca/<tenant> is sent to the real tenant subdomain
+# (<tenant>.regentparking.ca) and the URL bar changes. That keeps
+# index.html's resolveTenantSubdomain() as the single source of truth for
+# who a visit belongs to, instead of two different URLs quietly serving
+# the same content (which risks going stale if one side changes).
+#
+# Add one line per tenant when you create a new one in Platform Admin.
+# This file lives in the marketing site's own project, so a new line here
+# needs its own git push/redeploy of regent-parking-marketing/ — adding
+# the tenant in Platform Admin and adding the custom domain in Netlify
+# don't touch this file automatically.
+
+/dueast    https://dueast.regentparking.ca/         301
+/dueast/*  https://dueast.regentparking.ca/:splat   301
