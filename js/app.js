@@ -80,13 +80,19 @@ async function getActiveVisitors(addressId) {
 }
 
 async function addVisitorRegistration(data) {
-  const { data: row, error } = await _sb
+  // Deliberately no .select() here. Chaining .select() asks PostgREST to
+  // hand back the inserted row, which also requires that row to pass a
+  // SELECT policy — but anon has no SELECT policy on this table (only
+  // authenticated staff do, scoped to their tenant). Requesting the row
+  // back would make an otherwise-valid anon insert fail with the exact
+  // same "violates row-level security policy" error as a genuinely bad
+  // insert, which is what was happening here. Nothing calling this
+  // function actually uses the returned row, so there's no reason to ask
+  // for it back.
+  const { error } = await _sb
     .from('visitor_registrations')
-    .insert(data)
-    .select()
-    .single();
+    .insert(data);
   if (error) throw error;
-  return row;
 }
 
 async function deleteVisitorRegistration(id) {

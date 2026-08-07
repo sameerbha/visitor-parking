@@ -117,10 +117,15 @@ async function main() {
   });
   report('can_register_visitor responds', canReg.ok, JSON.stringify(canReg.data));
 
-  // 4. Insert the registration (mirrors addVisitorRegistration)
+  // 4. Insert the registration (mirrors addVisitorRegistration).
+  // Deliberately Prefer: return=minimal, matching app.js — asking for the
+  // row back (return=representation) requires it to also pass a SELECT
+  // policy, which anon doesn't have on this table, and fails with the same
+  // RLS error as a genuinely bad insert. A successful minimal insert
+  // responds 201 with an empty body.
   const insertRes = await fetch(`${SUPABASE_URL}/rest/v1/visitor_registrations`, {
     method: 'POST',
-    headers: { ...headers, Prefer: 'return=representation' },
+    headers: { ...headers, Prefer: 'return=minimal' },
     body: JSON.stringify({
       address_id: addressId,
       lot_code: lotCode,
@@ -128,11 +133,11 @@ async function main() {
       visitor_plate: testPlate,
     }),
   });
-  const inserted = await insertRes.json().catch(() => null);
+  const insertErrBody = insertRes.ok ? null : await insertRes.json().catch(() => null);
   const registrationOk = report(
     'Registration inserted',
-    insertRes.ok && Array.isArray(inserted) && !!inserted[0]?.id,
-    insertRes.ok ? `expires ${inserted?.[0]?.expires_at}` : JSON.stringify(inserted)
+    insertRes.ok && insertRes.status === 201,
+    insertRes.ok ? `status ${insertRes.status}` : JSON.stringify(insertErrBody)
   );
   if (!registrationOk) return finish();
 

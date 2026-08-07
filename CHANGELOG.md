@@ -2,6 +2,18 @@
 
 All changes to this project are documented here in reverse chronological order.
 
+## [2.2.6] — 2026-08-06
+
+### Actual fix for the long-standing 42501 registration error
+
+Found the real cause of the `new row violates row-level security policy for table "visitor_registrations"` error — first seen months ago during functional testing and never actually resolved, then hit again by a live DuEast resident on `dueast.regentparking.ca` even in a fresh incognito session (which ruled out both the stale-session and stale-cache fixes from [2.2.5] as the real cause).
+
+`addVisitorRegistration()` in `js/app.js` chained `.select().single()` after the insert, asking PostgREST to hand back the created row. Postgres RLS checks a `RETURNING` row against the table's **SELECT** policies too, not just the INSERT policy's `WITH CHECK`. `visitor_registrations` has no SELECT policy for `anon` — only `{authenticated}`, scoped to tenant staff — so the insert itself succeeded but the implicit read-back failed, and Postgres reports that with the identical "violates row-level security policy" text as a genuinely-rejected insert. Confirmed via `pg_policies` that the INSERT policy itself was correct the whole time (`{anon,authenticated}`, `WITH CHECK (true)`, no restrictive policies) — this was never a policy misconfiguration.
+
+Fix: dropped `.select()` from the insert — nothing calling `addVisitorRegistration()` used the returned row. `tests/regression-functional.mjs`'s raw insert check had the identical `Prefer: return=representation` pattern and is now `return=minimal`, checking for a 201 status instead of a returned row.
+
+**Files changed:** `js/app.js`, `tests/regression-functional.mjs`, `CHANGELOG.md`
+
 ---
 
 ## [2.2.5] — 2026-08-06
