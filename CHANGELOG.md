@@ -12,9 +12,11 @@ A resident hit `42501: new row violates row-level security policy for table "vis
 
 `index.html` now sets `window.SB_ANON_ONLY = true` before `app.js` loads, which creates its Supabase client with `persistSession: false` — it never reads or writes the shared session, so it always submits as `anon` regardless of any staff login sitting in that browser. Staff-facing pages are unaffected and keep their normal persisted login.
 
-This is a defense-in-depth fix, not a replacement for confirming the live `visitor_registrations` INSERT policy actually grants both `anon` and `authenticated` (it should, per `supabase-schema.sql` / `patch-multi-tenant-cutover.sql` — worth verifying directly against the live database with `SELECT policyname, roles, cmd, with_check FROM pg_policies WHERE tablename = 'visitor_registrations' AND cmd = 'INSERT';`).
+This is a defense-in-depth fix, not a replacement for confirming the live `visitor_registrations` INSERT policy actually grants both `anon` and `authenticated` (it should, per `supabase-schema.sql` / `patch-multi-tenant-cutover.sql` — worth verifying directly against the live database with `SELECT policyname, roles, cmd, with_check FROM pg_policies WHERE tablename = 'visitor_registrations' AND cmd = 'INSERT';`). Confirmed live on 2026-08-06 — the policy already correctly grants `{anon,authenticated}` with `with_check = true`, which rules this out as the ongoing cause and points instead at the service worker issue below.
 
-**Files changed:** `js/app.js`, `index.html`, `CHANGELOG.md`
+**Also bumped `sw.js`'s `CACHE_VERSION` to `vp-register-v4`.** `js/app.js` and `css/style.css` are served stale-while-revalidate by the service worker — a returning visitor gets the cached copy immediately and the cache only refreshes in the background for their *next* visit. Without bumping the version, a resident who'd loaded the page before today could keep running old cached JS indefinitely, including whatever earlier fix actually resolved the original RLS error, and now this `SB_ANON_ONLY` change too. Bump `CACHE_VERSION` any time `app.js`, `style.css`, or `index.html` meaningfully change, so the `activate` handler evicts the old cache and forces a fresh fetch.
+
+**Files changed:** `js/app.js`, `index.html`, `sw.js`, `CHANGELOG.md`
 
 ---
 

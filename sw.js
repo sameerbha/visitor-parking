@@ -2,7 +2,7 @@
    Keeps the registration page and its static assets available offline.
    Network-only for cross-origin requests (e.g., Supabase, CDNs). */
 
-const CACHE_VERSION = 'vp-register-v3';
+const CACHE_VERSION = 'vp-register-v4';
 const PRECACHE_URLS = [
   './index.html',
   './css/style.css',
