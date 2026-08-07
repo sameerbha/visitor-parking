@@ -118,6 +118,15 @@
   </p>
 </div>
 
+<script>
+  // This page only ever registers visitors as an anonymous resident — it
+  // never has a login flow. Setting this before app.js creates the Supabase
+  // client means it never reads or writes a persisted session, so it can't
+  // pick up a staff login left in this browser's localStorage (which is
+  // shared across every page on this origin) and submit as `authenticated`
+  // instead of `anon`.
+  window.SB_ANON_ONLY = true;
+</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase-config.js"></script>
 <script src="js/app.js"></script>

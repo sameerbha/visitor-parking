@@ -4,6 +4,20 @@ All changes to this project are documented here in reverse chronological order.
 
 ---
 
+## [2.2.5] — 2026-08-06
+
+### Registration page can no longer inherit a staff session
+
+A resident hit `42501: new row violates row-level security policy for table "visitor_registrations"` registering a visitor on `dueast.regentparking.ca`. Root cause: `js/app.js`'s Supabase client persists its session in `localStorage`, which is shared across every page on the same origin — if the same browser/device had ever logged into `admin.html` or `enforcement.html` (a shared concierge desk device, for example), `index.html` would silently submit as `authenticated` instead of `anon`.
+
+`index.html` now sets `window.SB_ANON_ONLY = true` before `app.js` loads, which creates its Supabase client with `persistSession: false` — it never reads or writes the shared session, so it always submits as `anon` regardless of any staff login sitting in that browser. Staff-facing pages are unaffected and keep their normal persisted login.
+
+This is a defense-in-depth fix, not a replacement for confirming the live `visitor_registrations` INSERT policy actually grants both `anon` and `authenticated` (it should, per `supabase-schema.sql` / `patch-multi-tenant-cutover.sql` — worth verifying directly against the live database with `SELECT policyname, roles, cmd, with_check FROM pg_policies WHERE tablename = 'visitor_registrations' AND cmd = 'INSERT';`).
+
+**Files changed:** `js/app.js`, `index.html`, `CHANGELOG.md`
+
+---
+
 ## [2.2.4] — 2026-08-06
 
 ### Pricing update: $139/month, billed annually

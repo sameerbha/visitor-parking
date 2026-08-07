@@ -16,7 +16,16 @@ if (typeof supabase === 'undefined' || typeof SUPABASE_URL === 'undefined') {
   console.error('[app.js] Supabase CDN or supabase-config.js not loaded. Check script order in your HTML.');
 }
 
-const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Pages that only ever need to act as an anonymous visitor (index.html) can
+// set `window.SB_ANON_ONLY = true` before this script loads. That client
+// never reads or writes the persisted auth session, so it can't accidentally
+// inherit a staff login that happens to be sitting in the same browser's
+// localStorage (which is shared across every page on the same origin) and
+// send requests as `authenticated` instead of `anon`. Staff pages omit the
+// flag and keep the normal persisted session so login carries across pages.
+const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, window.SB_ANON_ONLY
+  ? { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } }
+  : {});
 
 // ─── Addresses ──────────────────────────────────────────────────────────────
 
