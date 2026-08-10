@@ -355,6 +355,16 @@ async function changePassword(userId, currentPassword, newPassword) {
   return { success: true };
 }
 
+// For accept-invite.html only. A freshly-invited user arrives with a
+// temporary session from the invite link's token, not a real password yet —
+// there's nothing to verify against, unlike changePassword() above.
+async function setInitialPassword(newPassword) {
+  if (newPassword.length < 6) return { success: false, error: 'Password must be at least 6 characters.' };
+  const { error } = await _sb.auth.updateUser({ password: newPassword });
+  if (error) return { success: false, error: error.message };
+  return { success: true };
+}
+
 async function requireAuth(redirectBack) {
   const user = await getCurrentUser();
   if (!user) {
@@ -415,11 +425,42 @@ async function getTenantStaff(tenantId) {
   return data;
 }
 
+// Manual fallback only — the Platform Admin UI now uses inviteStaffToTenant()
+// below instead. Kept in case a raw Supabase user ID is ever the only thing
+// on hand (e.g. from the Supabase dashboard directly) and the invite
+// function isn't available for some reason.
 async function assignStaffToTenant(userId, tenantId) {
   const { data, error } = await _sb.from('staff_access')
     .insert({ user_id: userId, tenant_id: tenantId }).select().single();
   if (error) throw error;
   return data;
+}
+
+// Invites a new staff login by email (or links an existing one) and grants
+// them access to a tenant, in one step — no Supabase dashboard needed. Calls
+// the invite-staff Netlify function, which holds the service_role key
+// server-side; this client-side function just packages the request.
+async function inviteStaffToTenant(email, tenantId) {
+  const { data: sessionData } = await _sb.auth.getSession();
+  const token = sessionData?.session?.access_token;
+  if (!token) throw new Error('Your session has expired — please refresh and sign in again.');
+
+  const res = await fetch('/api/invite-staff', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: 'Bearer ' + token,
+    },
+    body: JSON.stringify({ email, tenantId, origin: window.location.origin }),
+  });
+
+  let payload = null;
+  try { payload = await res.json(); } catch { /* non-JSON error page, fall through */ }
+
+  if (!res.ok) {
+    throw new Error(payload?.error || 'Could not invite that email (server error ' + res.status + ').');
+  }
+  return payload;
 }
 
 async function removeStaffAccess(staffAccessId) {
@@ -431,6 +472,15 @@ async function removeStaffAccess(staffAccessId) {
 async function getTenantUsageStats(tenantId) {
   const { data, error } = await _sb.rpc('get_tenant_usage_stats', { p_tenant_id: tenantId });
   if (error) { console.error('getTenantUsageStats:', error); return null; }
+  return data;
+}
+
+// Clears a trial/demo tenant's registrations and exemptions. Hard-gated
+// server-side to status='trial' tenants — throws if called on anything
+// else, regardless of who's calling it.
+async function resetTenantDemoData(tenantId) {
+  const { data, error } = await _sb.rpc('reset_tenant_demo_data', { p_tenant_id: tenantId });
+  if (error) throw error;
   return data;
 }
 

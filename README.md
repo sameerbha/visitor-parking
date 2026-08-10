@@ -220,13 +220,29 @@ As of 2026-08-05 this app supports more than one customer ("tenant") sharing the
 2. Follow the instructions at the bottom of that file to make yourself a platform admin and backfill every existing staff login into `staff_access` — this must happen before step 3, or existing staff will see empty screens once tenant scoping is enforced.
 3. Run [patch-multi-tenant-cutover.sql](/Users/sameerbhaidani/Documents/VIsitors%20Parking%20App/patch-multi-tenant-cutover.sql) — this is the step that actually enforces tenant scoping on `addresses`, `visitor_registrations`, `exemptions`, and `unit_codes`. Log in as an existing staff account immediately after and confirm you still see the expected data.
 
-**Platform Admin (`platform-admin.html`):** for managing tenants across the whole system — create a tenant, add buildings under it, assign staff (by Supabase user ID — account creation itself is still done manually in the Supabase dashboard), and view basic usage per tenant. Gated by the `platform_admins` allow-list table, checked via `is_platform_admin()`.
+**Platform Admin (`platform-admin.html`):** for managing tenants across the whole system — create a tenant, add buildings under it, invite staff by email (see [Inviting Staff](#inviting-staff)), reset a trial tenant's demo data, and view basic usage per tenant. Gated by the `platform_admins` allow-list table, checked via `is_platform_admin()`.
+
+## Inviting Staff
+
+Platform Admin's "Invite Staff" sends an actual email invite and links the account to a tenant in one step — nobody needs to open the Supabase dashboard to onboard a new tenant's staff. This is powered by a Netlify serverless function (`netlify/functions/invite-staff.mjs`) that holds the Supabase `service_role` key server-side (that key must never be exposed to the browser, which is why this can't be done from client-side code alone).
+
+**One-time setup**, done once by whoever owns the Netlify site (not needed again per tenant):
+
+1. In Netlify → Site configuration → Environment variables, add `SUPABASE_URL` (same value as `js/supabase-config.js`) and `SUPABASE_SERVICE_ROLE_KEY` (Supabase dashboard → Project Settings → API → `service_role` secret key — treat this like a master password, never commit it to git).
+2. Redeploy so the function picks up the new environment variables.
+3. In Supabase → Authentication → URL Configuration, add the site's invite-landing page to the Redirect URLs allow-list, e.g. `https://dueastparking.netlify.app/accept-invite.html` and `https://*.regentparking.ca/accept-invite.html` (a wildcard entry covers every current and future tenant subdomain at once — see [Wildcard Subdomains](#wildcard-subdomains-recommended)).
+
+After that, inviting staff is just: Platform Admin → a tenant → "+ Invite Staff" → enter their email. They get an email, click it, land on `accept-invite.html`, set a password, and are in.
 
 **Resident-facing tenant resolution:** `index.html` resolves which tenant a visit belongs to from the hostname (`dueastparking.netlify.app` is mapped explicitly; `<subdomain>.regentparking.ca` resolves from the subdomain itself), then defaults to that tenant's first address. The `?lot=` URL parameter still works as a manual override for a specific building, same as before.
 
 **What's intentionally not built yet:** self-service tenant signup, automated billing, and any permission tier between "platform admin" and "any staff member of a tenant can do everything that tenant's staff can do." All straightforward to add later on top of this foundation, not blockers to running a second tenant today.
 
 **`regentparking.ca/<tenant>` vanity paths:** `regent-parking-marketing/_redirects` 301-redirects `regentparking.ca/<tenant>` to `https://<tenant>.regentparking.ca`, for anyone who types the bare domain plus a building name instead of the real subdomain. This is a separate, manual step from creating a tenant — Platform Admin only writes to the database, so add a line to `_redirects` and push/redeploy the marketing site whenever you add a new tenant that should have one.
+
+## Wildcard Subdomains (Recommended)
+
+Without this, every new tenant needs its subdomain (`<tenant>.regentparking.ca`) added manually as a custom domain in Netlify before that tenant can be reached. Since `regentparking.ca`'s nameservers are already delegated to Netlify DNS, you can instead add `*.regentparking.ca` as a single domain alias on the app's Netlify site, once — after that, every tenant's subdomain resolves automatically the moment it's created in Platform Admin, with no further Netlify visits ever.
 
 ## Row Level Security Note
 

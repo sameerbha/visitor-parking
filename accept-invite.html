@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Set Your Password — Regent Parking</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<div class="login-page">
+  <div class="login-card">
+    <div class="login-logo">
+      <span class="logo-icon-large">🅿️</span>
+      <h1>Regent <span class="gold-accent-dark">Parking</span></h1>
+      <p>Welcome — set a password to finish setting up your account</p>
+    </div>
+
+    <div class="alert alert-error hidden" id="invite-error"></div>
+
+    <!-- Shown only once we've confirmed this is a real invite link -->
+    <form id="invite-form" class="hidden" novalidate>
+      <div class="form-group">
+        <label for="new_password">New Password</label>
+        <input id="new_password" type="password" class="form-control" required autocomplete="new-password" />
+        <small class="field-hint">Minimum 6 characters.</small>
+      </div>
+      <div class="form-group">
+        <label for="confirm_password">Confirm Password</label>
+        <input id="confirm_password" type="password" class="form-control" required autocomplete="new-password" />
+      </div>
+      <button type="submit" class="btn btn-primary btn-block btn-lg" id="submit-btn">Set Password &amp; Continue</button>
+    </form>
+
+    <div id="invite-checking" class="muted" style="text-align:center;padding:12px 0">Checking your invite link…</div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-config.js"></script>
+<script src="js/app.js"></script>
+<script>
+  const errEl      = document.getElementById('invite-error');
+  const form       = document.getElementById('invite-form');
+  const checkingEl = document.getElementById('invite-checking');
+  const submitBtn  = document.getElementById('submit-btn');
+
+  function showInviteError(msg) {
+    checkingEl.classList.add('hidden');
+    form.classList.add('hidden');
+    errEl.textContent = msg;
+    errEl.classList.remove('hidden');
+  }
+
+  // supabase-js automatically parses the invite link's token from the URL
+  // and establishes a temporary session on load (detectSessionInUrl is on
+  // by default) — we just need to wait for that to land before deciding
+  // whether this is a real invite or someone landed here with no token at
+  // all (e.g. a bookmarked link, or the link expired).
+  (async () => {
+    const { data: { session } } = await _sb.auth.getSession();
+    if (session) {
+      checkingEl.classList.add('hidden');
+      form.classList.remove('hidden');
+      return;
+    }
+    // Give onAuthStateChange a moment in case the session is still being
+    // established from the URL fragment.
+    _sb.auth.onAuthStateChange((event, session) => {
+      if (session) {
+        checkingEl.classList.add('hidden');
+        form.classList.remove('hidden');
+      }
+    });
+    setTimeout(async () => {
+      const { data: { session: retry } } = await _sb.auth.getSession();
+      if (!retry) {
+        showInviteError('This invite link is invalid or has expired. Ask whoever invited you to send a new one.');
+      }
+    }, 2500);
+  })();
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    errEl.classList.add('hidden');
+
+    const newPw   = document.getElementById('new_password').value;
+    const confirm = document.getElementById('confirm_password').value;
+
+    if (newPw !== confirm) {
+      errEl.textContent = 'Passwords do not match.';
+      errEl.classList.remove('hidden');
+      return;
+    }
+
+    submitBtn.textContent = 'Setting password…';
+    submitBtn.disabled = true;
+
+    try {
+      const result = await setInitialPassword(newPw);
+      if (!result.success) {
+        errEl.textContent = result.error;
+        errEl.classList.remove('hidden');
+        submitBtn.textContent = 'Set Password & Continue';
+        submitBtn.disabled = false;
+        return;
+      }
+      window.location.href = 'portal.html';
+    } catch (err) {
+      errEl.textContent = 'Something went wrong. Please try again.';
+      errEl.classList.remove('hidden');
+      submitBtn.textContent = 'Set Password & Continue';
+      submitBtn.disabled = false;
+    }
+  });
+</script>
+</body>
+</html>

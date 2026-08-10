@@ -135,5 +135,22 @@ check_contains admin.html "bulk-preview-tbody" "admin.html has the bulk preview 
 check_contains js/app.js "function bulkUpsertUnitCodes" "app.js defines bulkUpsertUnitCodes"
 
 echo
+echo "== Reset Demo Data markers present =="
+check_contains platform-admin.html "reset-demo-btn" "platform-admin.html has the Reset Demo Data button"
+check_contains platform-admin.html "trial" "platform-admin.html gates the reset button to trial tenants"
+check_contains js/app.js "function resetTenantDemoData" "app.js defines resetTenantDemoData"
+check_status patch-reset-demo-data.sql 200
+
+echo
+echo "== Invite Staff by Email markers present =="
+check_contains platform-admin.html "inviteStaffToTenant" "platform-admin.html invites staff by email"
+check_not_contains platform-admin.html "s-userid" "platform-admin.html no longer asks for a raw Supabase user ID"
+check_contains js/app.js "function inviteStaffToTenant" "app.js defines inviteStaffToTenant"
+check_contains js/app.js "function setInitialPassword" "app.js defines setInitialPassword"
+check_status accept-invite.html 200
+check_status netlify/functions/invite-staff.mjs 200
+check_status package.json 200
+
+echo
 echo "== Summary: $PASS passed, $FAIL failed =="
 [ "$FAIL" -eq 0 ]

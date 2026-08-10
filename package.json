@@ -1,0 +1,8 @@
+{
+  "name": "regent-parking",
+  "private": true,
+  "description": "No build step for the site itself — this file exists only so Netlify installs dependencies for the serverless functions in netlify/functions/.",
+  "dependencies": {
+    "@supabase/supabase-js": "^2"
+  }
+}

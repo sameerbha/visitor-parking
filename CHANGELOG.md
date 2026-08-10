@@ -2,6 +2,24 @@
 
 All changes to this project are documented here in reverse chronological order.
 
+## [2.3.0] — 2026-08-06
+
+### Handoff-readiness: Reset Demo Data + Invite Staff by Email
+
+Both aimed at the same goal — running the business day-to-day (demoing, onboarding a tenant's staff) shouldn't require opening Supabase or asking a developer.
+
+**Reset Demo Data.** Platform Admin has a "🧹 Reset Demo Data" button, shown only for tenants with `status = 'trial'`. Clears that tenant's visitor registrations and exemptions so a demo tenant can be reset before a sales call — deliberately leaves unit codes and buildings alone, since those are the demo's setup, not its mess. Hard-gated server-side (`reset_tenant_demo_data` RPC checks `is_platform_admin()` and refuses anything not explicitly marked `trial`), not just hidden client-side. Run `patch-reset-demo-data.sql` once, then `UPDATE tenants SET status = 'trial' WHERE subdomain = '<your demo tenant>';`.
+
+**Invite Staff by Email.** Platform Admin's "Assign Staff" modal used to require pasting a raw Supabase user ID, which only someone with dashboard access could get — the single biggest thing blocking fully self-serve tenant onboarding. It's now "Invite Staff": enter an email, and a new Netlify serverless function (`netlify/functions/invite-staff.mjs`) creates the Supabase Auth user, emails them an invite, and links them to the tenant in one step (or just links them if that email already has an account). New `accept-invite.html` page is where the invite link lands — sets an initial password with no "current password" prompt, since a freshly-invited user doesn't have one yet.
+
+This needed a first for this project: a server-side dependency. Added `package.json` (`@supabase/supabase-js`) so Netlify installs it for the function — the site itself still has no build step.
+
+**One-time setup required** (not needed again per tenant) — see the [Inviting Staff](README.md#inviting-staff) section of the README: add `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` as Netlify environment variables, redeploy, and add `accept-invite.html`'s URL(s) to Supabase's Redirect URLs allow-list.
+
+**Files changed:** `netlify/functions/invite-staff.mjs` (new), `package.json` (new), `accept-invite.html` (new), `patch-reset-demo-data.sql` (new), `supabase-schema.sql`, `js/app.js`, `platform-admin.html`, `tests/regression-static.sh`, `README.md`, `CHANGELOG.md`
+
+---
+
 ## [2.2.7] — 2026-08-06
 
 ### Bulk unit code generator

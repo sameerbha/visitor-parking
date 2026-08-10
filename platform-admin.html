@@ -85,6 +85,9 @@
 
       <div class="table-header-bar" style="margin-top:8px">
         <h2 id="detail-title">—</h2>
+        <div class="table-actions">
+          <button class="btn btn-secondary btn-sm hidden" id="reset-demo-btn">🧹 Reset Demo Data</button>
+        </div>
       </div>
 
       <!-- Usage stats -->
@@ -109,7 +112,7 @@
         <div class="table-header-bar">
           <h2>Staff</h2>
           <div class="table-actions">
-            <button class="btn btn-primary btn-sm" id="add-staff-btn">+ Assign Staff</button>
+            <button class="btn btn-primary btn-sm" id="add-staff-btn">+ Invite Staff</button>
           </div>
         </div>
         <table class="data-table">
@@ -182,17 +185,17 @@
 <!-- ═══════════════════ Assign Staff Modal ═══════════════════ -->
 <div class="modal-overlay" id="staff-modal">
   <div class="modal-box modal-lg">
-    <h3>Assign Staff</h3>
-    <p class="modal-subtitle">Staff accounts are still created manually in the Supabase dashboard (Authentication → Users). Paste that user's ID here to give them access to this tenant's Enforcement and Admin portals.</p>
+    <h3>Invite Staff</h3>
+    <p class="modal-subtitle">Enter their email address — we'll send an invite to set a password and give them access to this tenant's Enforcement and Admin portals. If that email already has an account, it's linked to this tenant right away instead.</p>
     <div class="alert alert-error hidden" id="staff-form-error"></div>
     <form id="staff-form" novalidate>
       <div class="form-group">
-        <label>Supabase User ID *</label>
-        <input type="text" id="s-userid" class="form-control" placeholder="e.g. 3fa85f64-5717-4562-b3fc-2c963f66afa6" required />
+        <label>Email Address *</label>
+        <input type="email" id="s-email" class="form-control" placeholder="e.g. concierge@dueast.com" required autocomplete="off" />
       </div>
       <div class="modal-actions">
         <button type="button" class="btn btn-secondary" onclick="closeModal('staff-modal')">Cancel</button>
-        <button type="submit" class="btn btn-primary" id="staff-submit-btn">Assign</button>
+        <button type="submit" class="btn btn-primary" id="staff-submit-btn">Send Invite</button>
       </div>
     </form>
   </div>
@@ -206,6 +209,19 @@
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="closeModal('staff-remove-modal')">Cancel</button>
       <button class="btn btn-danger" id="confirm-staff-remove-btn">Remove</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ Reset Demo Data Confirm ═══════════════════ -->
+<div class="modal-overlay" id="reset-demo-modal">
+  <div class="modal-box">
+    <h3>Reset Demo Data?</h3>
+    <p id="reset-demo-body">Are you sure?</p>
+    <div class="alert alert-error hidden" id="reset-demo-error"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('reset-demo-modal')">Cancel</button>
+      <button class="btn btn-danger" id="confirm-reset-demo-btn">Reset Data</button>
     </div>
   </div>
 </div>
@@ -277,6 +293,10 @@ async function selectTenant(tenantId) {
   document.getElementById('detail-title').textContent = currentTenant.name;
   document.getElementById('address-modal-subtitle').textContent =
     'Adding a building to ' + currentTenant.name + '.';
+  // Only ever shown for tenants explicitly marked "trial" — the server
+  // enforces this too, but there's no reason to even show a destructive
+  // button for a real paying customer.
+  document.getElementById('reset-demo-btn').classList.toggle('hidden', currentTenant.status !== 'trial');
 
   await Promise.all([loadAddresses(), loadStaff(), loadUsage()]);
   document.getElementById('tenant-detail').scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -327,6 +347,35 @@ document.getElementById('confirm-staff-remove-btn').addEventListener('click', as
   closeModal('staff-remove-modal');
   showAlert('Staff access removed.');
   await loadStaff();
+});
+
+// ── Reset Demo Data ──────────────────────────────────────────────────────────
+document.getElementById('reset-demo-btn').addEventListener('click', () => {
+  document.getElementById('reset-demo-body').innerHTML =
+    'This permanently deletes every visitor registration and exemption for <strong>' +
+    escapeHtml(currentTenant.name) + '</strong>. Its buildings and unit codes are left alone. This cannot be undone.';
+  document.getElementById('reset-demo-error').classList.add('hidden');
+  document.getElementById('reset-demo-modal').classList.add('open');
+});
+
+document.getElementById('confirm-reset-demo-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('confirm-reset-demo-btn');
+  const errEl = document.getElementById('reset-demo-error');
+  btn.disabled = true;
+  btn.textContent = 'Resetting…';
+  try {
+    const result = await resetTenantDemoData(currentTenant.id);
+    closeModal('reset-demo-modal');
+    showAlert('Demo data reset — ' + result.registrationsDeleted + ' registration(s) and ' +
+      result.exemptionsDeleted + ' exemption(s) removed.');
+    await loadUsage();
+  } catch (err) {
+    errEl.textContent = err.message || 'Could not reset demo data.';
+    errEl.classList.remove('hidden');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Reset Data';
+  }
 });
 
 // ── Add Tenant ───────────────────────────────────────────────────────────────
@@ -400,32 +449,35 @@ document.getElementById('add-staff-btn').addEventListener('click', () => {
 
 document.getElementById('staff-form').addEventListener('submit', async (e) => {
   e.preventDefault();
-  const userId = document.getElementById('s-userid').value.trim();
-  const errEl   = document.getElementById('staff-form-error');
-  const btn     = document.getElementById('staff-submit-btn');
+  const email = document.getElementById('s-email').value.trim();
+  const errEl = document.getElementById('staff-form-error');
+  const btn   = document.getElementById('staff-submit-btn');
 
-  if (!userId || !currentTenant) return;
+  errEl.classList.add('hidden');
+  if (!email || !currentTenant) return;
   btn.disabled = true;
+  btn.textContent = 'Sending…';
   try {
-    await assignStaffToTenant(userId, currentTenant.id);
+    const result = await inviteStaffToTenant(email, currentTenant.id);
     closeModal('staff-modal');
-    showAlert('Staff assigned.');
+    showAlert(result.existingUser
+      ? 'That account already existed — linked to this tenant.'
+      : 'Invite sent to ' + email + '.');
     await loadStaff();
   } catch (err) {
     errEl.textContent = err.message && err.message.includes('duplicate')
-      ? 'That user already has access to this tenant.'
-      : err.message && err.message.includes('foreign key')
-      ? 'No Supabase user with that ID exists.'
-      : (err.message || 'Could not assign staff.');
+      ? 'That person already has access to this tenant.'
+      : (err.message || 'Could not send the invite.');
     errEl.classList.remove('hidden');
   } finally {
     btn.disabled = false;
+    btn.textContent = 'Send Invite';
   }
 });
 
 // ── Modal helpers ─────────────────────────────────────────────────────────────
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-['tenant-modal','address-modal','staff-modal','staff-remove-modal'].forEach(id => {
+['tenant-modal','address-modal','staff-modal','staff-remove-modal','reset-demo-modal'].forEach(id => {
   document.getElementById(id).addEventListener('click', function(e) {
     if (e.target === this) closeModal(id);
   });

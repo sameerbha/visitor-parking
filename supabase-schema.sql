@@ -205,6 +205,48 @@ END;
 $$;
 GRANT EXECUTE ON FUNCTION get_tenant_usage_stats TO authenticated;
 
+-- reset_tenant_demo_data: platform-admin-only, hard-gated to status='trial'
+-- tenants. Clears activity data (registrations, exemptions) so a demo
+-- tenant can be reset before a sales call. Deliberately leaves unit_codes
+-- and addresses alone — those are the demo's setup, not its mess.
+CREATE OR REPLACE FUNCTION reset_tenant_demo_data(p_tenant_id UUID)
+RETURNS JSON
+LANGUAGE plpgsql SECURITY DEFINER
+AS $$
+DECLARE
+  v_status          TEXT;
+  v_tenant_name     TEXT;
+  v_reg_count       INT;
+  v_exemption_count INT;
+BEGIN
+  IF NOT is_platform_admin() THEN
+    RAISE EXCEPTION 'Only platform admins can reset demo data';
+  END IF;
+
+  SELECT status, name INTO v_status, v_tenant_name FROM tenants WHERE id = p_tenant_id;
+  IF v_status IS NULL THEN
+    RAISE EXCEPTION 'Tenant not found';
+  END IF;
+  IF v_status <> 'trial' THEN
+    RAISE EXCEPTION 'Only trial tenants can be reset this way — "%" is marked "%". Change its status to trial first if this is really meant to be a demo account.', v_tenant_name, v_status;
+  END IF;
+
+  WITH addr AS (SELECT id FROM addresses WHERE tenant_id = p_tenant_id)
+  DELETE FROM visitor_registrations WHERE address_id IN (SELECT id FROM addr);
+  GET DIAGNOSTICS v_reg_count = ROW_COUNT;
+
+  WITH addr AS (SELECT id FROM addresses WHERE tenant_id = p_tenant_id)
+  DELETE FROM exemptions WHERE address_id IN (SELECT id FROM addr);
+  GET DIAGNOSTICS v_exemption_count = ROW_COUNT;
+
+  RETURN json_build_object(
+    'registrationsDeleted', v_reg_count,
+    'exemptionsDeleted',    v_exemption_count
+  );
+END;
+$$;
+GRANT EXECUTE ON FUNCTION reset_tenant_demo_data TO authenticated;
+
 -- ── 5. Row Level Security ────────────────────────────────────────────────────
 
 ALTER TABLE tenants                ENABLE ROW LEVEL SECURITY;
