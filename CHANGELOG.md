@@ -2,6 +2,16 @@
 
 All changes to this project are documented here in reverse chronological order.
 
+## [2.3.1] — 2026-08-06
+
+### Fix Netlify build failure from secrets scanning
+
+Adding `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY` as environment variables broke the build: Netlify's secrets scanner found `SUPABASE_URL`'s value in the published output and failed the deploy. That's a false positive — `SUPABASE_URL` isn't actually secret, it's the public project URL already committed in `js/supabase-config.js` and shipped to every browser by design. Added `netlify.toml` with `SECRETS_SCAN_OMIT_KEYS = "SUPABASE_URL"` to tell the scanner that's expected. `SUPABASE_SERVICE_ROLE_KEY` is deliberately not exempted — also narrowed its scope (and `SUPABASE_URL`'s) in the Netlify UI to **Functions only**, removing **Builds**, since neither is actually needed during the build step, only inside `netlify/functions/invite-staff.mjs` at runtime.
+
+**Files changed:** `netlify.toml` (new), `CHANGELOG.md`
+
+---
+
 ## [2.3.0] — 2026-08-06
 
 ### Handoff-readiness: Reset Demo Data + Invite Staff by Email

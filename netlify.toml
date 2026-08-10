@@ -1,0 +1,12 @@
+# SUPABASE_URL is not a secret — it's the project's public API URL, already
+# committed in plain text in js/supabase-config.js and shipped to every
+# browser by design (the client needs it to talk to Supabase at all).
+# Netlify's secrets scanner flags any build environment variable whose value
+# shows up in the published output, which this always will, harmlessly.
+#
+# SUPABASE_SERVICE_ROLE_KEY is deliberately NOT listed here. If the scanner
+# ever flags that one, that's worth actually investigating rather than
+# suppressing — it should never appear anywhere except as an env var read by
+# netlify/functions/invite-staff.mjs at runtime.
+[build.environment]
+  SECRETS_SCAN_OMIT_KEYS = "SUPABASE_URL"
