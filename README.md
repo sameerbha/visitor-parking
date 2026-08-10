@@ -191,6 +191,12 @@ Each successful registration is valid for 24 hours.
 
 The monthly-passes-per-unit and days-per-plate limits are per-tenant settings, not fixed values — editable from Admin's "⚙️ Settings" tab by any staff member of that tenant (any building's staff can change it, consistent with the flat access decision — there's no separate property-manager tier). They apply across every building under that tenant's account, not per-building. Existing tenants default to 10/7, matching the original fixed behavior, until changed. Run [patch-tenant-limits.sql](/Users/sameerbhaidani/Documents/VIsitors%20Parking%20App/patch-tenant-limits.sql) once in the Supabase SQL Editor to add this to an existing install.
 
+## Bulk Unit Code Generator
+
+Admin's "🔑 Unit Codes" tab has a "🎲 Bulk Generate" button for setting up a whole range of units at once — a prefix, a floor range, and a units-per-floor range (e.g. prefix `W`, floors 2–29, units 1–10 per floor generates `W201`...`W2910`, matching the existing DuEast unit-numbering convention). Codes are letters and numbers only (4–8 characters, configurable), skipping easily-confused characters (I, O, 0, 1) — there's no symbols option, since unit codes are typed on a phone keyboard and adding symbols would mean an extra keyboard-layout switch for no real security benefit (codes are compared case-insensitively, so letter case doesn't add entropy either).
+
+Generating always previews first: units that already have a code are shown but unchecked by default, so a re-run over a range never silently overwrites a code a resident already has, unless you explicitly check that row.
+
 ## Registration History & Retention
 
 Admin has a "Registration History" tab that looks up the full history — active and expired — for a given plate or unit. This works with no schema change, since the existing RLS policy already grants authenticated staff full read access to `visitor_registrations` regardless of expiry.

@@ -112,6 +112,7 @@
       <h2 id="uc-table-title">Unit Codes</h2>
       <div class="table-actions">
         <input class="search-input" id="uc-search-input" placeholder="Search unit…" />
+        <button class="btn btn-secondary btn-sm" onclick="openBulkModal()">🎲 Bulk Generate</button>
       </div>
     </div>
     <div class="unit-codes-info">
@@ -272,6 +273,67 @@
         <button type="submit" class="btn btn-primary" id="uc-submit-btn">Save Code</button>
       </div>
     </form>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     UNIT CODES — Bulk Generate Modal
+     ═══════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="bulk-modal">
+  <div class="modal-box modal-lg">
+    <h3>Bulk Generate Unit Codes</h3>
+    <p class="modal-subtitle">Generate codes for a whole range of units at once — for example, floors 2–29, units 1–10 per floor, with an optional prefix like "W".</p>
+    <div class="alert alert-error hidden" id="bulk-form-error"></div>
+
+    <div id="bulk-setup">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Prefix (optional)</label>
+          <input type="text" id="bg-prefix" class="form-control" placeholder="e.g. W" maxlength="5" style="text-transform:uppercase" />
+        </div>
+        <div class="form-group">
+          <label>Code Length *</label>
+          <input type="number" id="bg-code-length" class="form-control" min="4" max="8" value="6" required />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Floor Range *</label>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input type="number" id="bg-floor-start" class="form-control" placeholder="Start" min="0" required />
+            <span class="muted">to</span>
+            <input type="number" id="bg-floor-end" class="form-control" placeholder="End" min="0" required />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Units Per Floor *</label>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input type="number" id="bg-unit-start" class="form-control" placeholder="Start" min="1" value="1" required />
+            <span class="muted">to</span>
+            <input type="number" id="bg-unit-end" class="form-control" placeholder="End" min="1" required />
+          </div>
+        </div>
+      </div>
+      <p class="field-hint">Codes use letters and numbers only, skipping easily-confused characters (I, O, 0, 1). Case doesn't matter when residents enter them.</p>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('bulk-modal')">Cancel</button>
+        <button type="button" class="btn btn-primary" id="bulk-preview-btn" onclick="previewBulkCodes()">Preview</button>
+      </div>
+    </div>
+
+    <div id="bulk-preview" class="hidden">
+      <p id="bulk-preview-summary" class="muted" style="margin-bottom:12px"></p>
+      <div class="table-responsive" style="max-height:360px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius)">
+        <table class="data-table">
+          <thead><tr><th style="width:36px"></th><th>Unit Number</th><th>Status</th><th>Code</th></tr></thead>
+          <tbody id="bulk-preview-tbody"></tbody>
+        </table>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" onclick="backToBulkSetup()">Back</button>
+        <button type="button" class="btn btn-primary" id="bulk-confirm-btn" onclick="confirmBulkCodes()">Save Codes</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -571,11 +633,154 @@ function renderUnitCodesTable() {
 document.getElementById('uc-search-input').addEventListener('input', renderUnitCodesTable);
 
 // Generate a random 6-char alphanumeric code
-function generateUnitCode() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+// Excludes I/O/0/1 — easily confused with each other or with L/1, and codes
+// are read aloud or copied from a printed sheet often enough that this
+// matters. Shared by the single-code Generate button and Bulk Generate.
+const UNIT_CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+
+function randomUnitCode(length) {
   let code = '';
-  for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
-  document.getElementById('uc-code').value = code;
+  for (let i = 0; i < length; i++) code += UNIT_CODE_CHARS[Math.floor(Math.random() * UNIT_CODE_CHARS.length)];
+  return code;
+}
+
+function generateUnitCode() {
+  document.getElementById('uc-code').value = randomUnitCode(6);
+}
+
+// ── Bulk Generate ────────────────────────────────────────────────────────────
+let _bulkPreviewRows = []; // [{ unit_number, code, existing, checked }]
+
+function openBulkModal() {
+  document.getElementById('bg-prefix').value = '';
+  document.getElementById('bg-code-length').value = 6;
+  document.getElementById('bg-floor-start').value = '';
+  document.getElementById('bg-floor-end').value = '';
+  document.getElementById('bg-unit-start').value = 1;
+  document.getElementById('bg-unit-end').value = '';
+  document.getElementById('bulk-form-error').classList.add('hidden');
+  document.getElementById('bulk-setup').classList.remove('hidden');
+  document.getElementById('bulk-preview').classList.add('hidden');
+  document.getElementById('bulk-modal').classList.add('open');
+}
+
+function backToBulkSetup() {
+  document.getElementById('bulk-setup').classList.remove('hidden');
+  document.getElementById('bulk-preview').classList.add('hidden');
+}
+
+function previewBulkCodes() {
+  const errEl = document.getElementById('bulk-form-error');
+  errEl.classList.add('hidden');
+
+  const prefix     = document.getElementById('bg-prefix').value.trim().toUpperCase();
+  const codeLength = parseInt(document.getElementById('bg-code-length').value, 10);
+  const floorStart = parseInt(document.getElementById('bg-floor-start').value, 10);
+  const floorEnd   = parseInt(document.getElementById('bg-floor-end').value, 10);
+  const unitStart  = parseInt(document.getElementById('bg-unit-start').value, 10);
+  const unitEnd    = parseInt(document.getElementById('bg-unit-end').value, 10);
+
+  function fail(msg) { errEl.textContent = msg; errEl.classList.remove('hidden'); }
+
+  if ([codeLength, floorStart, floorEnd, unitStart, unitEnd].some(Number.isNaN)) {
+    return fail('Please fill in all the required fields.');
+  }
+  if (codeLength < 4 || codeLength > 8) {
+    return fail('Code length must be between 4 and 8 characters.');
+  }
+  if (floorEnd < floorStart) return fail('Floor range end must not be before the start.');
+  if (unitEnd < unitStart)   return fail('Unit range end must not be before the start.');
+
+  const totalUnits = (floorEnd - floorStart + 1) * (unitEnd - unitStart + 1);
+  if (totalUnits > 1000) {
+    return fail('That range is ' + totalUnits + ' units — please generate in batches of 1000 or fewer at a time.');
+  }
+
+  // Matches the existing DuEast convention (W201–W2910): prefix + floor
+  // as-is + unit zero-padded to at least 2 digits.
+  const unitDigits = Math.max(2, String(unitEnd).length);
+  const unitNumbers = [];
+  for (let floor = floorStart; floor <= floorEnd; floor++) {
+    for (let u = unitStart; u <= unitEnd; u++) {
+      unitNumbers.push(prefix + floor + String(u).padStart(unitDigits, '0'));
+    }
+  }
+
+  // allUnitCodes is already loaded for the current address whenever this
+  // tab is open, so checking for existing codes needs no extra round trip.
+  const existingByUnit = new Set(allUnitCodes.map(uc => uc.unit_number.toUpperCase()));
+
+  _bulkPreviewRows = unitNumbers.map(unitNumber => {
+    const existing = existingByUnit.has(unitNumber.toUpperCase());
+    return {
+      unit_number: unitNumber,
+      code: randomUnitCode(codeLength),
+      existing,
+      checked: !existing, // new units included by default; existing ones opt-in only
+    };
+  });
+
+  renderBulkPreview();
+  document.getElementById('bulk-setup').classList.add('hidden');
+  document.getElementById('bulk-preview').classList.remove('hidden');
+}
+
+function renderBulkPreview() {
+  const newCount = _bulkPreviewRows.filter(r => !r.existing).length;
+  const existingCount = _bulkPreviewRows.length - newCount;
+  document.getElementById('bulk-preview-summary').textContent =
+    _bulkPreviewRows.length + ' unit' + (_bulkPreviewRows.length === 1 ? '' : 's') + ' in range — ' +
+    newCount + ' new' +
+    (existingCount > 0
+      ? ', ' + existingCount + ' already have a code (unchecked by default — check any you want to overwrite).'
+      : '.');
+
+  document.getElementById('bulk-preview-tbody').innerHTML = _bulkPreviewRows.map((r, i) =>
+    '<tr>' +
+      '<td><input type="checkbox" ' + (r.checked ? 'checked' : '') + ' onchange="toggleBulkRow(' + i + ', this.checked)" /></td>' +
+      '<td>' + escapeHtml(r.unit_number) + '</td>' +
+      '<td>' + (r.existing
+        ? '<span class="status-badge status-expired">Has a code</span>'
+        : '<span class="status-badge status-active">New</span>') + '</td>' +
+      '<td><code class="code-badge">' + escapeHtml(r.code) + '</code></td>' +
+    '</tr>'
+  ).join('');
+}
+
+function toggleBulkRow(index, checked) {
+  _bulkPreviewRows[index].checked = checked;
+}
+
+async function confirmBulkCodes() {
+  const rowsToSave = _bulkPreviewRows.filter(r => r.checked);
+  const errEl = document.getElementById('bulk-form-error');
+  errEl.classList.add('hidden');
+
+  if (rowsToSave.length === 0) {
+    errEl.textContent = 'No units are checked — nothing to save.';
+    errEl.classList.remove('hidden');
+    return;
+  }
+
+  const btn = document.getElementById('bulk-confirm-btn');
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+  try {
+    await bulkUpsertUnitCodes(rowsToSave.map(r => ({
+      address_id: currentAddressId,
+      unit_number: r.unit_number,
+      code: r.code,
+    })));
+    closeModal('bulk-modal');
+    showAlert(rowsToSave.length + ' unit code' + (rowsToSave.length === 1 ? '' : 's') + ' saved.');
+    await loadUnitCodes();
+  } catch (err) {
+    errEl.textContent = err.message || 'Could not save codes.';
+    errEl.classList.remove('hidden');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Save Codes';
+  }
 }
 
 function openUCAddModal() {
@@ -807,7 +1012,7 @@ document.getElementById('settings-form').addEventListener('submit', async (e) =>
 
 // ── Modal helpers ─────────────────────────────────────────────────────────────
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-['form-modal','delete-modal','uc-form-modal','uc-delete-modal'].forEach(id => {
+['form-modal','delete-modal','uc-form-modal','uc-delete-modal','bulk-modal'].forEach(id => {
   document.getElementById(id).addEventListener('click', function(e) {
     if (e.target === this) closeModal(id);
   });

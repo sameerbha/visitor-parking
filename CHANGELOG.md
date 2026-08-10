@@ -2,6 +2,18 @@
 
 All changes to this project are documented here in reverse chronological order.
 
+## [2.2.7] — 2026-08-06
+
+### Bulk unit code generator
+
+Admin's Unit Codes tab has a "🎲 Bulk Generate" button: enter a prefix, a floor range, and a units-per-floor range, and it generates a code for every unit in that grid (matching DuEast's existing `W201`–`W2910` numbering convention). Configurable code length (4–8 characters); letters and numbers only, no symbols option — codes are compared case-insensitively already, so mixed case adds no real entropy, and symbols cost extra keyboard-layout switches on a phone for residents typing the code in. Reuses the same ambiguous-character exclusion (I, O, 0, 1) as the existing single-code Generate button.
+
+Always shows a preview before saving: units that already have a code are listed but unchecked by default, so running it again over a range that partly overlaps existing units never silently overwrites a code a resident already has — only checked rows get saved, via a single upsert.
+
+**Files changed:** `js/app.js`, `admin.html`, `tests/regression-static.sh`, `README.md`, `CHANGELOG.md`
+
+---
+
 ## [2.2.6] — 2026-08-06
 
 ### Actual fix for the long-standing 42501 registration error

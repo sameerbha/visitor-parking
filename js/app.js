@@ -200,6 +200,19 @@ async function deleteUnitCode(id) {
   if (error) throw error;
 }
 
+// Bulk-generate: inserts new unit codes and overwrites existing ones in a
+// single round trip. `rows` is [{ address_id, unit_number, code }, ...] —
+// the caller (Admin's Bulk Generate modal) decides per-row whether an
+// already-coded unit should be included here at all.
+async function bulkUpsertUnitCodes(rows) {
+  const { data, error } = await _sb
+    .from('unit_codes')
+    .upsert(rows, { onConflict: 'address_id,unit_number' })
+    .select();
+  if (error) throw error;
+  return data;
+}
+
 // ─── Validation (RPC — runs server-side, never exposes raw codes) ───────────
 
 /**

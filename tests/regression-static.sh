@@ -128,5 +128,12 @@ check_contains index.html "monthlyLimit" "index.html reads the dynamic monthly l
 check_status patch-tenant-limits.sql 200
 
 echo
+echo "== Bulk unit code generator markers present =="
+check_contains admin.html "openBulkModal" "admin.html has the Bulk Generate button/modal"
+check_contains admin.html "previewBulkCodes" "admin.html builds a preview before saving bulk codes"
+check_contains admin.html "bulk-preview-tbody" "admin.html has the bulk preview table"
+check_contains js/app.js "function bulkUpsertUnitCodes" "app.js defines bulkUpsertUnitCodes"
+
+echo
 echo "== Summary: $PASS passed, $FAIL failed =="
 [ "$FAIL" -eq 0 ]
