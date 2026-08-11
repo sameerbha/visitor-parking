@@ -533,10 +533,25 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
 }
 
-function generateCaptcha() {
-  const a = Math.floor(Math.random() * 9) + 1;
-  const b = Math.floor(Math.random() * 9) + 1;
-  return { question: a + ' + ' + b, answer: String(a + b) };
+// Sends the Google reCAPTCHA v2 checkbox token to verify-recaptcha.mjs,
+// which holds the secret key server-side and checks it with Google. No auth
+// header — this runs before a resident has any session, same as the rest of
+// the registration flow.
+async function verifyRecaptcha(token) {
+  try {
+    const res = await fetch('/api/verify-recaptcha', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token }),
+    });
+    const payload = await res.json().catch(() => null);
+    if (!res.ok || !payload?.success) {
+      return { success: false, error: payload?.error || 'Security check failed. Please try again.' };
+    }
+    return { success: true };
+  } catch {
+    return { success: false, error: 'Could not verify the security check. Please try again.' };
+  }
 }
 
 function exportCSV(rows, filename) {

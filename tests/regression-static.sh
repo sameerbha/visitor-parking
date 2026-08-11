@@ -154,5 +154,13 @@ check_contains js/app.js "tenantName" "app.js threads tenantName into the invite
 check_contains netlify/functions/invite-staff.mjs "tenant_name" "invite-staff.mjs passes tenant_name into invite metadata"
 
 echo
+echo "== reCAPTCHA markers present =="
+check_contains index.html "g-recaptcha" "index.html has the reCAPTCHA checkbox widget"
+check_not_contains index.html "captcha_answer" "index.html no longer has the math captcha input"
+check_contains js/app.js "function verifyRecaptcha" "app.js defines verifyRecaptcha"
+check_not_contains js/app.js "function generateCaptcha" "app.js no longer defines the math captcha generator"
+check_status netlify/functions/verify-recaptcha.mjs 200
+
+echo
 echo "== Summary: $PASS passed, $FAIL failed =="
 [ "$FAIL" -eq 0 ]

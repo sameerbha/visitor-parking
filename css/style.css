@@ -79,6 +79,9 @@ a:hover{text-decoration:underline}
 select.form-control{cursor:pointer}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 @media(max-width:600px){.form-row{grid-template-columns:1fr}}
+/* Google's reCAPTCHA checkbox widget is a fixed 304px wide — shrink it on
+   very narrow phones so it doesn't overflow the resident card's padding. */
+@media(max-width:340px){.captcha-group .g-recaptcha>div{transform:scale(0.87);transform-origin:0 0}}
 
 /* ── Alerts ───────────────────────────────────────────────── */
 .alert{padding:12px 16px;border-radius:var(--radius);margin-bottom:16px;font-size:.9rem;line-height:1.5}
@@ -152,9 +155,7 @@ select.form-control{cursor:pointer}
 .resident-subtitle{font-size:.92rem;opacity:.85}
 .resident-card{background:var(--surface);border-radius:16px;padding:28px 24px;width:100%;max-width:440px;box-shadow:var(--shadow-lg)}
 .form-intro{font-weight:600;color:#333;margin-bottom:20px;font-size:.95rem}
-.captcha-row{display:flex;gap:12px;align-items:center}
-.captcha-input{flex:1}
-.captcha-display{background:#f0f0f0;border:2px solid #ccc;padding:10px 18px;border-radius:var(--radius);font-family:'Courier New',monospace;font-size:1.15rem;letter-spacing:4px;font-weight:700;color:#333;flex-shrink:0;min-width:90px;text-align:center}
+.captcha-group .g-recaptcha{display:flex;justify-content:center;transform-origin:center;overflow:hidden}
 .success-box{text-align:center;padding:8px 0}
 .success-icon{width:64px;height:64px;background:var(--green);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:2rem;color:#fff;margin:0 auto 16px;font-weight:700}
 .success-box p{line-height:1.7;font-size:.95rem}

@@ -61,12 +61,15 @@
         </div>
 
         <div class="form-group captcha-group">
-          <label for="captcha_answer">Security Check</label>
-          <div class="captcha-row">
-            <input id="captcha_answer" type="text" class="form-control captcha-input"
-              placeholder="Answer" required inputmode="numeric" maxlength="3" autocomplete="off" />
-            <div class="captcha-display" id="captcha-display"></div>
-          </div>
+          <label>Security Check</label>
+          <!-- RECAPTCHA_SITE_KEY is public by design (like the Supabase anon
+               key above it) — safe to commit. Get it from
+               https://www.google.com/recaptcha/admin/create (reCAPTCHA v2,
+               "I'm not a robot" checkbox). The matching secret key is never
+               put here — it lives server-side only, as the
+               RECAPTCHA_SECRET_KEY env var read by
+               netlify/functions/verify-recaptcha.mjs. -->
+          <div class="g-recaptcha" id="recaptcha-widget" data-sitekey="6Lft7oAtAAAAAMjWNL73DlxpXEAO3t1qmcvitV9r"></div>
         </div>
 
         <!-- Error banner lives here — directly above Submit so it's always visible -->
@@ -130,10 +133,10 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase-config.js"></script>
 <script src="js/app.js"></script>
+<script src="https://www.google.com/recaptcha/api.js" async defer></script>
 <script>
 // ── State ─────────────────────────────────────────────────────────────────────
 let currentAddress = null;
-let captcha        = generateCaptcha();
 let _extendContext = null; // holds data when the extend prompt is showing
 
 // ── Shared helper: colour-coded progress bar ──────────────────────────────────
@@ -178,10 +181,13 @@ function showError(msg) {
   errEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
-function renderCaptcha() {
-  captcha = generateCaptcha();
-  document.getElementById('captcha-display').textContent = captcha.question + ' = ?';
-  document.getElementById('captcha_answer').value = '';
+// Resets the reCAPTCHA checkbox (e.g. after a failed submit or when the
+// resident starts a new registration). Guarded because grecaptcha loads
+// async — it may not exist yet on the very first render.
+function resetRecaptcha() {
+  if (window.grecaptcha && typeof window.grecaptcha.reset === 'function') {
+    window.grecaptcha.reset();
+  }
 }
 
 // Auto-uppercase inputs
@@ -208,7 +214,8 @@ function resolveTenantSubdomain() {
 // ── Page init (async) ─────────────────────────────────────────────────────────
 (async () => {
   try {
-    renderCaptcha();
+    // The reCAPTCHA checkbox renders itself once google's api.js loads and
+    // scans the page for .g-recaptcha — nothing to trigger here.
 
     // ?lot= always wins if present — an explicit manual override, same as
     // before. Otherwise resolve the tenant from the hostname and default to
@@ -252,7 +259,8 @@ document.getElementById('reg-form').addEventListener('submit', async function(e)
   const unit_number   = document.getElementById('unit_number').value.trim().toUpperCase();
   const unit_code     = document.getElementById('unit_code').value.trim();
   const visitor_plate = document.getElementById('visitor_plate').value.trim().toUpperCase();
-  const captchaAns    = document.getElementById('captcha_answer').value.trim();
+  const recaptchaToken = (window.grecaptcha && typeof window.grecaptcha.getResponse === 'function')
+    ? window.grecaptcha.getResponse() : '';
 
   // 1. Require a valid address
   if (!currentAddress) {
@@ -260,10 +268,9 @@ document.getElementById('reg-form').addEventListener('submit', async function(e)
     return;
   }
 
-  // 2. Validate captcha first (cheap, no server round-trip)
-  if (captchaAns !== captcha.answer) {
-    showError('Incorrect answer to the security question. Please try again.');
-    renderCaptcha();
+  // 2. Require the reCAPTCHA checkbox to be checked (cheap, no server round-trip yet)
+  if (!recaptchaToken) {
+    showError('Please check the box to confirm you’re not a robot.');
     return;
   }
 
@@ -277,7 +284,19 @@ document.getElementById('reg-form').addEventListener('submit', async function(e)
   submitBtn.disabled = true;
 
   try {
-    // 4. Validate unit code (server-side RPC — never exposes raw codes)
+    // 4. Verify the reCAPTCHA token server-side before trusting it at all —
+    // the checkbox alone only proves the browser rendered it, not that
+    // Google actually approved this specific token.
+    const recaptchaCheck = await verifyRecaptcha(recaptchaToken);
+    if (!recaptchaCheck.success) {
+      showError(recaptchaCheck.error || 'Security check failed. Please try again.');
+      resetRecaptcha();
+      submitBtn.textContent = 'Submit';
+      submitBtn.disabled = false;
+      return;
+    }
+
+    // 5. Validate unit code (server-side RPC — never exposes raw codes)
     const codeCheck = await validateUnitCode(unit_number, unit_code, address_id);
     if (!codeCheck.valid) {
       showError(codeCheck.error);
@@ -287,7 +306,7 @@ document.getElementById('reg-form').addEventListener('submit', async function(e)
       return;
     }
 
-    // 5. Check if plate is already actively registered
+    // 6. Check if plate is already actively registered
     submitBtn.textContent = 'Checking…';
     const activeCheck = await checkPlateActive(visitor_plate, address_id);
     if (activeCheck.active) {
@@ -315,7 +334,7 @@ document.getElementById('reg-form').addEventListener('submit', async function(e)
       return;
     }
 
-    // 6. Check monthly pass limits (server-side RPC)
+    // 7. Check monthly pass limits (server-side RPC)
     const passCheck = await canRegisterVisitor(unit_number, visitor_plate, address_id);
     if (!passCheck.allowed) {
       showError(passCheck.reason);
@@ -326,7 +345,7 @@ document.getElementById('reg-form').addEventListener('submit', async function(e)
 
     submitBtn.textContent = 'Registering…';
 
-    // 7. Create the registration
+    // 8. Create the registration
     await addVisitorRegistration({
       address_id,
       lot_code:     currentAddress.lot_code,
@@ -334,7 +353,7 @@ document.getElementById('reg-form').addEventListener('submit', async function(e)
       visitor_plate,
     });
 
-    // 8. Show success
+    // 9. Show success
     const expires = new Date(Date.now() + 24 * 3600000);
     document.getElementById('success-msg').innerHTML =
       'Plate <strong>' + escapeHtml(visitor_plate) + '</strong> has been registered at ' +
@@ -417,7 +436,7 @@ document.getElementById('register-again-btn').addEventListener('click', function
   document.getElementById('unit_code').value = '';
   document.getElementById('submit-btn').textContent = 'Submit';
   document.getElementById('submit-btn').disabled = false;
-  renderCaptcha();
+  resetRecaptcha();
   document.getElementById('success-view').classList.add('hidden');
   document.getElementById('extend-view').classList.add('hidden');
   document.getElementById('form-view').classList.remove('hidden');

@@ -2,6 +2,18 @@
 
 All changes to this project are documented here in reverse chronological order.
 
+## [2.4.0] — 2026-08-11
+
+### Replace math captcha with Google reCAPTCHA v2 (server-verified)
+
+Swapped the "what's 4 + 7" security question on the registration page for Google's "I'm not a robot" checkbox. The checkbox alone can't be trusted on its own — a script could skip it entirely — so verification now happens server-side: `index.html` sends the checkbox's token to a new Netlify function, `netlify/functions/verify-recaptcha.mjs`, which checks it against Google's `siteverify` API using a secret key that never reaches the browser, before the registration is allowed to proceed. Also cross-checks the `hostname` Google reports the token came from against an allowlist (`dueastparking.netlify.app`, any `*.regentparking.ca`, `localhost`) as defense in depth against a replayed token. Removed `generateCaptcha()`/`renderCaptcha()` and the math-question markup entirely.
+
+**Setup required (not code — see README):** create a reCAPTCHA v2 checkbox key at google.com/recaptcha/admin, drop the site key into `index.html`'s `data-sitekey`, and add `RECAPTCHA_SECRET_KEY` as a Netlify environment variable (same pattern as `SUPABASE_SERVICE_ROLE_KEY`).
+
+**Files changed:** `index.html`, `js/app.js`, `css/style.css`, `netlify/functions/verify-recaptcha.mjs` (new), `tests/regression-static.sh`, `README.md`, `CHANGELOG.md`
+
+---
+
 ## [2.3.2] — 2026-08-10
 
 ### Branded invite email + tenant name in metadata
