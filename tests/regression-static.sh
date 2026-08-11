@@ -150,6 +150,8 @@ check_contains js/app.js "function setInitialPassword" "app.js defines setInitia
 check_status accept-invite.html 200
 check_status netlify/functions/invite-staff.mjs 200
 check_status package.json 200
+check_contains js/app.js "tenantName" "app.js threads tenantName into the invite request"
+check_contains netlify/functions/invite-staff.mjs "tenant_name" "invite-staff.mjs passes tenant_name into invite metadata"
 
 echo
 echo "== Summary: $PASS passed, $FAIL failed =="

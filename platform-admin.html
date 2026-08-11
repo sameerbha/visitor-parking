@@ -458,7 +458,7 @@ document.getElementById('staff-form').addEventListener('submit', async (e) => {
   btn.disabled = true;
   btn.textContent = 'Sending…';
   try {
-    const result = await inviteStaffToTenant(email, currentTenant.id);
+    const result = await inviteStaffToTenant(email, currentTenant.id, currentTenant.name);
     closeModal('staff-modal');
     showAlert(result.existingUser
       ? 'That account already existed — linked to this tenant.'

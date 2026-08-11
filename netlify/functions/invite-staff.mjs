@@ -41,6 +41,7 @@ export default async (req) => {
 
   const email = (body.email || '').trim().toLowerCase();
   const tenantId = body.tenantId;
+  const tenantName = (body.tenantName || '').trim(); // building name, threaded into the invite email via user_metadata
   const origin = body.origin; // the browser's own origin, so the invite email links back to wherever the admin was working from
   if (!email || !tenantId) {
     return json({ error: 'email and tenantId are required.' }, 400);
@@ -81,7 +82,17 @@ export default async (req) => {
 
   const redirectTo = origin ? origin.replace(/\/$/, '') + '/accept-invite.html' : undefined;
 
-  const { data: invited, error: inviteErr } = await admin.auth.admin.inviteUserByEmail(email, redirectTo ? { redirectTo } : undefined);
+  // data becomes auth.users.user_metadata, which the Supabase invite email
+  // template can read as {{ .Data.tenant_name }} to greet the recipient with
+  // the actual building name instead of a generic message.
+  const inviteOptions = {};
+  if (redirectTo) inviteOptions.redirectTo = redirectTo;
+  if (tenantName) inviteOptions.data = { tenant_name: tenantName };
+
+  const { data: invited, error: inviteErr } = await admin.auth.admin.inviteUserByEmail(
+    email,
+    Object.keys(inviteOptions).length ? inviteOptions : undefined
+  );
 
   if (inviteErr) {
     // Most common non-error case: this person already has a Supabase login

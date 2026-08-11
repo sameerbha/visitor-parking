@@ -440,7 +440,7 @@ async function assignStaffToTenant(userId, tenantId) {
 // them access to a tenant, in one step — no Supabase dashboard needed. Calls
 // the invite-staff Netlify function, which holds the service_role key
 // server-side; this client-side function just packages the request.
-async function inviteStaffToTenant(email, tenantId) {
+async function inviteStaffToTenant(email, tenantId, tenantName) {
   const { data: sessionData } = await _sb.auth.getSession();
   const token = sessionData?.session?.access_token;
   if (!token) throw new Error('Your session has expired — please refresh and sign in again.');
@@ -451,7 +451,10 @@ async function inviteStaffToTenant(email, tenantId) {
       'Content-Type': 'application/json',
       Authorization: 'Bearer ' + token,
     },
-    body: JSON.stringify({ email, tenantId, origin: window.location.origin }),
+    // tenantName is passed through as auth.users user_metadata so the
+    // Supabase invite email template can reference {{ .Data.tenant_name }}
+    // and greet the recipient with the actual building name.
+    body: JSON.stringify({ email, tenantId, tenantName, origin: window.location.origin }),
   });
 
   let payload = null;

@@ -2,6 +2,16 @@
 
 All changes to this project are documented here in reverse chronological order.
 
+## [2.3.2] — 2026-08-10
+
+### Branded invite email + tenant name in metadata
+
+The invite email staff received was Supabase's fully generic default template (no Regent Parking branding, and text referencing `http://localhost:3000`). Threaded the building's name through the invite flow so Supabase's template can personalize it: `inviteStaffToTenant(email, tenantId, tenantName)` in `js/app.js` now sends `tenantName`, and `netlify/functions/invite-staff.mjs` passes it to `inviteUserByEmail` as `data: { tenant_name }`, landing in `auth.users.user_metadata` where the email template can read it as `{{ .Data.tenant_name }}`. The actual template HTML/subject is edited directly in the Supabase dashboard (Authentication → Email Templates → Invite user), not in this repo — see README for the branded template text. Also flagged (not fixed in code — it's a dashboard setting) that Supabase's Auth "Site URL" is still the default `localhost:3000`, which is why that text showed up in the email body; needs to be set to a real production URL in Authentication → URL Configuration.
+
+**Files changed:** `js/app.js`, `platform-admin.html`, `netlify/functions/invite-staff.mjs`, `CHANGELOG.md`
+
+---
+
 ## [2.3.1] — 2026-08-06
 
 ### Fix Netlify build failure from secrets scanning
