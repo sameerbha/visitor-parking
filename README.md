@@ -179,7 +179,7 @@ Residents do not read the `unit_codes` table directly. The public registration p
 The resident registration page enforces:
 
 - A valid building selected from the `?lot=` URL parameter
-- Google reCAPTCHA checkbox (server-verified — see below)
+- Invisible Google reCAPTCHA, score-based (server-verified — see below; no checkbox or puzzle, the resident never sees it)
 - Correct unit code
 - Valid plate format
 - A monthly unit pass limit (10 by default — configurable per tenant, see below)
@@ -189,17 +189,18 @@ Each successful registration is valid for 24 hours.
 
 ## Setting Up reCAPTCHA
 
-The registration page's "I'm not a robot" checkbox is Google reCAPTCHA v2. One-time setup, not code:
+The registration page uses Google's invisible, score-based reCAPTCHA — no checkbox, no puzzle, nothing for the resident to click. It's Google's own recommended default specifically because it adds zero friction; a small "protected by reCAPTCHA" badge appears in the corner automatically (required by Google's terms — don't hide it with CSS). Verification happens server-side against a **legacy secret key** rather than the newer Enterprise Assessment API on purpose — the Enterprise route needs a Google Cloud project, billing, and an API key/service account just to check a form on a low-volume site, which isn't worth it here. One-time setup, not code:
 
-1. Go to [google.com/recaptcha/admin/create](https://www.google.com/recaptcha/admin/create), sign in, and register a new site:
-   - reCAPTCHA type: **reCAPTCHA v2**, "I'm not a robot" Checkbox
+1. Go to [google.com/recaptcha/admin](https://www.google.com/recaptcha/admin), sign in, and create a key:
+   - reCAPTCHA type: **Score based (v3)**
    - Domains: `regentparking.ca` (this automatically covers every `*.regentparking.ca` tenant subdomain, current and future), `dueastparking.netlify.app`, and `localhost` (for local testing)
-2. Google gives you a **Site key** (public) and a **Secret key** (private, never commit this).
-3. Paste the Site key into `index.html`, replacing `RECAPTCHA_SITE_KEY` in the `data-sitekey` attribute of `<div class="g-recaptcha">`. It's fine to commit — it's public by design, same as the Supabase anon key already in `js/supabase-config.js`.
-4. In Netlify → your app site → Site configuration → Environment variables, add `RECAPTCHA_SECRET_KEY` set to the Secret key. This is read only by `netlify/functions/verify-recaptcha.mjs` at runtime — never shipped to the browser.
-5. Trigger a new deploy (env var changes only take effect on the next build).
+2. Google gives you a **Site key** (public) tied to that key.
+3. Open the key → **Integration** tab → click **"Integrate with a third-party service or plug-in"** → this reveals the **legacy secret key** (private, never commit this — it's what makes the plain `siteverify` check in `netlify/functions/verify-recaptcha.mjs` work, instead of the Enterprise API).
+4. Paste the Site key into `index.html` in two places: the `render=` parameter of the `recaptcha/api.js` script tag, and the `RECAPTCHA_SITE_KEY` constant near the top of the page's script. It's fine to commit — it's public by design, same as the Supabase anon key already in `js/supabase-config.js`.
+5. In Netlify → your app site → Site configuration → Environment variables, add `RECAPTCHA_SECRET_KEY` set to the legacy secret key from step 3. This is read only by `netlify/functions/verify-recaptcha.mjs` at runtime — never shipped to the browser.
+6. Trigger a new deploy (env var changes only take effect on the next build).
 
-Until step 3 is done, the checkbox will render but fail — Google rejects any site key it doesn't recognize.
+Google scores every interaction 0.0–1.0; `verify-recaptcha.mjs` rejects anything below `MIN_SCORE` (0.5 by default). If real residents ever get wrongly rejected, or spam gets through, check the score distribution on the key's Overview tab in the Google Cloud Fraud Defense console and adjust `MIN_SCORE` accordingly.
 
 ## Configurable Pass Limits
 

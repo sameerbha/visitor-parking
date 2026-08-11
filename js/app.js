@@ -533,16 +533,17 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
 }
 
-// Sends the Google reCAPTCHA v2 checkbox token to verify-recaptcha.mjs,
-// which holds the secret key server-side and checks it with Google. No auth
-// header — this runs before a resident has any session, same as the rest of
-// the registration flow.
-async function verifyRecaptcha(token) {
+// Sends the invisible reCAPTCHA token (and the action it was generated
+// for) to verify-recaptcha.mjs, which holds the secret key server-side and
+// checks both the token and its score with Google. No auth header — this
+// runs before a resident has any session, same as the rest of the
+// registration flow.
+async function verifyRecaptcha(token, action) {
   try {
     const res = await fetch('/api/verify-recaptcha', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token }),
+      body: JSON.stringify({ token, action }),
     });
     const payload = await res.json().catch(() => null);
     if (!res.ok || !payload?.success) {

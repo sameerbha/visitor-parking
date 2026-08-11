@@ -2,6 +2,16 @@
 
 All changes to this project are documented here in reverse chronological order.
 
+## [2.4.1] — 2026-08-11
+
+### Switch reCAPTCHA from checkbox to invisible score-based
+
+Replaced the "I'm not a robot" checkbox with Google's invisible, score-based reCAPTCHA — no widget, no click, nothing on the page except the small required "protected by reCAPTCHA" corner badge. This is Google's own recommended default (their docs explicitly say checkbox keys "increase user friction and don't significantly improve accuracy"), and it directly matches the original goal: make registration simpler than the old math question, not add a new one. `index.html` now fetches a fresh token via `grecaptcha.execute(siteKey, {action: 'register'})` right before submit (score tokens expire in ~2 minutes, so they're never generated at page load) instead of rendering a `g-recaptcha` div. `netlify/functions/verify-recaptcha.mjs` now checks Google's returned `score` against `MIN_SCORE` (0.5, tunable) and cross-checks the `action`, instead of a plain pass/fail. Still uses the same **legacy secret key** + `siteverify` pattern as before, not the Enterprise Assessment API — deliberately, to avoid needing a Google Cloud project/API key for a low-volume form. The existing site key (already a Score-type key) didn't need to be recreated, just re-wired on the frontend.
+
+**Files changed:** `index.html`, `js/app.js`, `netlify/functions/verify-recaptcha.mjs`, `css/style.css`, `tests/regression-static.sh`, `README.md`, `CHANGELOG.md`
+
+---
+
 ## [2.4.0] — 2026-08-11
 
 ### Replace math captcha with Google reCAPTCHA v2 (server-verified)
