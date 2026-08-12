@@ -165,11 +165,17 @@ async function deleteExemption(id) {
 // are read aloud or copied from a printed sheet often enough that this
 // matters. Shared by admin.html's single-code "⚄ Generate" button and
 // platform-admin.html's Bulk Generate.
-const UNIT_CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const UNIT_CODE_LETTERS = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+const UNIT_CODE_NUMBERS = '23456789';
+const UNIT_CODE_CHARS = UNIT_CODE_LETTERS + UNIT_CODE_NUMBERS;
 
-function randomUnitCode(length) {
+// charset defaults to letters+numbers (the original single-code behavior);
+// Bulk Generate passes UNIT_CODE_LETTERS or UNIT_CODE_NUMBERS explicitly
+// when the admin restricts to one character type.
+function randomUnitCode(length, charset) {
+  charset = charset || UNIT_CODE_CHARS;
   let code = '';
-  for (let i = 0; i < length; i++) code += UNIT_CODE_CHARS[Math.floor(Math.random() * UNIT_CODE_CHARS.length)];
+  for (let i = 0; i < length; i++) code += charset[Math.floor(Math.random() * charset.length)];
   return code;
 }
 

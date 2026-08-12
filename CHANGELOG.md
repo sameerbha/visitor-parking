@@ -2,6 +2,16 @@
 
 All changes to this project are documented here in reverse chronological order.
 
+## [2.5.1] — 2026-08-12
+
+### Bulk Generate: choose letters, numbers, or both
+
+Added a "Character Types" dropdown to Platform Admin's Bulk Generate Unit Codes modal — letters + numbers (the previous, still-default behavior), letters only, or numbers only. `js/app.js`'s single `UNIT_CODE_CHARS` constant split into `UNIT_CODE_LETTERS` and `UNIT_CODE_NUMBERS` (both still excluding easily-confused characters — I/O from letters, 0/1 from numbers); `randomUnitCode(length, charset)` takes an optional charset, defaulting to the combined set so admin.html's single-code "⚄ Generate" button needed no changes. The field hint text updates live to describe whichever character set is selected.
+
+**Files changed:** `platform-admin.html`, `js/app.js`, `tests/regression-static.sh`, `CHANGELOG.md`
+
+---
+
 ## [2.5.0] — 2026-08-12
 
 ### Pre-GA fixes: security, self-service password reset, accessibility, polish

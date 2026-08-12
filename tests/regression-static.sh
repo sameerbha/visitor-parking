@@ -137,6 +137,9 @@ check_contains platform-admin.html "confirmBulkCodesRewrite" "platform-admin.htm
 check_contains js/app.js "function bulkRegenerateUnitCodes" "app.js defines bulkRegenerateUnitCodes"
 check_not_contains js/app.js "function bulkUpsertUnitCodes" "app.js no longer defines the old upsert-based bulk helper"
 check_contains js/app.js "function randomUnitCode" "app.js defines the shared randomUnitCode helper"
+check_contains js/app.js "UNIT_CODE_LETTERS" "app.js defines a letters-only unit code charset"
+check_contains js/app.js "UNIT_CODE_NUMBERS" "app.js defines a numbers-only unit code charset"
+check_contains platform-admin.html "bg-charset" "platform-admin.html lets admins choose letters/numbers/both for bulk codes"
 check_status patch-bulk-regenerate-unit-codes.sql 200
 
 echo

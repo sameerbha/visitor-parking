@@ -234,6 +234,14 @@
           <input type="number" id="bg-code-length" class="form-control" min="4" max="8" value="6" required />
         </div>
       </div>
+      <div class="form-group">
+        <label>Character Types *</label>
+        <select id="bg-charset" class="form-control" style="width:auto">
+          <option value="both">Letters + Numbers</option>
+          <option value="letters">Letters Only</option>
+          <option value="numbers">Numbers Only</option>
+        </select>
+      </div>
       <div class="form-row">
         <div class="form-group">
           <label>Floor Range *</label>
@@ -252,7 +260,7 @@
           </div>
         </div>
       </div>
-      <p class="field-hint">Codes use letters and numbers only, skipping easily-confused characters (I, O, 0, 1). Case doesn't matter when residents enter them.</p>
+      <p class="field-hint" id="bg-charset-hint">Codes use letters and numbers only, skipping easily-confused characters (I, O, 0, 1). Case doesn't matter when residents enter them.</p>
       <div class="modal-actions">
         <button type="button" class="btn btn-secondary" onclick="closeModal('bulk-codes-modal')">Cancel</button>
         <button type="button" class="btn btn-primary" id="bulk-codes-preview-btn" onclick="previewBulkCodes()">Preview</button>
@@ -618,6 +626,8 @@ function openBulkCodesModal(addressId) {
     'This replaces that building\'s entire unit code list — existing codes for units outside the range you enter are deleted too.';
   document.getElementById('bg-prefix').value = '';
   document.getElementById('bg-code-length').value = 6;
+  document.getElementById('bg-charset').value = 'both';
+  updateBulkCodesCharsetHint();
   document.getElementById('bg-floor-start').value = '';
   document.getElementById('bg-floor-end').value = '';
   document.getElementById('bg-unit-start').value = 1;
@@ -627,6 +637,19 @@ function openBulkCodesModal(addressId) {
   document.getElementById('bulk-codes-preview').classList.add('hidden');
   document.getElementById('bulk-codes-modal').classList.add('open');
 }
+
+function updateBulkCodesCharsetHint() {
+  const charset = document.getElementById('bg-charset').value;
+  const hint = document.getElementById('bg-charset-hint');
+  if (charset === 'letters') {
+    hint.textContent = 'Codes use letters only, skipping easily-confused characters (I, O). Case doesn\'t matter when residents enter them.';
+  } else if (charset === 'numbers') {
+    hint.textContent = 'Codes use numbers only, skipping easily-confused digits (0, 1).';
+  } else {
+    hint.textContent = 'Codes use letters and numbers only, skipping easily-confused characters (I, O, 0, 1). Case doesn\'t matter when residents enter them.';
+  }
+}
+document.getElementById('bg-charset').addEventListener('change', updateBulkCodesCharsetHint);
 
 function backToBulkCodesSetup() {
   document.getElementById('bulk-codes-setup').classList.remove('hidden');
@@ -639,6 +662,10 @@ async function previewBulkCodes() {
 
   const prefix     = document.getElementById('bg-prefix').value.trim().toUpperCase();
   const codeLength = parseInt(document.getElementById('bg-code-length').value, 10);
+  const charsetMode = document.getElementById('bg-charset').value;
+  const charset = charsetMode === 'letters' ? UNIT_CODE_LETTERS
+    : charsetMode === 'numbers' ? UNIT_CODE_NUMBERS
+    : UNIT_CODE_CHARS;
   const floorStart = parseInt(document.getElementById('bg-floor-start').value, 10);
   const floorEnd   = parseInt(document.getElementById('bg-floor-end').value, 10);
   const unitStart  = parseInt(document.getElementById('bg-unit-start').value, 10);
@@ -672,7 +699,7 @@ async function previewBulkCodes() {
 
   _bulkCodesPreview = unitNumbers.map(unitNumber => ({
     unit_number: unitNumber,
-    code: randomUnitCode(codeLength),
+    code: randomUnitCode(codeLength, charset),
   }));
 
   // Full wipe-and-replace, so the existing count matters more than any
