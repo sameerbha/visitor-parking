@@ -143,6 +143,14 @@ check_contains platform-admin.html "bg-charset" "platform-admin.html lets admins
 check_status patch-bulk-regenerate-unit-codes.sql 200
 
 echo
+echo "== Range-scoped bulk regenerate + Wipe All markers present =="
+check_contains js/app.js "function wipeUnitCodes" "app.js defines wipeUnitCodes"
+check_contains platform-admin.html "wipe-all-codes-btn" "platform-admin.html has the Wipe All Codes button"
+check_contains platform-admin.html "confirm-wipe-all-codes-btn" "platform-admin.html has the Wipe All confirm step"
+check_contains platform-admin.html "Replace This Range" "platform-admin.html labels the scoped action, not a full building wipe"
+check_status patch-scoped-bulk-regenerate-and-wipe-codes.sql 200
+
+echo
 echo "== Building edit + tenant status markers present =="
 check_contains platform-admin.html "address-edit-modal" "platform-admin.html has the Edit Building modal"
 check_contains js/app.js "function updateAddress" "app.js defines updateAddress"

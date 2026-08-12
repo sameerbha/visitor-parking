@@ -249,15 +249,20 @@ GRANT EXECUTE ON FUNCTION reset_tenant_demo_data TO authenticated;
 
 -- bulk_regenerate_unit_codes: platform-admin-only. Bulk-generating unit codes
 -- used to be available to any tenant staff member from Admin's Unit Codes
--- tab, merging into the existing list. It's now a full wipe-and-replace of
--- every unit code for one building at a time, which is destructive enough
--- (and rare enough — mainly initial onboarding) to restrict to platform
--- admins and run through a single atomic transaction rather than a
+-- tab, merging into the existing list. It's now restricted to platform
+-- admins and runs through a single atomic transaction rather than a
 -- client-side delete-then-insert that could partially fail. Gated here, not
 -- just by hiding the button, in case a tenant staff member ever calls the
 -- RPC directly — the existing "Staff can manage their tenant unit codes"
 -- policy on the table itself is untouched, so day-to-day single-code
 -- add/edit/reset by tenant staff keeps working exactly as before.
+--
+-- The delete is scoped to the unit numbers in p_codes, not the whole
+-- building — a two-tower building (e.g. E201-E1110 and W201-W2910 sharing
+-- one address) can regenerate one tower's range without wiping the other's.
+-- Re-running the exact same range you already generated still behaves like
+-- a full replace of that range, since it's deleted then reinserted. Use
+-- wipe_unit_codes() below to clear an entire building at once.
 CREATE OR REPLACE FUNCTION bulk_regenerate_unit_codes(p_address_id UUID, p_codes JSONB)
 RETURNS JSON
 LANGUAGE plpgsql SECURITY DEFINER
@@ -274,7 +279,9 @@ BEGIN
     RAISE EXCEPTION 'Building not found';
   END IF;
 
-  DELETE FROM unit_codes WHERE address_id = p_address_id;
+  DELETE FROM unit_codes
+  WHERE address_id = p_address_id
+    AND unit_number IN (SELECT elem->>'unit_number' FROM jsonb_array_elements(p_codes) AS elem);
   GET DIAGNOSTICS v_deleted = ROW_COUNT;
 
   INSERT INTO unit_codes (address_id, unit_number, code)
@@ -286,6 +293,37 @@ BEGIN
 END;
 $$;
 GRANT EXECUTE ON FUNCTION bulk_regenerate_unit_codes TO authenticated;
+
+-- wipe_unit_codes: platform-admin-only, deletes every unit code for exactly
+-- one building — never more than one address at a time, and never
+-- tenant-wide. This is the deliberate "start completely fresh" action for
+-- when bulk_regenerate_unit_codes's range-scoped delete isn't what you
+-- want, e.g. tearing down a building's whole code list before re-numbering
+-- it from scratch (new tower layout, wrong prefix scheme, etc.).
+CREATE OR REPLACE FUNCTION wipe_unit_codes(p_address_id UUID)
+RETURNS JSON
+LANGUAGE plpgsql SECURITY DEFINER
+AS $$
+DECLARE
+  v_deleted      INT;
+  v_address_name TEXT;
+BEGIN
+  IF NOT is_platform_admin() THEN
+    RAISE EXCEPTION 'Only platform admins can wipe unit codes';
+  END IF;
+
+  SELECT name INTO v_address_name FROM addresses WHERE id = p_address_id;
+  IF v_address_name IS NULL THEN
+    RAISE EXCEPTION 'Building not found';
+  END IF;
+
+  DELETE FROM unit_codes WHERE address_id = p_address_id;
+  GET DIAGNOSTICS v_deleted = ROW_COUNT;
+
+  RETURN json_build_object('deleted', v_deleted, 'address_name', v_address_name);
+END;
+$$;
+GRANT EXECUTE ON FUNCTION wipe_unit_codes TO authenticated;
 
 -- ── 5. Row Level Security ────────────────────────────────────────────────────
 

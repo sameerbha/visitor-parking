@@ -218,9 +218,10 @@ async function deleteUnitCode(id) {
   if (error) throw error;
 }
 
-// Bulk-regenerate: platform-admin-only, full wipe-and-replace of every unit
-// code for one building. `codes` is [{ unit_number, code }, ...] — runs as
-// a single atomic RPC (see bulk_regenerate_unit_codes) rather than a
+// Bulk-regenerate: platform-admin-only, wipes and replaces unit codes for
+// just the range being generated (not the whole building) — see the SQL
+// comment on bulk_regenerate_unit_codes for why. `codes` is
+// [{ unit_number, code }, ...] — runs as a single atomic RPC rather than a
 // client-side delete-then-insert, so it can't partially fail. Lives in
 // Platform Admin, not Admin — see platform-admin.html.
 async function bulkRegenerateUnitCodes(addressId, codes) {
@@ -228,6 +229,16 @@ async function bulkRegenerateUnitCodes(addressId, codes) {
     p_address_id: addressId,
     p_codes: codes,
   });
+  if (error) throw error;
+  return data;
+}
+
+// Wipe every unit code for exactly one building — platform-admin-only, and
+// deliberately separate from bulkRegenerateUnitCodes above. Use this when
+// starting a building's codes completely from scratch (e.g. re-numbering),
+// not as part of the normal generate flow.
+async function wipeUnitCodes(addressId) {
+  const { data, error } = await _sb.rpc('wipe_unit_codes', { p_address_id: addressId });
   if (error) throw error;
   return data;
 }

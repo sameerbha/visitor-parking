@@ -2,6 +2,20 @@
 
 All changes to this project are documented here in reverse chronological order.
 
+## [2.5.2] — 2026-08-12
+
+### Bulk Generate: scope the wipe to the range, add a separate Wipe All
+
+Fixed a real data-loss bug: `bulk_regenerate_unit_codes` deleted **every** unit code for a building before inserting the new batch, not just the ones in the range being generated. That's wrong for any building with more than one tower sharing an address — DuEast's own "225 Sumach Street" has West Tower (`W201`-`W2910`) and East Tower (`E201`-`E1110`) on one address, so regenerating just the West range would have deleted every East code too.
+
+The delete is now scoped to only the unit numbers in the batch being generated — regenerating West's range never touches East's codes, and vice versa. Single-tower buildings that always generate their whole range in one go see no behavior change. The Bulk Generate modal's warning/preview copy was updated to match (it now counts and describes only the units in-range, not the whole building), and the confirm button was relabeled "Replace This Range" instead of "Delete Existing & Generate" to stop implying a full wipe.
+
+Added a separate, explicit **Wipe All Codes** action (new `wipe_unit_codes` RPC, its own confirm dialog matching the Reset Demo Data pattern) for when you actually do want to clear a building's entire code list from scratch — e.g. tearing down and re-numbering a building with a new tower layout. Always scoped to exactly one building, never a whole tenant.
+
+**Files changed:** `supabase-schema.sql`, `patch-scoped-bulk-regenerate-and-wipe-codes.sql` (new), `platform-admin.html`, `js/app.js`, `tests/regression-static.sh`, `README.md`, `CHANGELOG.md`
+
+---
+
 ## [2.5.1] — 2026-08-12
 
 ### Bulk Generate: choose letters, numbers, or both
