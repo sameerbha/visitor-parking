@@ -247,6 +247,46 @@ END;
 $$;
 GRANT EXECUTE ON FUNCTION reset_tenant_demo_data TO authenticated;
 
+-- bulk_regenerate_unit_codes: platform-admin-only. Bulk-generating unit codes
+-- used to be available to any tenant staff member from Admin's Unit Codes
+-- tab, merging into the existing list. It's now a full wipe-and-replace of
+-- every unit code for one building at a time, which is destructive enough
+-- (and rare enough — mainly initial onboarding) to restrict to platform
+-- admins and run through a single atomic transaction rather than a
+-- client-side delete-then-insert that could partially fail. Gated here, not
+-- just by hiding the button, in case a tenant staff member ever calls the
+-- RPC directly — the existing "Staff can manage their tenant unit codes"
+-- policy on the table itself is untouched, so day-to-day single-code
+-- add/edit/reset by tenant staff keeps working exactly as before.
+CREATE OR REPLACE FUNCTION bulk_regenerate_unit_codes(p_address_id UUID, p_codes JSONB)
+RETURNS JSON
+LANGUAGE plpgsql SECURITY DEFINER
+AS $$
+DECLARE
+  v_deleted  INT;
+  v_inserted INT;
+BEGIN
+  IF NOT is_platform_admin() THEN
+    RAISE EXCEPTION 'Only platform admins can bulk-regenerate unit codes';
+  END IF;
+
+  IF NOT EXISTS (SELECT 1 FROM addresses WHERE id = p_address_id) THEN
+    RAISE EXCEPTION 'Building not found';
+  END IF;
+
+  DELETE FROM unit_codes WHERE address_id = p_address_id;
+  GET DIAGNOSTICS v_deleted = ROW_COUNT;
+
+  INSERT INTO unit_codes (address_id, unit_number, code)
+  SELECT p_address_id, elem->>'unit_number', elem->>'code'
+  FROM jsonb_array_elements(p_codes) AS elem;
+  GET DIAGNOSTICS v_inserted = ROW_COUNT;
+
+  RETURN json_build_object('deleted', v_deleted, 'inserted', v_inserted);
+END;
+$$;
+GRANT EXECUTE ON FUNCTION bulk_regenerate_unit_codes TO authenticated;
+
 -- ── 5. Row Level Security ────────────────────────────────────────────────────
 
 ALTER TABLE tenants                ENABLE ROW LEVEL SECURITY;

@@ -22,6 +22,7 @@
       <a href="enforcement.html" class="nav-link">Enforcement</a>
       <a href="admin.html" class="nav-link">Admin</a>
       <a href="platform-admin.html" class="nav-link active">Platform Admin</a>
+      <a href="index.html" class="nav-link" target="_blank">Resident Portal ↗</a>
     </nav>
     <div class="header-right">
       <span class="user-badge desktop-only" id="user-badge"></span>
@@ -35,6 +36,7 @@
     <a href="enforcement.html" class="mobile-nav-link">Enforcement Portal</a>
     <a href="admin.html" class="mobile-nav-link">Admin Portal</a>
     <a href="platform-admin.html" class="mobile-nav-link">Platform Admin</a>
+    <a href="index.html" target="_blank" class="mobile-nav-link">Resident Portal ↗</a>
     <div class="mobile-nav-divider"></div>
     <span class="mobile-nav-user" id="mobile-user"></span>
     <button class="mobile-nav-link logout-link" id="mobile-logout">Sign Out</button>
@@ -86,6 +88,12 @@
       <div class="table-header-bar" style="margin-top:8px">
         <h2 id="detail-title">—</h2>
         <div class="table-actions">
+          <label for="tenant-status-select" class="status-select-label">Status</label>
+          <select class="form-control form-control-sm" id="tenant-status-select" style="width:auto">
+            <option value="trial">Trial</option>
+            <option value="active">Active</option>
+            <option value="suspended">Suspended</option>
+          </select>
           <button class="btn btn-secondary btn-sm hidden" id="reset-demo-btn">🧹 Reset Demo Data</button>
         </div>
       </div>
@@ -102,7 +110,7 @@
           </div>
         </div>
         <table class="data-table">
-          <thead><tr><th>Name</th><th>Lot Code</th></tr></thead>
+          <thead><tr><th>Name</th><th>Lot Code</th><th>Controls</th></tr></thead>
           <tbody id="addresses-tbody"></tbody>
         </table>
       </div>
@@ -179,6 +187,92 @@
         <button type="submit" class="btn btn-primary" id="address-submit-btn">Add Building</button>
       </div>
     </form>
+  </div>
+</div>
+
+<!-- ═══════════════════ Edit Building Modal ═══════════════════ -->
+<div class="modal-overlay" id="address-edit-modal">
+  <div class="modal-box modal-lg">
+    <h3>Edit Building</h3>
+    <p class="modal-subtitle">Fixing a typo here doesn't change the building's data — just its name and lot code.</p>
+    <div class="alert alert-error hidden" id="address-edit-form-error"></div>
+    <form id="address-edit-form" novalidate>
+      <input type="hidden" id="ae-id" value="" />
+      <div class="form-row">
+        <div class="form-group">
+          <label>Building Name *</label>
+          <input type="text" id="ae-name" class="form-control" required maxlength="120" />
+        </div>
+        <div class="form-group">
+          <label>Lot Code *</label>
+          <input type="text" id="ae-lotcode" class="form-control" required maxlength="20" />
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('address-edit-modal')">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="address-edit-submit-btn">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ═══════════════════ Bulk Generate Unit Codes Modal ═══════════════════ -->
+<div class="modal-overlay" id="bulk-codes-modal">
+  <div class="modal-box modal-lg">
+    <h3>Bulk Generate Unit Codes</h3>
+    <p class="modal-subtitle" id="bulk-codes-subtitle">Generate codes for a whole range of units at once.</p>
+    <div class="alert alert-error hidden" id="bulk-codes-form-error"></div>
+
+    <div id="bulk-codes-setup">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Prefix (optional)</label>
+          <input type="text" id="bg-prefix" class="form-control" placeholder="e.g. W" maxlength="5" style="text-transform:uppercase" />
+        </div>
+        <div class="form-group">
+          <label>Code Length *</label>
+          <input type="number" id="bg-code-length" class="form-control" min="4" max="8" value="6" required />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Floor Range *</label>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input type="number" id="bg-floor-start" class="form-control" placeholder="Start" min="0" required />
+            <span class="muted">to</span>
+            <input type="number" id="bg-floor-end" class="form-control" placeholder="End" min="0" required />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Units Per Floor *</label>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input type="number" id="bg-unit-start" class="form-control" placeholder="Start" min="1" value="1" required />
+            <span class="muted">to</span>
+            <input type="number" id="bg-unit-end" class="form-control" placeholder="End" min="1" required />
+          </div>
+        </div>
+      </div>
+      <p class="field-hint">Codes use letters and numbers only, skipping easily-confused characters (I, O, 0, 1). Case doesn't matter when residents enter them.</p>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('bulk-codes-modal')">Cancel</button>
+        <button type="button" class="btn btn-primary" id="bulk-codes-preview-btn" onclick="previewBulkCodes()">Preview</button>
+      </div>
+    </div>
+
+    <div id="bulk-codes-preview" class="hidden">
+      <div class="alert alert-error" id="bulk-codes-warning" style="margin-bottom:12px"></div>
+      <p id="bulk-codes-summary" class="muted" style="margin-bottom:12px"></p>
+      <div class="table-responsive" style="max-height:360px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius)">
+        <table class="data-table">
+          <thead><tr><th>Unit Number</th><th>Code</th></tr></thead>
+          <tbody id="bulk-codes-preview-tbody"></tbody>
+        </table>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" onclick="backToBulkCodesSetup()">Back</button>
+        <button type="button" class="btn btn-danger" id="bulk-codes-confirm-btn" onclick="confirmBulkCodesRewrite()">Delete Existing &amp; Generate</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -297,6 +391,7 @@ async function selectTenant(tenantId) {
   // enforces this too, but there's no reason to even show a destructive
   // button for a real paying customer.
   document.getElementById('reset-demo-btn').classList.toggle('hidden', currentTenant.status !== 'trial');
+  document.getElementById('tenant-status-select').value = currentTenant.status;
 
   await Promise.all([loadAddresses(), loadStaff(), loadUsage()]);
   document.getElementById('tenant-detail').scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -312,12 +407,46 @@ async function loadUsage() {
     '<div class="stat-card"><div class="stat-value">' + stats.addressCount + '</div><div class="stat-label">Buildings</div></div>';
 }
 
+document.getElementById('tenant-status-select').addEventListener('change', async (e) => {
+  const newStatus = e.target.value;
+  const oldStatus = currentTenant.status;
+  if (newStatus === oldStatus) return;
+
+  if (!confirm('Change ' + currentTenant.name + '\'s status from "' + oldStatus + '" to "' + newStatus + '"? ' +
+    (newStatus === 'suspended' ? 'This cuts off staff and resident access immediately.' : 'This may change what staff and residents can access.'))) {
+    e.target.value = oldStatus;
+    return;
+  }
+
+  try {
+    currentTenant = await updateTenantStatus(currentTenant.id, newStatus);
+    const i = allTenants.findIndex(t => t.id === currentTenant.id);
+    if (i !== -1) allTenants[i] = currentTenant;
+    document.getElementById('reset-demo-btn').classList.toggle('hidden', currentTenant.status !== 'trial');
+    await loadTenants();
+  } catch (err) {
+    alert(err.message || 'Could not update tenant status.');
+    e.target.value = oldStatus;
+  }
+});
+
+let currentTenantAddresses = [];
+
 async function loadAddresses() {
-  const addrs = await getAddressesByTenantId(currentTenant.id);
+  currentTenantAddresses = await getAddressesByTenantId(currentTenant.id);
   const tbody = document.getElementById('addresses-tbody');
-  tbody.innerHTML = addrs.length === 0
-    ? '<tr><td colspan="2" class="empty-row">No buildings yet.</td></tr>'
-    : addrs.map(a => '<tr><td>' + escapeHtml(a.name) + '</td><td><code>' + escapeHtml(a.lot_code) + '</code></td></tr>').join('');
+  tbody.innerHTML = currentTenantAddresses.length === 0
+    ? '<tr><td colspan="3" class="empty-row">No buildings yet.</td></tr>'
+    : currentTenantAddresses.map(a =>
+        '<tr>' +
+          '<td>' + escapeHtml(a.name) + '</td>' +
+          '<td><code>' + escapeHtml(a.lot_code) + '</code></td>' +
+          '<td class="controls-cell">' +
+            '<button class="btn btn-warning btn-sm" onclick="openAddressEditModal(\'' + a.id + '\')" title="Edit name/lot code">✏ Edit</button>' +
+            '<button class="btn btn-secondary btn-sm" onclick="openBulkCodesModal(\'' + a.id + '\')" title="Bulk-generate unit codes">🎲 Codes</button>' +
+          '</td>' +
+        '</tr>'
+      ).join('');
 }
 
 async function loadStaff() {
@@ -440,6 +569,153 @@ document.getElementById('address-form').addEventListener('submit', async (e) => 
   }
 });
 
+// ── Edit Address ─────────────────────────────────────────────────────────────
+function openAddressEditModal(addressId) {
+  const addr = currentTenantAddresses.find(a => a.id === addressId);
+  if (!addr) return;
+  document.getElementById('ae-id').value = addr.id;
+  document.getElementById('ae-name').value = addr.name;
+  document.getElementById('ae-lotcode').value = addr.lot_code;
+  document.getElementById('address-edit-form-error').classList.add('hidden');
+  document.getElementById('address-edit-modal').classList.add('open');
+}
+
+document.getElementById('address-edit-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const id      = document.getElementById('ae-id').value;
+  const name    = document.getElementById('ae-name').value.trim();
+  const lotCode = document.getElementById('ae-lotcode').value.trim();
+  const errEl   = document.getElementById('address-edit-form-error');
+  const btn     = document.getElementById('address-edit-submit-btn');
+
+  if (!id || !name || !lotCode) return;
+  btn.disabled = true;
+  try {
+    await updateAddress(id, { name, lot_code: lotCode });
+    closeModal('address-edit-modal');
+    showAlert('Building updated.');
+    await loadAddresses();
+    await loadTenants();
+  } catch (err) {
+    errEl.textContent = err.message && err.message.includes('duplicate')
+      ? 'That lot code is already in use.' : (err.message || 'Could not update building.');
+    errEl.classList.remove('hidden');
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+// ── Bulk Generate Unit Codes (platform-admin-only, full wipe-and-replace) ────
+let _bulkCodesAddress = null;   // the address these codes are being generated for
+let _bulkCodesPreview = [];     // [{ unit_number, code }]
+
+function openBulkCodesModal(addressId) {
+  _bulkCodesAddress = currentTenantAddresses.find(a => a.id === addressId);
+  if (!_bulkCodesAddress) return;
+
+  document.getElementById('bulk-codes-subtitle').textContent =
+    'Generate codes for a whole range of units at once, for ' + _bulkCodesAddress.name + '. ' +
+    'This replaces that building\'s entire unit code list — existing codes for units outside the range you enter are deleted too.';
+  document.getElementById('bg-prefix').value = '';
+  document.getElementById('bg-code-length').value = 6;
+  document.getElementById('bg-floor-start').value = '';
+  document.getElementById('bg-floor-end').value = '';
+  document.getElementById('bg-unit-start').value = 1;
+  document.getElementById('bg-unit-end').value = '';
+  document.getElementById('bulk-codes-form-error').classList.add('hidden');
+  document.getElementById('bulk-codes-setup').classList.remove('hidden');
+  document.getElementById('bulk-codes-preview').classList.add('hidden');
+  document.getElementById('bulk-codes-modal').classList.add('open');
+}
+
+function backToBulkCodesSetup() {
+  document.getElementById('bulk-codes-setup').classList.remove('hidden');
+  document.getElementById('bulk-codes-preview').classList.add('hidden');
+}
+
+async function previewBulkCodes() {
+  const errEl = document.getElementById('bulk-codes-form-error');
+  errEl.classList.add('hidden');
+
+  const prefix     = document.getElementById('bg-prefix').value.trim().toUpperCase();
+  const codeLength = parseInt(document.getElementById('bg-code-length').value, 10);
+  const floorStart = parseInt(document.getElementById('bg-floor-start').value, 10);
+  const floorEnd   = parseInt(document.getElementById('bg-floor-end').value, 10);
+  const unitStart  = parseInt(document.getElementById('bg-unit-start').value, 10);
+  const unitEnd    = parseInt(document.getElementById('bg-unit-end').value, 10);
+
+  function fail(msg) { errEl.textContent = msg; errEl.classList.remove('hidden'); }
+
+  if ([codeLength, floorStart, floorEnd, unitStart, unitEnd].some(Number.isNaN)) {
+    return fail('Please fill in all the required fields.');
+  }
+  if (codeLength < 4 || codeLength > 8) {
+    return fail('Code length must be between 4 and 8 characters.');
+  }
+  if (floorEnd < floorStart) return fail('Floor range end must not be before the start.');
+  if (unitEnd < unitStart)   return fail('Unit range end must not be before the start.');
+
+  const totalUnits = (floorEnd - floorStart + 1) * (unitEnd - unitStart + 1);
+  if (totalUnits > 1000) {
+    return fail('That range is ' + totalUnits + ' units — please generate in batches of 1000 or fewer at a time.');
+  }
+
+  // Matches the existing DuEast convention (W201–W2910): prefix + floor
+  // as-is + unit zero-padded to at least 2 digits.
+  const unitDigits = Math.max(2, String(unitEnd).length);
+  const unitNumbers = [];
+  for (let floor = floorStart; floor <= floorEnd; floor++) {
+    for (let u = unitStart; u <= unitEnd; u++) {
+      unitNumbers.push(prefix + floor + String(u).padStart(unitDigits, '0'));
+    }
+  }
+
+  _bulkCodesPreview = unitNumbers.map(unitNumber => ({
+    unit_number: unitNumber,
+    code: randomUnitCode(codeLength),
+  }));
+
+  // Full wipe-and-replace, so the existing count matters more than any
+  // per-row detail — this is the number of codes about to be deleted.
+  const existing = await getUnitCodes(_bulkCodesAddress.id);
+  document.getElementById('bulk-codes-warning').textContent =
+    existing.length > 0
+      ? 'This will permanently delete all ' + existing.length + ' existing unit code' + (existing.length === 1 ? '' : 's') +
+        ' for ' + _bulkCodesAddress.name + ' and replace them with the ' + _bulkCodesPreview.length + ' below. This cannot be undone.'
+      : _bulkCodesAddress.name + ' has no existing unit codes yet — these ' + _bulkCodesPreview.length + ' will be created.';
+
+  document.getElementById('bulk-codes-summary').textContent =
+    _bulkCodesPreview.length + ' unit' + (_bulkCodesPreview.length === 1 ? '' : 's') + ' will be generated:';
+
+  document.getElementById('bulk-codes-preview-tbody').innerHTML = _bulkCodesPreview.map(r =>
+    '<tr><td>' + escapeHtml(r.unit_number) + '</td><td><code class="code-badge">' + escapeHtml(r.code) + '</code></td></tr>'
+  ).join('');
+
+  document.getElementById('bulk-codes-setup').classList.add('hidden');
+  document.getElementById('bulk-codes-preview').classList.remove('hidden');
+}
+
+async function confirmBulkCodesRewrite() {
+  if (!_bulkCodesAddress || _bulkCodesPreview.length === 0) return;
+  const errEl = document.getElementById('bulk-codes-form-error');
+  errEl.classList.add('hidden');
+
+  const btn = document.getElementById('bulk-codes-confirm-btn');
+  btn.disabled = true;
+  btn.textContent = 'Generating…';
+  try {
+    const result = await bulkRegenerateUnitCodes(_bulkCodesAddress.id, _bulkCodesPreview);
+    closeModal('bulk-codes-modal');
+    showAlert(result.deleted + ' old code(s) removed, ' + result.inserted + ' new code(s) created for ' + _bulkCodesAddress.name + '.');
+  } catch (err) {
+    errEl.textContent = err.message || 'Could not generate codes.';
+    errEl.classList.remove('hidden');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Delete Existing & Generate';
+  }
+}
+
 // ── Assign Staff ─────────────────────────────────────────────────────────────
 document.getElementById('add-staff-btn').addEventListener('click', () => {
   document.getElementById('staff-form').reset();
@@ -477,7 +753,7 @@ document.getElementById('staff-form').addEventListener('submit', async (e) => {
 
 // ── Modal helpers ─────────────────────────────────────────────────────────────
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-['tenant-modal','address-modal','staff-modal','staff-remove-modal','reset-demo-modal'].forEach(id => {
+['tenant-modal','address-modal','address-edit-modal','bulk-codes-modal','staff-modal','staff-remove-modal','reset-demo-modal'].forEach(id => {
   document.getElementById(id).addEventListener('click', function(e) {
     if (e.target === this) closeModal(id);
   });

@@ -54,10 +54,9 @@
 
         <div class="form-group">
           <label for="visitor_plate">Visitor License Plate</label>
-          <input id="visitor_plate" type="text" class="form-control"
+          <input id="visitor_plate" type="text" class="form-control input-plate"
             placeholder="e.g. ABCD 123" required maxlength="10"
-            autocapitalize="characters" autocomplete="off"
-            style="text-transform:uppercase;letter-spacing:2px;font-weight:600" />
+            autocapitalize="characters" autocomplete="off" />
         </div>
 
         <!-- No visible security-check UI here on purpose — reCAPTCHA runs
@@ -70,7 +69,7 @@
         <!-- Error banner lives here — directly above Submit so it's always visible -->
         <div class="alert alert-error hidden" id="form-error"></div>
 
-        <button type="submit" class="btn btn-success btn-block btn-lg" id="submit-btn">Submit</button>
+        <button type="submit" class="btn btn-success btn-block btn-lg" id="submit-btn" disabled>Loading building info…</button>
       </form>
     </div>
 
@@ -138,6 +137,7 @@
 // ── State ─────────────────────────────────────────────────────────────────────
 let currentAddress = null;
 let _extendContext = null; // holds data when the extend prompt is showing
+let _codeFailCount = 0; // consecutive wrong-unit-code attempts, resets on success or a fresh registration
 
 // ── Shared helper: colour-coded progress bar ──────────────────────────────────
 function passBar(label, used, max) {
@@ -244,11 +244,23 @@ function resolveTenantSubdomain() {
       currentAddress = addresses.length > 0 ? addresses[0] : null;
     }
 
+    const submitBtn = document.getElementById('submit-btn');
     if (currentAddress) {
       document.getElementById('address_id').value = currentAddress.id;
       const badge = document.getElementById('tenant-badge');
       badge.textContent = currentAddress.name;
       badge.classList.remove('hidden');
+      // Only now is there actually something valid to submit against — a
+      // fast tap on Submit before this resolves used to hit a "Building
+      // not found" error that was really just this race.
+      submitBtn.textContent = 'Submit';
+      submitBtn.disabled = false;
+    } else {
+      // Genuinely nothing to register against (bad/missing ?lot=, or no
+      // tenant/address resolved from this hostname) — say so immediately
+      // instead of waiting for a submit attempt, and leave Submit disabled
+      // since there's nothing valid it could do.
+      showError('Building not found. Please use the link provided by your building management.');
     }
   } catch (initErr) {
     console.error('[index.html] Init error:', initErr);
@@ -300,12 +312,20 @@ document.getElementById('reg-form').addEventListener('submit', async function(e)
     // 5. Validate unit code (server-side RPC — never exposes raw codes)
     const codeCheck = await validateUnitCode(unit_number, unit_code, address_id);
     if (!codeCheck.valid) {
-      showError(codeCheck.error);
+      _codeFailCount++;
+      // After a couple of tries, a resident with a genuinely wrong code
+      // (versus one typo) should be nudged to stop retrying and call
+      // someone — the same contact info already lives in the footer, but
+      // that's easy to miss right after an error.
+      showError(_codeFailCount >= 2
+        ? codeCheck.error + ' Still not working? Contact your building concierge for help.'
+        : codeCheck.error);
       document.getElementById('unit_code').value = '';
       submitBtn.textContent = 'Submit';
       submitBtn.disabled = false;
       return;
     }
+    _codeFailCount = 0;
 
     // 6. Check if plate is already actively registered
     submitBtn.textContent = 'Checking…';
@@ -433,8 +453,14 @@ document.getElementById('extend-confirm-btn').addEventListener('click', async fu
 
 // ── Register again ────────────────────────────────────────────────────────────
 document.getElementById('register-again-btn').addEventListener('click', function() {
+  // Keep the unit number — a resident registering a second guest shouldn't
+  // have to retype it. Only the code and plate are security/guest-specific
+  // enough to be worth clearing.
+  const unitNumber = document.getElementById('unit_number').value;
   document.getElementById('reg-form').reset();
+  document.getElementById('unit_number').value = unitNumber;
   document.getElementById('unit_code').value = '';
+  _codeFailCount = 0;
   document.getElementById('submit-btn').textContent = 'Submit';
   document.getElementById('submit-btn').disabled = false;
   document.getElementById('success-view').classList.add('hidden');

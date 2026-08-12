@@ -141,9 +141,8 @@
     <div class="lookup-box">
       <p>Check whether a plate is currently authorized to park at this address (active visitor registration or valid exemption).</p>
       <div class="lookup-row">
-        <input class="form-control lookup-input" id="lookup-plate"
+        <input class="form-control lookup-input input-plate" id="lookup-plate"
           placeholder="Enter license plate…" maxlength="10"
-          style="text-transform:uppercase;letter-spacing:2px;font-weight:600"
           autocapitalize="characters" />
         <button class="btn btn-primary" id="check-btn">Check Plate</button>
       </div>
@@ -172,8 +171,7 @@
     <p>Not on the valid list or exempt — log it here to call in from the desk.</p>
     <div class="form-group">
       <label for="flag-plate">License Plate</label>
-      <input id="flag-plate" type="text" class="form-control" maxlength="10"
-        style="text-transform:uppercase;letter-spacing:2px;font-weight:600"
+      <input id="flag-plate" type="text" class="form-control input-plate" maxlength="10"
         autocapitalize="characters" autocomplete="off" placeholder="e.g. ABCD 123" />
     </div>
     <div class="form-group">
@@ -245,6 +243,10 @@ function updateHeaderTenantBadge(address) {
     loadFlaggedFromStorage();
     await loadVisitors();
   } else {
+    // Same fix as admin.html: previously left the tab bar and Valid Plates
+    // panel visible with a permanently-stuck "Loading…" title.
+    document.querySelector('.tab-bar').style.display = 'none';
+    document.getElementById('panel-plates').classList.add('hidden');
     document.querySelector('.portal-toolbar').insertAdjacentHTML('beforebegin',
       '<div class="alert alert-info">Your account isn\'t assigned to a building yet. ' +
       'Contact your administrator to get set up.</div>');
@@ -454,6 +456,7 @@ document.getElementById('patrol-list').addEventListener('click', function(e) {
 document.getElementById('patrol-search').addEventListener('input', renderPatrol);
 
 document.getElementById('patrol-reset-btn').addEventListener('click', function() {
+  if (!confirm('Reset every checked-off plate for this shift? This can\'t be undone.')) return;
   checkedIds = new Set();
   saveCheckedToStorage();
   renderPatrol();

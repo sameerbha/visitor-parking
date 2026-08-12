@@ -18,9 +18,15 @@
      product and the pitch read as the same brand without reskinning every
      screen. --gold-light is for gold text on navy/dark backgrounds;
      --gold is for gold text on white/light backgrounds (needs the extra
-     contrast). */
-  --gold:       #B8912F;
-  --gold-light: #D4AF5A;
+     contrast). Both values are nudged slightly darker/lighter than the
+     marketing site's exact gold specifically so text set in them clears
+     3:1 contrast (WCAG AA, large text) against the backgrounds they're
+     actually used on here — the original values measured ~2.75:1 and
+     ~2.94:1 respectively, both just under the floor. Badges/borders don't
+     use these variables (they're hardcoded rgba elsewhere), so this only
+     affects text. */
+  --gold:       #B38A2C;
+  --gold-light: #E2BC68;
   --bg:        #f0f2f5;
   --surface:   #ffffff;
   --border:    #dee2e6;
@@ -75,8 +81,17 @@ a:hover{text-decoration:underline}
 .form-group label{display:block;margin-bottom:6px;font-weight:600;font-size:.88rem;color:#333}
 .form-control{width:100%;padding:10px 14px;border:2px solid #ced4da;border-radius:var(--radius);font-size:.95rem;background:#fff;color:var(--text);transition:border-color var(--tr),box-shadow var(--tr);outline:none}
 .form-control:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(13,110,253,.18)}
-.form-control::placeholder{color:#adb5bd}
+/* #adb5bd measured ~2.1:1 against white — hard to read, including the
+   resident's only guidance text on the unit-code field on index.html. */
+.form-control::placeholder{color:#8a929a}
 select.form-control{cursor:pointer}
+.form-control-sm{padding:6px 10px;font-size:.85rem}
+.status-select-label{font-size:.85rem;font-weight:600;color:var(--muted)}
+/* Shared by every plate/code-style input that used to hand-copy this same
+   inline style: index.html's plate field, admin.html's exemption plate,
+   unit-code, and history-search fields, enforcement.html's two lookup
+   fields. */
+.input-plate{text-transform:uppercase;letter-spacing:2px;font-weight:600}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 @media(max-width:600px){.form-row{grid-template-columns:1fr}}
 
@@ -135,10 +150,16 @@ select.form-control{cursor:pointer}
 .login-page{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:linear-gradient(135deg,var(--navy) 0%,#1a1a9e 100%)}
 .login-card{background:var(--surface);border-radius:12px;padding:40px 36px;width:100%;max-width:400px;box-shadow:var(--shadow-lg)}
 .login-logo{text-align:center;margin-bottom:32px}
+/* ── Change Password (embedded in the normal white portal-page layout,
+   not the full-screen navy .login-page — needed its own class instead of
+   the inline styles it used to carry) ─────────────────────────────── */
+.change-password-page{max-width:480px;margin:40px auto}
+.change-password-card{box-shadow:var(--shadow);border-radius:var(--radius);padding:32px}
+.change-password-card h2{margin-bottom:4px}
+.change-password-intro{color:var(--muted);font-size:.9rem;margin-bottom:24px}
 .logo-icon-large{font-size:3rem;display:block;margin-bottom:8px}
 .login-logo h1{font-size:1.4rem;font-weight:800;color:var(--navy);margin-bottom:4px}
 .login-logo p{font-size:.88rem;color:var(--muted)}
-.login-demo-hint{margin-top:20px;padding:12px 14px;background:#f8f9fa;border-radius:var(--radius);font-size:.8rem;color:var(--muted);line-height:1.7;text-align:center}
 
 /* ── Resident Portal ──────────────────────────────────────── */
 .resident-portal{min-height:100vh;background:linear-gradient(160deg,#1565c0 0%,#0a0a6e 100%);padding:calc(24px + env(safe-area-inset-top)) 16px calc(48px + env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center}
@@ -335,6 +356,11 @@ select.form-control{cursor:pointer}
   .lookup-row{flex-direction:column;align-items:stretch}
   .modal-box{padding:20px}
   .controls-cell{display:flex;flex-wrap:wrap;gap:4px}
+  /* .btn-sm's desktop size (~26-30px tall) is under the ~44px recommended
+     tap target — it's the class used for every row-level action in tables
+     that are explicitly meant to be used on a phone in the field. Scoped
+     to mobile only so desktop table density is unaffected. */
+  .btn-sm{min-height:44px;padding:8px 14px}
   .patrol-plate{font-size:1.5rem}
   .patrol-row{padding:18px 16px}
   .patrol-fab{bottom:calc(16px + env(safe-area-inset-bottom));right:16px;padding:16px 24px;font-size:1.05rem}

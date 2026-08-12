@@ -161,6 +161,18 @@ async function deleteExemption(id) {
 
 // ─── Unit Codes ─────────────────────────────────────────────────────────────
 
+// Excludes I/O/0/1 — easily confused with each other or with L/1, and codes
+// are read aloud or copied from a printed sheet often enough that this
+// matters. Shared by admin.html's single-code "⚄ Generate" button and
+// platform-admin.html's Bulk Generate.
+const UNIT_CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+
+function randomUnitCode(length) {
+  let code = '';
+  for (let i = 0; i < length; i++) code += UNIT_CODE_CHARS[Math.floor(Math.random() * UNIT_CODE_CHARS.length)];
+  return code;
+}
+
 async function getUnitCodes(addressId) {
   const { data, error } = await _sb
     .from('unit_codes')
@@ -200,15 +212,16 @@ async function deleteUnitCode(id) {
   if (error) throw error;
 }
 
-// Bulk-generate: inserts new unit codes and overwrites existing ones in a
-// single round trip. `rows` is [{ address_id, unit_number, code }, ...] —
-// the caller (Admin's Bulk Generate modal) decides per-row whether an
-// already-coded unit should be included here at all.
-async function bulkUpsertUnitCodes(rows) {
-  const { data, error } = await _sb
-    .from('unit_codes')
-    .upsert(rows, { onConflict: 'address_id,unit_number' })
-    .select();
+// Bulk-regenerate: platform-admin-only, full wipe-and-replace of every unit
+// code for one building. `codes` is [{ unit_number, code }, ...] — runs as
+// a single atomic RPC (see bulk_regenerate_unit_codes) rather than a
+// client-side delete-then-insert, so it can't partially fail. Lives in
+// Platform Admin, not Admin — see platform-admin.html.
+async function bulkRegenerateUnitCodes(addressId, codes) {
+  const { data, error } = await _sb.rpc('bulk_regenerate_unit_codes', {
+    p_address_id: addressId,
+    p_codes: codes,
+  });
   if (error) throw error;
   return data;
 }
@@ -348,21 +361,35 @@ async function changePassword(userId, currentPassword, newPassword) {
   });
   if (verifyError) return { success: false, error: 'Current password is incorrect.' };
 
-  if (newPassword.length < 6) return { success: false, error: 'New password must be at least 6 characters.' };
+  if (newPassword.length < MIN_PASSWORD_LENGTH) return { success: false, error: 'New password must be at least ' + MIN_PASSWORD_LENGTH + ' characters.' };
 
   const { error } = await _sb.auth.updateUser({ password: newPassword });
   if (error) return { success: false, error: error.message };
   return { success: true };
 }
 
-// For accept-invite.html only. A freshly-invited user arrives with a
-// temporary session from the invite link's token, not a real password yet —
-// there's nothing to verify against, unlike changePassword() above.
+// Length over complexity — current best-practice default, and simpler to
+// communicate than a rule about mixing character types. Shared by every
+// password-setting flow: invite acceptance, self-service reset, and the
+// signed-in change-password form.
+const MIN_PASSWORD_LENGTH = 8;
+
+// Used by accept-invite.html and reset-password.html — both arrive with a
+// temporary session from an emailed link's token, not a real password yet,
+// so there's nothing to verify against, unlike changePassword() above.
 async function setInitialPassword(newPassword) {
-  if (newPassword.length < 6) return { success: false, error: 'Password must be at least 6 characters.' };
+  if (newPassword.length < MIN_PASSWORD_LENGTH) return { success: false, error: 'Password must be at least ' + MIN_PASSWORD_LENGTH + ' characters.' };
   const { error } = await _sb.auth.updateUser({ password: newPassword });
   if (error) return { success: false, error: error.message };
   return { success: true };
+}
+
+// For forgot-password.html. Always reports success regardless of whether
+// the email actually has an account — Supabase itself doesn't error on an
+// unknown email either, but this keeps the UI copy from ever implying
+// otherwise (no email enumeration).
+async function requestPasswordReset(email, redirectTo) {
+  await _sb.auth.resetPasswordForEmail(email, { redirectTo });
 }
 
 async function requireAuth(redirectBack) {
@@ -413,8 +440,24 @@ async function createTenant(data) {
   return row;
 }
 
+// Same "Platform admins manage tenants" FOR ALL RLS policy as createTenant
+// already relies on — no new policy or RPC needed.
+async function updateTenantStatus(id, status) {
+  const { data: row, error } = await _sb.from('tenants').update({ status }).eq('id', id).select().single();
+  if (error) throw error;
+  return row;
+}
+
 async function createAddress(data) {
   const { data: row, error } = await _sb.from('addresses').insert(data).select().single();
+  if (error) throw error;
+  return row;
+}
+
+// The "Platform admins manage addresses" RLS policy is FOR ALL, so this
+// needs no new policy or RPC — same table access createAddress already uses.
+async function updateAddress(id, data) {
+  const { data: row, error } = await _sb.from('addresses').update(data).eq('id', id).select().single();
   if (error) throw error;
   return row;
 }
@@ -572,6 +615,46 @@ function showAlert(msg, type = 'success') {
   el.style.display = 'block';
   setTimeout(() => { el.style.display = 'none'; }, 3500);
 }
+
+// ── Modal accessibility (Escape-to-close, focus management) ─────────────────
+// Runs on every page — a no-op wherever there are no .modal-overlay
+// elements. Watches each modal's "open" class rather than requiring every
+// existing openModal-equivalent/closeModal() call site across admin.html,
+// enforcement.html, and platform-admin.html to route through a shared
+// function — those keep working exactly as they already do, and this adds
+// Escape-to-close plus focus-in/focus-restore on top, for free, everywhere.
+(function initModalAccessibility() {
+  const returnFocus = new WeakMap(); // modal element -> element to refocus on close
+
+  function firstFocusable(modal) {
+    return modal.querySelector(
+      'input:not([type="hidden"]):not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), a[href]'
+    );
+  }
+
+  function onModalToggle(modal) {
+    if (modal.classList.contains('open')) {
+      returnFocus.set(modal, document.activeElement);
+      const target = firstFocusable(modal);
+      if (target) target.focus();
+    } else if (returnFocus.has(modal)) {
+      const toFocus = returnFocus.get(modal);
+      if (toFocus && document.body.contains(toFocus)) toFocus.focus();
+      returnFocus.delete(modal);
+    }
+  }
+
+  document.querySelectorAll('.modal-overlay').forEach(modal => {
+    new MutationObserver(() => onModalToggle(modal))
+      .observe(modal, { attributes: true, attributeFilter: ['class'] });
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    const openOverlay = document.querySelector('.modal-overlay.open');
+    if (openOverlay) openOverlay.classList.remove('open');
+  });
+})();
 
 async function populateAddressSelect(selectEl) {
   const addrs = await getAddresses();

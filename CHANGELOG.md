@@ -2,6 +2,24 @@
 
 All changes to this project are documented here in reverse chronological order.
 
+## [2.5.0] — 2026-08-12
+
+### Pre-GA fixes: security, self-service password reset, accessibility, polish
+
+A batch of ~20 fixes from a pre-GA UX and feature-gap audit (`regent-parking-pre-ga-audit.md`), covering four areas:
+
+**Bulk Generate moved to Platform Admin, now a full rewrite.** Any tenant staff member could previously bulk-generate unit codes for their own building from Admin, and doing so merged/upserted into the existing list. Both were wrong for GA: bulk setup is a one-time onboarding action, not a routine staff task, and a silent merge could leave stale codes behind. It's now platform-admin-only (`platform-admin.html`, in each tenant's Buildings table), and confirming a bulk generate **deletes every existing code for that building and replaces it** with the new batch, via a new `SECURITY DEFINER` RPC (`bulk_regenerate_unit_codes`, gated by `is_platform_admin()`) that does the delete+insert atomically. The old admin.html modal, its preview/confirm JS, and the upsert-based `bulkUpsertUnitCodes()` helper are gone; `randomUnitCode()` now lives once in `js/app.js`, shared by Platform Admin.
+
+**Self-service password reset.** Staff who forgot their password had no way to recover access without an admin re-inviting them. Added `forgot-password.html` (email-only, always shows the same generic confirmation regardless of whether the account exists — no email enumeration) and `reset-password.html` (mirrors the existing accept-invite session-detection pattern), backed by a new `requestPasswordReset()` in `js/app.js`. `login.html` now links to it. Also bumped the shared minimum password length from 6 to 8 characters (`MIN_PASSWORD_LENGTH` in `js/app.js`, used everywhere instead of hardcoded values) — length matters more than complexity rules for real-world password strength.
+
+**Platform Admin: building edit + tenant status control.** Buildings could be created but never renamed/corrected without a database edit — added an Edit Building modal (`address-edit-modal`) and `updateAddress()`. Tenant status (trial/active/suspended) could only be set at creation — added a status dropdown in the tenant detail view (`updateTenantStatus()`), with a confirmation prompt before applying since it affects staff/resident access.
+
+**Accessibility, contrast, and small bugs.** The brand gold (`--gold`/`--gold-light`) measured under WCAG's 3:1 minimum against its backgrounds — recalculated both to pass. Modals across admin.html/enforcement.html/platform-admin.html couldn't be closed with Escape and didn't manage focus — added one shared fix (`initModalAccessibility()` in `js/app.js`, a `MutationObserver` watching for the `open` class) that required no changes to any individual modal. Fixed a loading-state race on `index.html` and a "stuck on Loading…" empty state on admin.html/enforcement.html for staff not yet assigned to a building. Added a confirm() guard before "Reset checks" on enforcement.html (matching the existing "Clear list" pattern). Placeholder text contrast, license-plate input styling, and 44px tap targets were also cleaned up and de-duplicated into shared CSS classes.
+
+**Files changed:** `index.html`, `admin.html`, `enforcement.html`, `platform-admin.html`, `login.html`, `portal.html`, `change-password.html`, `accept-invite.html`, `forgot-password.html` (new), `reset-password.html` (new), `js/app.js`, `css/style.css`, `supabase-schema.sql`, `patch-bulk-regenerate-unit-codes.sql` (new), `tests/regression-static.sh`, `README.md`, `CHANGELOG.md`
+
+---
+
 ## [2.4.1] — 2026-08-11
 
 ### Switch reCAPTCHA from checkbox to invisible score-based

@@ -21,6 +21,7 @@
     <nav class="header-nav desktop-nav" id="staff-nav" style="display:none">
       <a href="enforcement.html" class="nav-link">Enforcement</a>
       <a href="admin.html"  class="nav-link">Admin</a>
+      <a href="platform-admin.html" class="nav-link hidden" id="platform-admin-link">Platform Admin</a>
       <a href="index.html"    class="nav-link" target="_blank">Resident Portal ↗</a>
     </nav>
     <div class="header-right">
@@ -34,6 +35,7 @@
   <nav class="mobile-nav" id="mobile-nav">
     <a href="enforcement.html" class="mobile-nav-link">Enforcement Portal</a>
     <a href="admin.html"  class="mobile-nav-link">Admin Portal</a>
+    <a href="platform-admin.html" class="mobile-nav-link hidden" id="mobile-platform-admin-link">Platform Admin</a>
     <a href="index.html" target="_blank" class="mobile-nav-link">Resident Portal ↗</a>
     <div class="mobile-nav-divider"></div>
     <span class="mobile-nav-user" id="mobile-user"></span>
@@ -71,8 +73,8 @@
     <!-- Portal 3 -->
     <div class="portal-card portal-card-exemptions">
       <div class="portal-card-icon">📋</div>
-      <h2>Exemptions Management</h2>
-      <p>Add, edit, and remove vehicle exemptions for contractors, realtors, and other authorized visitors.</p>
+      <h2>Building Admin</h2>
+      <p>Manage vehicle exemptions, unit codes, registration history, and visitor pass limits for your building.</p>
       <a href="admin.html" class="btn btn-primary btn-block" id="exemptions-link">Admin Portal →</a>
       <small class="portal-note">Staff login required</small>
     </div>
@@ -110,6 +112,12 @@
         location.reload();
       });
       document.getElementById('login-hint').innerHTML = 'Signed in as <strong>' + escapeHtml(displayName) + '</strong>';
+      // Only shown to platform admins — everyone else has no use for it,
+      // and it's only reachable via direct URL otherwise.
+      if (await isPlatformAdmin()) {
+        document.getElementById('platform-admin-link').classList.remove('hidden');
+        document.getElementById('mobile-platform-admin-link').classList.remove('hidden');
+      }
       return;
     }
 

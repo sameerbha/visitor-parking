@@ -31,6 +31,8 @@
     </form>
 
     <div style="text-align:center;margin-top:16px">
+      <a href="forgot-password.html" style="font-size:.85rem;color:var(--muted)">Forgot password?</a>
+      &nbsp;·&nbsp;
       <a href="portal.html" style="font-size:.85rem;color:var(--muted)">← Back to Home</a>
     </div>
   </div>
@@ -43,9 +45,16 @@
   // If already logged in, redirect to home
   (async () => { if (await getCurrentUser()) window.location.href = 'portal.html'; })();
 
-  // Parse ?from= param for redirect after login
-  const params   = new URLSearchParams(window.location.search);
-  const redirect = params.get('from') || 'enforcement.html';
+  // Parse ?from= param for redirect after login. With no explicit ?from=,
+  // default to Platform Admin for platform admins — enforcement.html's
+  // "not assigned to a building yet" message otherwise greets them first,
+  // since a platform admin isn't necessarily tenant staff anywhere.
+  const params      = new URLSearchParams(window.location.search);
+  const fromParam   = params.get('from');
+  async function resolveRedirect() {
+    if (fromParam) return fromParam;
+    return (await isPlatformAdmin()) ? 'platform-admin.html' : 'enforcement.html';
+  }
 
   const form    = document.getElementById('login-form');
   const errEl   = document.getElementById('login-error');
@@ -63,7 +72,7 @@
     try {
       const result = await loginUser(email, password);
       if (result.success) {
-        window.location.href = redirect;
+        window.location.href = await resolveRedirect();
       } else {
         errEl.textContent = result.error;
         errEl.classList.remove('hidden');

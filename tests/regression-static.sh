@@ -63,7 +63,7 @@ check_not_contains() {
 
 echo "== Pages and assets return 200 =="
 for f in index.html portal.html enforcement.html admin.html login.html change-password.html \
-         platform-admin.html \
+         platform-admin.html forgot-password.html reset-password.html \
          manifest.webmanifest sw.js css/style.css js/app.js js/supabase-config.js icons/icon-192.png; do
   check_status "$f" 200
 done
@@ -128,11 +128,36 @@ check_contains index.html "monthlyLimit" "index.html reads the dynamic monthly l
 check_status patch-tenant-limits.sql 200
 
 echo
-echo "== Bulk unit code generator markers present =="
-check_contains admin.html "openBulkModal" "admin.html has the Bulk Generate button/modal"
-check_contains admin.html "previewBulkCodes" "admin.html builds a preview before saving bulk codes"
-check_contains admin.html "bulk-preview-tbody" "admin.html has the bulk preview table"
-check_contains js/app.js "function bulkUpsertUnitCodes" "app.js defines bulkUpsertUnitCodes"
+echo "== Bulk unit code generator markers present (platform-admin-only, full rewrite) =="
+check_not_contains admin.html "openBulkModal" "admin.html no longer has the Bulk Generate button/modal"
+check_contains admin.html "Platform Admin" "admin.html points staff to Platform Admin for bulk setup"
+check_contains platform-admin.html "openBulkCodesModal" "platform-admin.html has the Bulk Generate button/modal"
+check_contains platform-admin.html "previewBulkCodes" "platform-admin.html builds a preview before rewriting codes"
+check_contains platform-admin.html "confirmBulkCodesRewrite" "platform-admin.html rewrites codes via the confirm step"
+check_contains js/app.js "function bulkRegenerateUnitCodes" "app.js defines bulkRegenerateUnitCodes"
+check_not_contains js/app.js "function bulkUpsertUnitCodes" "app.js no longer defines the old upsert-based bulk helper"
+check_contains js/app.js "function randomUnitCode" "app.js defines the shared randomUnitCode helper"
+check_status patch-bulk-regenerate-unit-codes.sql 200
+
+echo
+echo "== Building edit + tenant status markers present =="
+check_contains platform-admin.html "address-edit-modal" "platform-admin.html has the Edit Building modal"
+check_contains js/app.js "function updateAddress" "app.js defines updateAddress"
+check_contains platform-admin.html "tenant-status-select" "platform-admin.html has the tenant status selector"
+check_contains js/app.js "function updateTenantStatus" "app.js defines updateTenantStatus"
+
+echo
+echo "== Self-service password reset markers present =="
+check_contains login.html "forgot-password.html" "login.html links to Forgot Password"
+check_contains js/app.js "function requestPasswordReset" "app.js defines requestPasswordReset"
+check_status forgot-password.html 200
+check_status reset-password.html 200
+
+echo
+echo "== Password policy + modal accessibility markers present =="
+check_contains js/app.js "MIN_PASSWORD_LENGTH" "app.js defines the shared MIN_PASSWORD_LENGTH constant"
+check_not_contains change-password.html "Minimum 6 characters" "change-password.html no longer shows the old 6-character hint"
+check_contains js/app.js "initModalAccessibility" "app.js wires up Escape-to-close modal accessibility"
 
 echo
 echo "== Reset Demo Data markers present =="

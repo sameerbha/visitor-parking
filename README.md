@@ -24,6 +24,8 @@ The Regent Parking marketing site (`regentparking.ca`, no subdomain) is a separa
 | Platform Admin | `platform-admin.html` | Platform admin login required — see [Multi-Tenancy](#multi-tenancy) |
 | Staff Login | `login.html` | Public |
 | Change Password | `change-password.html` | Logged-in staff |
+| Forgot Password | `forgot-password.html` | Public |
+| Reset Password | `reset-password.html` | Via emailed reset link |
 
 ## Stack
 
@@ -55,6 +57,9 @@ VIsitors Parking App/
 ├── platform-admin.html
 ├── login.html
 ├── change-password.html
+├── forgot-password.html
+├── reset-password.html
+├── accept-invite.html
 ├── css/
 │   └── style.css
 ├── js/
@@ -156,6 +161,10 @@ Create staff accounts in Supabase Auth for anyone who should access:
 
 The app uses `supabase.auth.signInWithPassword()`.
 
+### Password reset
+
+As of 2026-08-12, staff can reset their own password without an admin's help. `login.html` links to `forgot-password.html`, which always shows the same generic confirmation message regardless of whether the email has an account (no email enumeration) and calls `supabase.auth.resetPasswordForEmail()`. The emailed link lands on `reset-password.html`, which mirrors `accept-invite.html`'s session-detection pattern and calls `supabase.auth.updateUser({ password })`. The shared minimum password length is **8 characters** (`MIN_PASSWORD_LENGTH` in `js/app.js`) — length over complexity is the current best-practice default, so there are no character-class rules.
+
 ## Security Model
 
 ### Public residents can:
@@ -208,9 +217,13 @@ The monthly-passes-per-unit and days-per-plate limits are per-tenant settings, n
 
 ## Bulk Unit Code Generator
 
-Admin's "🔑 Unit Codes" tab has a "🎲 Bulk Generate" button for setting up a whole range of units at once — a prefix, a floor range, and a units-per-floor range (e.g. prefix `W`, floors 2–29, units 1–10 per floor generates `W201`...`W2910`, matching the existing DuEast unit-numbering convention). Codes are letters and numbers only (4–8 characters, configurable), skipping easily-confused characters (I, O, 0, 1) — there's no symbols option, since unit codes are typed on a phone keyboard and adding symbols would mean an extra keyboard-layout switch for no real security benefit (codes are compared case-insensitively, so letter case doesn't add entropy either).
+As of 2026-08-12, bulk generation is a **platform-admin-only** action, done from Platform Admin's Buildings table ("🎲 Codes" next to a building), not from tenant Admin. Bulk setup is a one-time onboarding step, not a routine staff task, so it moved out of the tenant-facing Admin portal entirely.
 
-Generating always previews first: units that already have a code are shown but unchecked by default, so a re-run over a range never silently overwrites a code a resident already has, unless you explicitly check that row.
+A prefix, a floor range, and a units-per-floor range (e.g. prefix `W`, floors 2–29, units 1–10 per floor generates `W201`...`W2910`, matching the existing DuEast unit-numbering convention) generate a batch of codes — letters and numbers only (4–8 characters, configurable), skipping easily-confused characters (I, O, 0, 1). There's no symbols option, since unit codes are typed on a phone keyboard and adding symbols would mean an extra keyboard-layout switch for no real security benefit (codes are compared case-insensitively, so letter case doesn't add entropy either).
+
+**This is a full wipe-and-replace, not a merge.** Confirming a bulk generate deletes every existing unit code for that building and replaces it with the new batch — there's no partial/preview-checkbox mode. The preview screen shows how many existing codes will be deleted before you confirm. This is intentional: it matches how bulk generate is actually used (setting up a building from scratch, or redoing it entirely), and an atomic delete+insert is safer than a client-side merge that could partially fail. Run [patch-bulk-regenerate-unit-codes.sql](/Users/sameerbhaidani/Documents/VIsitors%20Parking%20App/patch-bulk-regenerate-unit-codes.sql) once in the Supabase SQL Editor to add the `bulk_regenerate_unit_codes` RPC to an existing install.
+
+Tenant Admin staff can still add, edit, or remove individual unit codes one at a time from the "🔑 Unit Codes" tab — only the bulk range-generator moved.
 
 ## Registration History & Retention
 
@@ -235,7 +248,7 @@ As of 2026-08-05 this app supports more than one customer ("tenant") sharing the
 2. Follow the instructions at the bottom of that file to make yourself a platform admin and backfill every existing staff login into `staff_access` — this must happen before step 3, or existing staff will see empty screens once tenant scoping is enforced.
 3. Run [patch-multi-tenant-cutover.sql](/Users/sameerbhaidani/Documents/VIsitors%20Parking%20App/patch-multi-tenant-cutover.sql) — this is the step that actually enforces tenant scoping on `addresses`, `visitor_registrations`, `exemptions`, and `unit_codes`. Log in as an existing staff account immediately after and confirm you still see the expected data.
 
-**Platform Admin (`platform-admin.html`):** for managing tenants across the whole system — create a tenant, add buildings under it, invite staff by email (see [Inviting Staff](#inviting-staff)), reset a trial tenant's demo data, and view basic usage per tenant. Gated by the `platform_admins` allow-list table, checked via `is_platform_admin()`.
+**Platform Admin (`platform-admin.html`):** for managing tenants across the whole system — create a tenant, change its status (trial/active/suspended), add buildings under it, edit a building's name/lot code, bulk-generate unit codes for a building (see [Bulk Unit Code Generator](#bulk-unit-code-generator)), invite staff by email (see [Inviting Staff](#inviting-staff)), reset a trial tenant's demo data, and view basic usage per tenant. Gated by the `platform_admins` allow-list table, checked via `is_platform_admin()`.
 
 ## Inviting Staff
 
