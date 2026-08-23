@@ -130,6 +130,19 @@ section { padding: 80px 0; }
 .faq-item h4 { font-size: 1rem; font-weight: 700; margin-bottom: 8px; }
 .faq-item p { color: var(--muted); font-size: .92rem; }
 
+/* ── Help center: numbered step list (reuses .feature-card's box/number
+   styling, just stacked in one column instead of a 3-up grid) ── */
+.step-list { display: flex; flex-direction: column; gap: 16px; max-width: 720px; margin: 0 auto 40px; }
+.step-list .feature-card { display: flex; gap: 20px; align-items: flex-start; }
+.step-list .feature-card .num { min-width: 30px; margin-bottom: 0; flex: none; }
+.step-list .feature-card div:not(.num) { flex: 1; }
+
+.note-box {
+  background: var(--cream); border-left: 3px solid var(--gold); border-radius: var(--radius);
+  padding: 18px 22px; max-width: 720px; margin: 0 auto 40px; font-size: .92rem; color: var(--text);
+}
+.note-box strong { color: var(--text); }
+
 /* ── Contact ── */
 .contact-grid { display: grid; grid-template-columns: 1.1fr .9fr; gap: 56px; }
 .contact-info h3 { font-size: 1.2rem; font-weight: 700; margin-bottom: 10px; }

@@ -195,12 +195,20 @@
     <h1>DuEast Visitor Parking</h1>
     <p>Concierge &amp; Staff Guide</p>
     <div class="portal-chips">
-      <span class="chip chip-blue">🚔 Enforcement Portal <span class="chip-url">dueastparking.netlify.app/enforcement.html</span></span>
-      <span class="chip chip-blue">⚙️ Admin Portal <span class="chip-url">dueastparking.netlify.app/admin.html</span></span>
+      <span class="chip chip-blue">🚔 Enforcement Portal <span class="chip-url">dueast.regentparking.ca/enforcement.html</span></span>
+      <span class="chip chip-blue">⚙️ Admin Portal <span class="chip-url">dueast.regentparking.ca/admin.html</span></span>
     </div>
   </div>
 
   <div class="body">
+
+    <div class="callout callout-blue" style="margin-bottom: 28px;">
+      <div class="callout-icon">ℹ️</div>
+      <div class="callout-body">
+        <h4>This guide, always up to date</h4>
+        <p>This document is a printable snapshot. Once you're signed in, both portals also have a <strong>Help</strong> link in the navigation with the same guide, kept current as new features ship.</p>
+      </div>
+    </div>
 
     <!-- Portal overview -->
     <div class="section-title">Your Two Portals</div>
@@ -215,10 +223,10 @@
         </div>
         <div class="portal-card-body">
           <ul>
-            <li>View all active visitor registrations</li>
-            <li>Search any plate instantly</li>
-            <li>See registration expiry times</li>
-            <li>Export current registrations as CSV</li>
+            <li>View all active visitor registrations, with search and CSV export</li>
+            <li>🚶 Patrol View — a big, glanceable plate list built for walking the garage on a phone</li>
+            <li>🚩 Flag unregistered vehicles found on patrol, then copy the list to call it in</li>
+            <li>🔍 Look up any single plate to confirm it's valid or exempt</li>
           </ul>
         </div>
       </div>
@@ -227,15 +235,15 @@
           <span class="icon">⚙️</span>
           <div>
             <h3>Admin Portal</h3>
-            <p>Exemptions &amp; unit codes</p>
+            <p>Exemptions, unit codes &amp; settings</p>
           </div>
         </div>
         <div class="portal-card-body">
           <ul>
-            <li>Add / edit / remove plate exemptions</li>
-            <li>Set date ranges for exempt vehicles</li>
-            <li>Create and reset resident unit codes</li>
-            <li>Manage unit codes for all suites</li>
+            <li>Add / edit / remove plate exemptions with date ranges</li>
+            <li>Create, reset, or remove individual resident unit codes</li>
+            <li>📜 Look up 3 years of registration history by plate or unit</li>
+            <li>⚙️ Set your building's monthly pass and per-plate day limits</li>
           </ul>
         </div>
       </div>
@@ -247,22 +255,22 @@
       <div class="step">
         <div class="step-num step-num-blue">1</div>
         <div class="step-content">
-          <h3>Go to either portal URL</h3>
-          <p>Both portals redirect you to the login page automatically if you're not signed in.</p>
+          <h3>First time? Check your email for an invite</h3>
+          <p>New staff receive an email invite from Regent Parking with a link to set up their own password (8 characters minimum). If you don't have an account yet, ask management to request an invite — see <strong>Common Scenarios</strong> below.</p>
         </div>
       </div>
       <div class="step">
         <div class="step-num step-num-blue">2</div>
         <div class="step-content">
-          <h3>Enter your staff credentials</h3>
-          <p>Use the email and password provided by building management. Contact management if you don't have an account.</p>
+          <h3>Go to either portal URL and sign in</h3>
+          <p>Both portals redirect you to the login page automatically if you're not signed in. Enter your email and password.</p>
         </div>
       </div>
       <div class="step">
         <div class="step-num step-num-blue">3</div>
         <div class="step-content">
-          <h3>Change your password on first login</h3>
-          <p>Click <strong>🔒 Password</strong> in the top-right nav to set a personal password.</p>
+          <h3>Forgot your password?</h3>
+          <p>Click <strong>Forgot password?</strong> on the login page and enter your email — you'll get a reset link by email. No need to ask management. You can also change your password anytime via <strong>🔒 Password</strong> in the top-right nav while signed in.</p>
         </div>
       </div>
     </div>
@@ -277,7 +285,13 @@
 
     <!-- Enforcement portal -->
     <div class="section-title">Using the Enforcement Portal</div>
-    <div class="steps">
+
+    <p style="font-size: 13.5px; color: #4a5568; line-height: 1.6; margin-bottom: 20px;">
+      Four tabs, each built for a different moment: <strong>Valid Plates</strong> for desk lookups, <strong>🚶 Patrol View</strong> for walking the garage, <strong>🚩 Flagged</strong> for cars you found that aren't registered, and <strong>🔍 Plate Lookup</strong> for checking one plate at a time.
+    </p>
+
+    <p style="font-size: 12px; font-weight: 700; color: #1a237e; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;">Valid Plates tab</p>
+    <div class="steps" style="margin-bottom: 24px;">
       <div class="step">
         <div class="step-num step-num-blue">1</div>
         <div class="step-content">
@@ -301,13 +315,63 @@
       </div>
     </div>
 
+    <p style="font-size: 12px; font-weight: 700; color: #1a237e; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;">🚶 Patrol View tab</p>
+    <div class="steps" style="margin-bottom: 24px;">
+      <div class="step">
+        <div class="step-num step-num-blue">1</div>
+        <div class="step-content">
+          <h3>Walk the garage with a phone, not a desk</h3>
+          <p>Shows just plate and unit, in large text — nothing to squint at while walking a row of cars. Exempt vehicles are clearly marked with a blue "EXEMPT" badge.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num step-num-blue">2</div>
+        <div class="step-content">
+          <h3>Tap a row to check it off</h3>
+          <p>Tapping dims the row with a strikethrough so you can track which cars you've confirmed. A counter shows "X of Y checked," and progress is saved automatically if you lose signal mid-walk — it resets the next day.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num step-num-blue">3</div>
+        <div class="step-content">
+          <h3>Reset checks for the next round</h3>
+          <p>Tap the small <strong>Reset checks</strong> link next to the counter and confirm — clears every checkmark without affecting anyone's actual registration.</p>
+        </div>
+      </div>
+    </div>
+
+    <p style="font-size: 12px; font-weight: 700; color: #1a237e; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;">🚩 Flagged tab</p>
+    <div class="steps" style="margin-bottom: 24px;">
+      <div class="step">
+        <div class="step-num step-num-blue">1</div>
+        <div class="step-content">
+          <h3>Log a car that isn't registered or exempt</h3>
+          <p>From Patrol View, tap the floating <strong>🚩 Flag Vehicle</strong> button, then enter the plate, spot/location, and an optional description (e.g. "Black SUV"). It's timestamped automatically.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num step-num-blue">2</div>
+        <div class="step-content">
+          <h3>Review and call it in from the Flagged tab</h3>
+          <p>Tap <strong>Copy list</strong> to copy every flagged vehicle as plain text — ready to read straight off your phone when calling the city.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num step-num-blue">3</div>
+        <div class="step-content">
+          <h3>Clear the list once it's handled</h3>
+          <p>Remove a single vehicle with the one-tap Remove button, or clear the whole list (with a confirmation prompt) once everything's been called in. Flagged vehicles are stored only on this device, never sent to Regent Parking's database.</p>
+        </div>
+      </div>
+    </div>
+
     <div class="divider"></div>
 
     <!-- Admin portal -->
     <div class="section-title">Using the Admin Portal</div>
 
     <p style="font-size: 13.5px; color: #4a5568; line-height: 1.6; margin-bottom: 20px;">
-      The Admin Portal has two tabs: <strong>Vehicle Exemptions</strong> and <strong>Unit Codes</strong>. Use the tabs to switch between them. The <strong>+ Add</strong> button in the top-right of the tab bar changes based on the active tab.
+      The Admin Portal has four tabs: <strong>Vehicle Exemptions</strong>, <strong>🔑 Unit Codes</strong>, <strong>📜 Registration History</strong>, and <strong>⚙️ Settings</strong>. Use the tab bar to switch between them; the <strong>+ Add</strong> button (where it appears) changes based on the active tab.
     </p>
 
     <!-- Exemptions -->
@@ -362,6 +426,59 @@
       </div>
     </div>
 
+    <div class="callout callout-blue" style="margin-bottom: 32px;">
+      <div class="callout-icon">ℹ️</div>
+      <div class="callout-body">
+        <h4>Setting up many units at once</h4>
+        <p>Admin's Unit Codes tab handles one unit at a time, by design — bulk-generating codes for an entire building (e.g. onboarding a new tower) is a one-time setup step done by Regent Parking on request, not a routine staff task. Email <strong>support@regentparking.ca</strong> to request it.</p>
+      </div>
+    </div>
+
+    <!-- Registration History -->
+    <p style="font-size: 12px; font-weight: 700; color: #2e7d32; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;">📜 Registration History tab</p>
+    <div class="steps" style="margin-bottom: 24px;">
+      <div class="step">
+        <div class="step-num step-num-green">1</div>
+        <div class="step-content">
+          <h3>Choose By Plate or By Unit</h3>
+          <p>Toggle the search mode, then enter a plate or unit number.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num step-num-green">2</div>
+        <div class="step-content">
+          <h3>Review every registration, active or expired</h3>
+          <p>Results show most recent first, going back up to <strong>3 years</strong> — useful for board questions about who parked where and when.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num step-num-green">3</div>
+        <div class="step-content">
+          <h3>Export if needed</h3>
+          <p>Use <strong>⬇ Export CSV</strong> the same way as elsewhere in the app, for incident reports or board packages.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings -->
+    <p style="font-size: 12px; font-weight: 700; color: #2e7d32; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;">⚙️ Settings tab</p>
+    <div class="steps" style="margin-bottom: 32px;">
+      <div class="step">
+        <div class="step-num step-num-green">1</div>
+        <div class="step-content">
+          <h3>Set your monthly pass limit and per-plate day limit</h3>
+          <p>Change how many visitor passes each unit gets per month, and how many days a single plate can stay registered — both apply across every building under this account, not per-building.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num step-num-green">2</div>
+        <div class="step-content">
+          <h3>Changes apply immediately</h3>
+          <p>New registrations and extensions use the updated numbers right away. There's no separate "save and confirm" step beyond submitting the form.</p>
+        </div>
+      </div>
+    </div>
+
     <div class="divider"></div>
 
     <!-- Common scenarios -->
@@ -380,7 +497,7 @@
 
       <div class="scenario">
         <div class="scenario-q"><span class="q-icon">❓</span>A resident is blocked because they've hit their monthly limit</div>
-        <div class="scenario-a">Monthly limits are enforced by the system and <strong>cannot be overridden</strong> from the portal. The limit resets on the 1st of the month. If it's a legitimate exception, escalate to building management.</div>
+        <div class="scenario-a">A specific resident's current-month count <strong>cannot be overridden</strong> — it resets on the 1st of the month. If the limit itself is too low for your building going forward, a board-authorized staff member can raise it any time in the Admin Portal's <strong>⚙️ Settings</strong> tab; that applies to future registrations, not the current block.</div>
       </div>
 
       <div class="scenario">
@@ -391,6 +508,16 @@
       <div class="scenario">
         <div class="scenario-q"><span class="q-icon">❓</span>A new resident has moved in and needs a unit code</div>
         <div class="scenario-a">Go to the Admin Portal → Unit Codes tab → <strong>+ Add Unit Code</strong>. Enter their unit number, generate a code, and share it with them privately. If a code already exists for that unit (previous tenant), reset it first.</div>
+      </div>
+
+      <div class="scenario">
+        <div class="scenario-q"><span class="q-icon">❓</span>You forgot your own staff password</div>
+        <div class="scenario-a">Click <strong>Forgot password?</strong> on the login page and enter your email — you'll get a reset link. This is self-service; you don't need to ask management or Regent Parking.</div>
+      </div>
+
+      <div class="scenario">
+        <div class="scenario-q"><span class="q-icon">❓</span>A new staff member needs portal access</div>
+        <div class="scenario-a">Staff accounts are set up by Regent Parking, not from within either portal. Email <strong>support@regentparking.ca</strong> with the new staff member's name, email, and which building they support — they'll receive an invite email to set up their own account.</div>
       </div>
 
     </div>
@@ -404,6 +531,7 @@
           <li>Never share your staff login credentials with residents or other unauthorized individuals.</li>
           <li>Unit codes should only be shared directly with the resident of that unit — not posted publicly.</li>
           <li>If you suspect a unit code has been compromised, reset it immediately from the Admin Portal.</li>
+          <li>If you suspect your own staff password has been compromised, reset it immediately via <strong>Forgot password?</strong> on the login page.</li>
           <li>Always sign out when leaving a shared workstation.</li>
         </ul>
       </div>
@@ -427,19 +555,44 @@
           <td><span class="badge badge-blue">View</span><span class="badge badge-red">Delete</span></td>
         </tr>
         <tr>
+          <td>Patrol View &amp; Flagged</td>
+          <td>Enforcement</td>
+          <td><span class="badge badge-blue">View</span><span class="badge badge-green">Add</span> — local to your device only, never sent to Regent Parking</td>
+        </tr>
+        <tr>
           <td>Vehicle exemptions</td>
           <td>Admin</td>
           <td><span class="badge badge-blue">View</span><span class="badge badge-green">Add</span><span class="badge badge-green">Edit</span><span class="badge badge-red">Delete</span></td>
         </tr>
         <tr>
-          <td>Unit codes</td>
+          <td>Unit codes (single)</td>
           <td>Admin</td>
           <td><span class="badge badge-blue">View</span><span class="badge badge-green">Add</span><span class="badge badge-green">Reset</span><span class="badge badge-red">Delete</span></td>
         </tr>
         <tr>
+          <td>Bulk unit code setup</td>
+          <td>Regent Parking</td>
+          <td>Onboarding-only, done on request — email support@regentparking.ca</td>
+        </tr>
+        <tr>
+          <td>Registration history (3 yrs)</td>
+          <td>Admin</td>
+          <td><span class="badge badge-blue">View</span><span class="badge badge-blue">Export CSV</span></td>
+        </tr>
+        <tr>
+          <td>Pass limit settings</td>
+          <td>Admin</td>
+          <td><span class="badge badge-blue">View</span><span class="badge badge-green">Edit</span> — applies to your whole account</td>
+        </tr>
+        <tr>
           <td>Staff accounts</td>
-          <td>Supabase</td>
-          <td>Managed by building management only</td>
+          <td>Regent Parking</td>
+          <td>Invited by email — contact support@regentparking.ca to add or remove staff</td>
+        </tr>
+        <tr>
+          <td>Your own password</td>
+          <td>Login page</td>
+          <td>Self-service reset via "Forgot password?", or change anytime via 🔒 Password</td>
         </tr>
       </tbody>
     </table>
@@ -448,8 +601,8 @@
 
   <!-- Footer -->
   <div class="footer">
-    <p>🅿️ <strong>DuEast Visitor Parking</strong> &nbsp;·&nbsp; Staff &amp; Concierge Guide</p>
-    <p>dueastparking.netlify.app</p>
+    <p>🅿️ <strong>DuEast Visitor Parking</strong> &nbsp;·&nbsp; Staff &amp; Concierge Guide &nbsp;·&nbsp; Powered by Regent Parking</p>
+    <p>dueast.regentparking.ca &nbsp;·&nbsp; support@regentparking.ca</p>
   </div>
 
 </div>

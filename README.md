@@ -26,6 +26,7 @@ The Regent Parking marketing site (`regentparking.ca`, no subdomain) is a separa
 | Change Password | `change-password.html` | Logged-in staff |
 | Forgot Password | `forgot-password.html` | Public |
 | Reset Password | `reset-password.html` | Via emailed reset link |
+| Staff Guide | `staff-guide.html` | Logged-in staff — generic, tenant-agnostic walkthrough of both portals |
 
 ## Stack
 
@@ -60,6 +61,7 @@ VIsitors Parking App/
 ├── forgot-password.html
 ├── reset-password.html
 ├── accept-invite.html
+├── staff-guide.html
 ├── css/
 │   └── style.css
 ├── js/

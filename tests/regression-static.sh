@@ -63,7 +63,7 @@ check_not_contains() {
 
 echo "== Pages and assets return 200 =="
 for f in index.html portal.html enforcement.html admin.html login.html change-password.html \
-         platform-admin.html forgot-password.html reset-password.html \
+         platform-admin.html forgot-password.html reset-password.html staff-guide.html \
          manifest.webmanifest sw.js css/style.css js/app.js js/supabase-config.js icons/icon-192.png; do
   check_status "$f" 200
 done
@@ -198,6 +198,15 @@ check_contains js/app.js "function verifyRecaptcha" "app.js defines verifyRecapt
 check_not_contains js/app.js "function generateCaptcha" "app.js no longer defines the math captcha generator"
 check_contains netlify/functions/verify-recaptcha.mjs "MIN_SCORE" "verify-recaptcha.mjs checks the reCAPTCHA score threshold"
 check_status netlify/functions/verify-recaptcha.mjs 200
+
+echo
+echo "== In-app Staff Guide markers present =="
+check_contains staff-guide.html "requireAuth('staff-guide.html')" "staff-guide.html is gated behind requireAuth"
+check_contains staff-guide.html "support@regentparking.ca" "staff-guide.html points staff to support@regentparking.ca"
+check_contains portal.html "staff-guide.html" "portal.html links to the staff guide"
+check_contains enforcement.html "staff-guide.html" "enforcement.html links to the staff guide"
+check_contains admin.html "staff-guide.html" "admin.html links to the staff guide"
+check_contains login.html "New here?" "login.html has sign-in/invite help reachable without logging in first"
 
 echo
 echo "== Summary: $PASS passed, $FAIL failed =="

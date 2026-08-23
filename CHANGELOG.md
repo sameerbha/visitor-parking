@@ -2,6 +2,26 @@
 
 All changes to this project are documented here in reverse chronological order.
 
+## [2.6.0] — 2026-08-21
+
+### Help & Support: public resident help center, in-app staff guide
+
+Both DuEast's printable guides (`DuEast-Visitor-Parking-Guide.html`/`.txt`, `DuEast-Concierge-Guide.html`) were updated to match current functionality — invisible reCAPTCHA replaces the old math-question step, the registration domain is now `dueast.regentparking.ca`, and the concierge guide covers Patrol View, Flagged, Registration History, Settings, self-service password reset, and the new staff-invite flow, none of which existed when it was first written.
+
+That update surfaced a gap: this content only existed as a per-building handout. Added two new, generic (tenant-agnostic) homes for it, split by audience since one is public and the other isn't:
+
+**`regent-parking-marketing/help.html`** — a public Help Center on the marketing site, residents only. Covers registering a visitor, extending a registration, monthly limits (described generically, since limits are per-tenant configurable — see [2.2.0]), and a troubleshooting FAQ. Deliberately excludes any staff/concierge procedure: the marketing site has no login, so anything there is visible to competitors and prospects, not just customers. Added `support@regentparking.ca` as the published contact for technical issues, and split `contact.html`'s contact block into "Sales & Demos" vs. "Existing Customer Support" so the two don't share one inbox in the copy. New `.step-list`/`.note-box` CSS added to `regent-parking-marketing/css/style.css`, reusing the existing charcoal/gold, no-emoji visual language rather than introducing a new one. "Help" added to the nav and footer on every marketing page.
+
+**`staff-guide.html`** (new, in the main app) — the concierge-guide content, genericized and moved behind the existing staff auth guard (`requireAuth`), so it's reachable by any signed-in staff member of any tenant, not just DuEast. Linked from `portal.html`'s nav (desktop + mobile) and as a header link on `enforcement.html`/`admin.html`/`change-password.html`. Covers signing in and self-service password reset, all four Enforcement tabs, all four Admin tabs, common scenarios, security reminders, and a permissions summary — the same structure as the old printable guide, kept current going forward since it lives with the app instead of as a static handout.
+
+DuEast's own two guides remain as-is and now cross-link both new pages: the resident guide points to `regentparking.ca/help` for general how-to, and the concierge guide points staff to `staff-guide.html` for the always-current version.
+
+**Follow-up fix, same day:** two issues caught after building the above. First, `regent-parking-marketing/css/style.css`'s new `.step-list .feature-card div { flex: 1; }` rule matched *every* div in the card, including the step number itself, so the number and its content split the row 50/50 instead of sitting together — narrowed to `div:not(.num)`. Second, and more substantively: `staff-guide.html`'s "Signing In" section (invite flow, forgot password) was only reachable *after* signing in, which is useless to someone actually locked out. That guidance now also lives directly on `login.html` — the one staff-facing page that's genuinely public — so it's visible to exactly the person who needs it, without requiring the thing it's explaining how to do.
+
+**Files changed:** `regent-parking-marketing/help.html` (new), `regent-parking-marketing/css/style.css`, `regent-parking-marketing/index.html`, `regent-parking-marketing/pricing.html`, `regent-parking-marketing/contact.html`, `staff-guide.html` (new), `portal.html`, `enforcement.html`, `admin.html`, `change-password.html`, `login.html`, `DuEast-Visitor-Parking-Guide.html`, `DuEast-Visitor-Parking-Guide.txt`, `DuEast-Concierge-Guide.html`, `tests/regression-static.sh`, `README.md`, `CHANGELOG.md`
+
+---
+
 ## [2.5.2] — 2026-08-12
 
 ### Bulk Generate: scope the wipe to the range, add a separate Wipe All

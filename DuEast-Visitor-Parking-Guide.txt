@@ -1,7 +1,7 @@
 ================================================================
   DUEAST VISITOR PARKING — RESIDENT REGISTRATION GUIDE
 ================================================================
-  Register your visitor at: dueastparking.netlify.app
+  Register your visitor at: dueast.regentparking.ca
 ================================================================
 
 
@@ -9,7 +9,7 @@ HOW TO REGISTER A VISITOR
 --------------------------
 
 Step 1 — Open the registration page
-  Go to dueastparking.netlify.app on your phone or computer.
+  Go to dueast.regentparking.ca on your phone or computer.
   The registration form opens right away — no extra taps needed.
 
 Step 2 — Enter your unit number
@@ -26,12 +26,13 @@ Step 4 — Enter your visitor's license plate
   (e.g. ABCD 123). Double-check — it must match exactly for
   enforcement staff.
 
-Step 5 — Complete the security check
-  Answer the simple math question on screen.
-
-Step 6 — Submit
+Step 5 — Submit
   Tap "Register Visitor". A confirmation screen will show the
   expiry time and your remaining monthly passes.
+
+  (A small "protected by reCAPTCHA" badge appears in the corner
+  of the page — that's an automatic, invisible spam check with
+  nothing for you to click or answer.)
 
 
 EXTENDING AN EXISTING REGISTRATION
@@ -48,7 +49,9 @@ MONTHLY LIMITS
    7  days a single plate can be registered per month
   24  hours each registration is valid for
 
-Limits reset on the 1st of every month.
+Limits reset on the 1st of every month. These are DuEast's
+current limits, set by the Board, and can change — check with
+building management if you're unsure what's currently in effect.
 
 
 TIPS
@@ -68,11 +71,14 @@ TIPS
 
 NEED HELP?
 ----------
-If you don't have a unit code, your registration is being
-blocked, or you have any questions, please contact the
-concierge desk or building management.
+If you don't have a unit code or think it's wrong, contact the
+concierge desk or building management — they manage unit codes
+directly. If the site itself won't load or isn't working, email
+support@regentparking.ca. General how-to and FAQs are also always
+available at regentparking.ca/help.
 
 
 ================================================================
-  dueastparking.netlify.app  |  For residents of DuEast
+  dueast.regentparking.ca  |  Powered by Regent Parking
+  support@regentparking.ca  |  For residents of DuEast
 ================================================================

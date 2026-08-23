@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Staff Guide — Regent Parking</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    /* ── Guide content — scoped to this page, reuses the app's own navy/gold
+       variables (css/style.css) rather than introducing a new palette. ── */
+    .guide-wrap { max-width: 880px; margin: 0 auto; padding: 32px 20px 64px; }
+    .guide-intro { margin-bottom: 32px; }
+    .guide-intro h1 { font-size: 1.6rem; font-weight: 800; color: var(--navy); margin-bottom: 8px; }
+    .guide-intro p { color: var(--muted); font-size: .98rem; max-width: 640px; }
+
+    .guide-jump { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 40px; }
+    .guide-jump a {
+      font-size: .82rem; font-weight: 600; color: var(--navy); background: var(--surface, #f1f3f5);
+      border: 1px solid var(--border, #dee2e6); border-radius: 20px; padding: 7px 14px; text-decoration: none;
+    }
+    .guide-jump a:hover { border-color: var(--navy); }
+
+    .g-section-title {
+      font-size: .78rem; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase;
+      color: var(--navy); margin: 40px 0 16px; display: flex; align-items: center; gap: 10px;
+    }
+    .g-section-title::after { content: ''; flex: 1; height: 1.5px; background: var(--border, #e4eaf3); }
+    .g-section-title:first-of-type { margin-top: 0; }
+
+    .g-steps { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+    .g-step { display: flex; align-items: flex-start; gap: 14px; padding: 14px 18px; border-radius: var(--radius, 10px); background: var(--surface, #f8fafd); border: 1px solid var(--border, #e4eaf3); }
+    .g-step-num { min-width: 30px; height: 30px; border-radius: 50%; background: var(--navy); color: #fff; font-size: .82rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .g-step h3 { font-size: .92rem; font-weight: 700; color: var(--navy); margin-bottom: 2px; }
+    .g-step p { font-size: .88rem; color: var(--muted); line-height: 1.6; margin: 0; }
+    .g-step p strong { color: var(--text, #1a1a2e); }
+
+    .g-subhead { font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: var(--gold); margin: 24px 0 10px; }
+
+    .g-callout { border-radius: var(--radius, 10px); padding: 14px 18px; margin-bottom: 20px; display: flex; gap: 12px; align-items: flex-start; font-size: .88rem; line-height: 1.6; }
+    .g-callout-blue  { background: #eef2ff; border: 1px solid #c5cae9; color: #283593; }
+    .g-callout-amber { background: #fffbf0; border: 1px solid #f0d080; color: #6d4200; }
+    .g-callout-red   { background: #fff5f5; border: 1px solid #ffcdd2; color: #7f1d1d; }
+    .g-callout strong { color: inherit; }
+    .g-callout ul { margin: 6px 0 0 18px; padding: 0; }
+
+    .g-scenario { border: 1px solid var(--border, #e4eaf3); border-radius: var(--radius, 10px); overflow: hidden; margin-bottom: 10px; }
+    .g-scenario-q { padding: 11px 16px; background: #f0f4ff; font-size: .88rem; font-weight: 600; color: #1a237e; }
+    .g-scenario-a { padding: 11px 16px; background: var(--surface, #f8fafd); font-size: .87rem; color: var(--muted); line-height: 1.6; }
+    .g-scenario-a strong { color: var(--text, #1a1a2e); }
+
+    .g-perm-table { width: 100%; border-collapse: collapse; font-size: .85rem; margin-bottom: 8px; }
+    .g-perm-table th { background: #f0f4ff; color: #1a237e; font-weight: 700; padding: 9px 12px; text-align: left; font-size: .72rem; text-transform: uppercase; letter-spacing: .6px; }
+    .g-perm-table td { padding: 9px 12px; border-bottom: 1px solid var(--border, #e4eaf3); color: var(--muted); vertical-align: top; }
+    .g-perm-table td:first-child { font-weight: 600; color: var(--text, #1a1a2e); width: 26%; }
+
+    .g-divider { height: 1px; background: var(--border, #e4eaf3); margin: 32px 0; }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="app-header">
+  <div class="header-inner">
+    <a class="header-logo" href="portal.html">
+      <span class="logo-icon">🅿️</span>
+      <div class="logo-text">
+        <span class="logo-name">Regent <span class="gold-accent">Parking</span></span>
+        <span class="logo-sub">Staff Guide</span>
+      </div>
+    </a>
+    <nav class="header-nav desktop-nav">
+      <a href="enforcement.html" class="nav-link">Enforcement</a>
+      <a href="admin.html"  class="nav-link">Admin</a>
+      <a href="staff-guide.html" class="nav-link active">Help</a>
+      <a href="index.html"    class="nav-link" target="_blank">Resident Portal ↗</a>
+    </nav>
+    <div class="header-right">
+      <span class="user-badge desktop-only" id="user-badge"></span>
+      <a href="change-password.html" class="btn btn-outline btn-sm desktop-only" title="Change Password">🔒 Password</a>
+      <button class="btn btn-outline btn-sm" id="logout-btn">Sign Out</button>
+      <button class="hamburger" id="hamburger" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+  <nav class="mobile-nav" id="mobile-nav">
+    <a href="enforcement.html" class="mobile-nav-link">Enforcement Portal</a>
+    <a href="admin.html"  class="mobile-nav-link">Admin Portal</a>
+    <a href="staff-guide.html" class="mobile-nav-link">Help</a>
+    <a href="index.html" target="_blank" class="mobile-nav-link">Resident Portal ↗</a>
+    <div class="mobile-nav-divider"></div>
+    <span class="mobile-nav-user" id="mobile-user"></span>
+    <button class="mobile-nav-link logout-link" id="mobile-logout">Sign Out</button>
+  </nav>
+</header>
+
+<!-- Page Content -->
+<div class="guide-wrap">
+
+  <div class="guide-intro">
+    <h1>Staff &amp; Concierge Guide</h1>
+    <p>How to use the Enforcement and Admin portals day to day — common tasks, and who to contact when something needs Regent Parking's help directly.</p>
+  </div>
+
+  <div class="guide-jump">
+    <a href="#enforcement">Enforcement Portal</a>
+    <a href="#admin">Admin Portal</a>
+    <a href="#scenarios">Common Scenarios</a>
+    <a href="#security">Security</a>
+    <a href="#permissions">What You Can Do</a>
+    <a href="#support">Contact Support</a>
+  </div>
+
+  <!-- Enforcement Portal -->
+  <div class="g-section-title" id="enforcement">Using the Enforcement Portal</div>
+  <p style="font-size:.9rem;color:var(--muted);line-height:1.6;margin-bottom:8px">
+    Four tabs, each built for a different moment: <strong>Valid Plates</strong> for desk lookups, <strong>🚶 Patrol View</strong> for walking the garage, <strong>🚩 Flagged</strong> for cars you found that aren't registered, and <strong>🔍 Plate Lookup</strong> for checking one plate at a time.
+  </p>
+
+  <div class="g-subhead">Valid Plates</div>
+  <div class="g-steps">
+    <div class="g-step">
+      <div class="g-step-num">1</div>
+      <div><h3>View active registrations</h3><p>Loads automatically and shows every currently registered plate with unit, registration time, and expiry. Auto-refreshes periodically.</p></div>
+    </div>
+    <div class="g-step">
+      <div class="g-step-num">2</div>
+      <div><h3>Search a plate</h3><p>Type any part of a plate into the search box — the table filters instantly.</p></div>
+    </div>
+    <div class="g-step">
+      <div class="g-step-num">3</div>
+      <div><h3>Export a record</h3><p>Click <strong>⬇ Export CSV</strong> for shift handovers or incident reports.</p></div>
+    </div>
+  </div>
+
+  <div class="g-subhead">🚶 Patrol View</div>
+  <div class="g-steps">
+    <div class="g-step">
+      <div class="g-step-num">1</div>
+      <div><h3>Walk the garage with a phone, not a desk</h3><p>Just plate and unit, in large text. Exempt vehicles show a blue "EXEMPT" badge.</p></div>
+    </div>
+    <div class="g-step">
+      <div class="g-step-num">2</div>
+      <div><h3>Tap a row to check it off</h3><p>Dims the row with a strikethrough. A counter shows "X of Y checked," and progress is saved automatically — it resets the next day.</p></div>
+    </div>
+    <div class="g-step">
+      <div class="g-step-num">3</div>
+      <div><h3>Reset checks for the next round</h3><p>Tap the small <strong>Reset checks</strong> link next to the counter and confirm.</p></div>
+    </div>
+  </div>
+
+  <div class="g-subhead">🚩 Flagged</div>
+  <div class="g-steps">
+    <div class="g-step">
+      <div class="g-step-num">1</div>
+      <div><h3>Log a car that isn't registered or exempt</h3><p>From Patrol View, tap the floating <strong>🚩 Flag Vehicle</strong> button — plate, spot/location, and an optional description. Timestamped automatically.</p></div>
+    </div>
+    <div class="g-step">
+      <div class="g-step-num">2</div>
+      <div><h3>Review and call it in</h3><p>Tap <strong>Copy list</strong> to copy every flagged vehicle as plain text, ready to read off your phone when calling the city.</p></div>
+    </div>
+    <div class="g-step">
+      <div class="g-step-num">3</div>
+      <div><h3>Clear once handled</h3><p>Remove one vehicle, or clear the whole list (with confirmation) once everything's been called in. Stored only on this device, never sent to Regent Parking.</p></div>
+    </div>
+  </div>
+
+  <div class="g-divider"></div>
+
+  <!-- Admin Portal -->
+  <div class="g-section-title" id="admin">Using the Admin Portal</div>
+  <p style="font-size:.9rem;color:var(--muted);line-height:1.6;margin-bottom:8px">
+    Four tabs: <strong>Vehicle Exemptions</strong>, <strong>🔑 Unit Codes</strong>, <strong>📜 Registration History</strong>, and <strong>⚙️ Settings</strong>.
+  </p>
+
+  <div class="g-subhead">Vehicle Exemptions</div>
+  <div class="g-steps">
+    <div class="g-step">
+      <div class="g-step-num">+</div>
+      <div><h3>Adding an exemption</h3><p>Click <strong>+ Add Exemption</strong>. Enter the plate, an optional note, and a start/end date.</p></div>
+    </div>
+    <div class="g-step">
+      <div class="g-step-num">✏</div>
+      <div><h3>Editing</h3><p>Click the pencil on any row to update plate, notes, or dates.</p></div>
+    </div>
+    <div class="g-step">
+      <div class="g-step-num">🗑</div>
+      <div><h3>Removing</h3><p>Click the trash icon and confirm. Expired exemptions stay visible, greyed out — use <strong>Active only</strong> to hide them.</p></div>
+    </div>
+  </div>
+
+  <div class="g-subhead">🔑 Unit Codes</div>
+  <div class="g-steps">
+    <div class="g-step">
+      <div class="g-step-num">+</div>
+      <div><h3>Adding a code</h3><p>Click <strong>+ Add Unit Code</strong>, enter the unit number, and either type a code or hit <strong>⚄ Generate</strong>. Share it privately with the resident.</p></div>
+    </div>
+    <div class="g-step">
+      <div class="g-step-num">↺</div>
+      <div><h3>Resetting</h3><p>Edit the unit, generate or type a new code, save — the old one stops working immediately.</p></div>
+    </div>
+    <div class="g-step">
+      <div class="g-step-num">🗑</div>
+      <div><h3>Removing</h3><p>Click the trash icon and confirm. The resident can't register visitors until a new code is assigned.</p></div>
+    </div>
+  </div>
+  <div class="g-callout g-callout-blue">
+    <span>ℹ️</span>
+    <div>Setting up <strong>many units at once</strong> (e.g. onboarding a new tower) is a one-time step Regent Parking runs on request — not a routine task here. Email <strong>support@regentparking.ca</strong> to request it.</div>
+  </div>
+
+  <div class="g-subhead">📜 Registration History</div>
+  <div class="g-steps">
+    <div class="g-step">
+      <div class="g-step-num">1</div>
+      <div><h3>Search by plate or unit</h3><p>Toggle the mode, then enter a plate or unit number.</p></div>
+    </div>
+    <div class="g-step">
+      <div class="g-step-num">2</div>
+      <div><h3>Review, active or expired</h3><p>Most recent first, going back up to 3 years.</p></div>
+    </div>
+    <div class="g-step">
+      <div class="g-step-num">3</div>
+      <div><h3>Export if needed</h3><p><strong>⬇ Export CSV</strong>, same as elsewhere.</p></div>
+    </div>
+  </div>
+
+  <div class="g-subhead">⚙️ Settings</div>
+  <div class="g-steps">
+    <div class="g-step">
+      <div class="g-step-num">1</div>
+      <div><h3>Set your pass limits</h3><p>Monthly passes per unit, and days a single plate can stay registered — applied across every building under your account.</p></div>
+    </div>
+    <div class="g-step">
+      <div class="g-step-num">2</div>
+      <div><h3>Applies immediately</h3><p>New registrations and extensions use the updated numbers right away.</p></div>
+    </div>
+  </div>
+
+  <div class="g-divider"></div>
+
+  <!-- Common Scenarios -->
+  <div class="g-section-title" id="scenarios">Common Scenarios</div>
+
+  <div class="g-scenario">
+    <div class="g-scenario-q">❓ A resident says their visitor is registered but it's not showing up</div>
+    <div class="g-scenario-a">Search the plate in Enforcement. If it's not there, the registration may have expired — each pass is valid for a limited window (see Registration History for exact timing). Ask the resident to register again, or try refreshing the page first.</div>
+  </div>
+  <div class="g-scenario">
+    <div class="g-scenario-q">❓ A resident says their unit code isn't working</div>
+    <div class="g-scenario-a">Go to Admin → Unit Codes and confirm the code matches what they're entering (codes are case-insensitive). Reset it if needed and share the new one privately.</div>
+  </div>
+  <div class="g-scenario">
+    <div class="g-scenario-q">❓ A resident is blocked because they've hit their monthly limit</div>
+    <div class="g-scenario-a">A specific resident's current-month count <strong>can't be overridden</strong> — it resets on the 1st. If the limit itself is too low going forward, use Admin → Settings to raise it for future registrations.</div>
+  </div>
+  <div class="g-scenario">
+    <div class="g-scenario-q">❓ A contractor or vendor needs parking for multiple days</div>
+    <div class="g-scenario-a">Add a Vehicle Exemption with the right start/end dates. Exempt vehicles bypass resident registration entirely and won't be flagged by enforcement.</div>
+  </div>
+  <div class="g-scenario">
+    <div class="g-scenario-q">❓ A new resident needs a unit code</div>
+    <div class="g-scenario-a">Admin → Unit Codes → <strong>+ Add Unit Code</strong>. If a code already exists for that unit (previous tenant), reset it first.</div>
+  </div>
+  <div class="g-scenario">
+    <div class="g-scenario-q">❓ You forgot your own staff password</div>
+    <div class="g-scenario-a">Click <strong>Forgot password?</strong> on the login page — fully self-service.</div>
+  </div>
+  <div class="g-scenario">
+    <div class="g-scenario-q">❓ A new staff member needs portal access</div>
+    <div class="g-scenario-a">Staff accounts are set up by Regent Parking, not from within either portal. Email <strong>support@regentparking.ca</strong> with the person's name, email, and which building they support — they'll get an invite email to set up their own account.</div>
+  </div>
+
+  <div class="g-divider"></div>
+
+  <!-- Security -->
+  <div class="g-section-title" id="security">Security Reminders</div>
+  <div class="g-callout g-callout-red">
+    <span>🔐</span>
+    <div>
+      <ul>
+        <li>Never share your staff login credentials with residents or anyone else.</li>
+        <li>Unit codes go directly to the resident of that unit — never posted publicly.</li>
+        <li>If a unit code may be compromised, reset it immediately from Admin.</li>
+        <li>If your own password may be compromised, reset it immediately via <strong>Forgot password?</strong>.</li>
+        <li>Always sign out on a shared workstation.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Permissions -->
+  <div class="g-section-title" id="permissions">What You Can Do</div>
+  <table class="g-perm-table">
+    <thead><tr><th>Feature</th><th>Portal</th><th>Permissions</th></tr></thead>
+    <tbody>
+      <tr><td>Visitor registrations</td><td>Enforcement</td><td>View, Delete</td></tr>
+      <tr><td>Patrol View &amp; Flagged</td><td>Enforcement</td><td>View, Add — local to your device only</td></tr>
+      <tr><td>Vehicle exemptions</td><td>Admin</td><td>View, Add, Edit, Delete</td></tr>
+      <tr><td>Unit codes (single)</td><td>Admin</td><td>View, Add, Reset, Delete</td></tr>
+      <tr><td>Bulk unit code setup</td><td>Regent Parking</td><td>Onboarding-only, on request</td></tr>
+      <tr><td>Registration history (3 yrs)</td><td>Admin</td><td>View, Export CSV</td></tr>
+      <tr><td>Pass limit settings</td><td>Admin</td><td>View, Edit — whole account</td></tr>
+      <tr><td>Staff accounts</td><td>Regent Parking</td><td>Invited by email, on request</td></tr>
+      <tr><td>Your own password</td><td>Login page</td><td>Self-service reset or change anytime</td></tr>
+    </tbody>
+  </table>
+
+  <div class="g-divider"></div>
+
+  <!-- Support -->
+  <div class="g-section-title" id="support">Contact Support</div>
+  <div class="g-callout g-callout-blue">
+    <span>💬</span>
+    <div>For anything this guide doesn't cover — a new staff account, bulk unit code setup, a billing question, or something in the app not working as expected — email <strong>support@regentparking.ca</strong>.</div>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-config.js"></script>
+<script src="js/app.js"></script>
+<script>
+  (async () => {
+    const user = await requireAuth('staff-guide.html');
+    if (!user) return;
+
+    document.getElementById('user-badge').textContent  = user.name;
+    document.getElementById('mobile-user').textContent = 'Signed in as ' + user.name;
+
+    function doLogout() { logoutUser().then(() => { window.location.href = 'login.html'; }); }
+    document.getElementById('logout-btn').addEventListener('click', doLogout);
+    document.getElementById('mobile-logout').addEventListener('click', doLogout);
+    document.getElementById('hamburger').addEventListener('click', () =>
+      document.getElementById('mobile-nav').classList.toggle('open'));
+  })();
+</script>
+</body>
+</html>
