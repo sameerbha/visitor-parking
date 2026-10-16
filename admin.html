@@ -69,6 +69,9 @@
     <button class="tab-btn" id="tab-unitcodes" onclick="showTab('unitcodes')">
       🔑 Unit Codes
     </button>
+    <button class="tab-btn" id="tab-visitorspots" onclick="showTab('visitorspots')">
+      🅿️ Visitor Spots
+    </button>
     <button class="tab-btn" id="tab-history" onclick="showTab('history')">
       📜 Registration History
     </button>
@@ -137,6 +140,47 @@
       </table>
     </div>
     <div class="table-footer" id="uc-table-footer"></div>
+  </div>
+
+  <!-- ── Visitor Spots Panel ─────────────────────────────────────────────── -->
+  <div id="panel-visitorspots" class="table-section hidden">
+    <div class="table-header-bar">
+      <h2>Visitor Parking Spots</h2>
+    </div>
+    <p class="unit-codes-info" style="margin-bottom:20px">
+      <strong>ℹ️ Optional, and specific to this building</strong>
+      Switch buildings above to configure a different one. When enabled, residents must choose a spot when registering a visitor, and it's shown to enforcement staff. This is a label only — the app does not prevent two visitors from picking the same spot.
+    </p>
+    <div class="alert alert-error hidden" id="vs-error"></div>
+    <div class="alert alert-success hidden" id="vs-success"></div>
+    <form id="vs-form" novalidate style="max-width:480px">
+      <div class="form-group">
+        <label style="display:flex;align-items:center;gap:8px;font-weight:600;cursor:pointer">
+          <input type="checkbox" id="vs-enabled" style="width:auto" />
+          Enable visitor spot selection for this building
+        </label>
+      </div>
+      <div id="vs-range-fields" class="hidden">
+        <div class="form-group">
+          <label>Prefix *</label>
+          <input type="text" id="vs-prefix" class="form-control" maxlength="5"
+            placeholder="e.g. V" style="text-transform:uppercase;max-width:120px" />
+          <span class="field-hint">Shown before the number on every spot, e.g. "V".</span>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>First Spot Number *</label>
+            <input type="number" id="vs-start" class="form-control" min="1" />
+          </div>
+          <div class="form-group">
+            <label>Last Spot Number *</label>
+            <input type="number" id="vs-end" class="form-control" min="1" />
+          </div>
+        </div>
+        <p class="field-hint" id="vs-preview" style="margin-bottom:16px"></p>
+      </div>
+      <button type="submit" class="btn btn-primary" id="vs-submit-btn">Save Changes</button>
+    </form>
   </div>
 
   <!-- ── Registration History Panel ──────────────────────────────────────── -->
@@ -355,6 +399,10 @@ function updateHeaderTenantBadge(address) {
     currentAddressId = currentAddress.id;
     updateHeaderTenantBadge(currentAddress);
     await loadAll();
+    // Visitor Spots is per-building (unlike Settings' tenant-wide limits),
+    // so switching buildings while on that tab needs to re-render it —
+    // currentAddress already has everything needed, no extra fetch.
+    if (activeTab === 'visitorspots') loadVisitorSpots();
   });
 })();
 
@@ -367,16 +415,20 @@ function showTab(tab) {
   activeTab = tab;
   document.getElementById('panel-exemptions').classList.toggle('hidden', tab !== 'exemptions');
   document.getElementById('panel-unitcodes').classList.toggle('hidden',  tab !== 'unitcodes');
+  document.getElementById('panel-visitorspots').classList.toggle('hidden', tab !== 'visitorspots');
   document.getElementById('panel-history').classList.toggle('hidden',   tab !== 'history');
   document.getElementById('panel-settings').classList.toggle('hidden',  tab !== 'settings');
   document.getElementById('tab-exemptions').classList.toggle('active', tab === 'exemptions');
   document.getElementById('tab-unitcodes').classList.toggle('active',  tab === 'unitcodes');
+  document.getElementById('tab-visitorspots').classList.toggle('active', tab === 'visitorspots');
   document.getElementById('tab-history').classList.toggle('active',    tab === 'history');
   document.getElementById('tab-settings').classList.toggle('active',   tab === 'settings');
-  document.getElementById('add-btn').classList.toggle('hidden', tab === 'history' || tab === 'settings');
+  document.getElementById('add-btn').classList.toggle('hidden',
+    tab === 'history' || tab === 'settings' || tab === 'visitorspots');
   document.getElementById('add-btn').textContent = tab === 'exemptions' ? '+ Add Exemption' : '+ Add Unit Code';
 
   if (tab === 'settings') loadSettings();
+  if (tab === 'visitorspots') loadVisitorSpots();
 }
 
 function handleAddBtn() {
@@ -714,6 +766,7 @@ function renderHistoryResults(query) {
     return '<tr>' +
       '<td>' + plateBadge(v.visitor_plate) + '</td>' +
       '<td>' + escapeHtml(v.unit_number) + '</td>' +
+      '<td>' + (v.spot ? escapeHtml(v.spot) : '<span class="muted">—</span>') + '</td>' +
       '<td class="date-cell">' + formatDateTime(v.registered_at) + '</td>' +
       '<td class="date-cell">' + formatDateTime(v.expires_at) + '</td>' +
       '<td><span class="status-badge ' + (active ? 'status-active' : 'status-expired') + '">' + (active ? 'Active' : 'Expired') + '</span></td>' +
@@ -729,17 +782,17 @@ function renderHistoryResults(query) {
     '</div>' +
     '<div class="table-responsive">' +
       '<table class="data-table">' +
-        '<thead><tr><th>Plate</th><th>Unit</th><th>Registered</th><th>Expires</th><th>Status</th></tr></thead>' +
+        '<thead><tr><th>Plate</th><th>Unit</th><th>Spot</th><th>Registered</th><th>Expires</th><th>Status</th></tr></thead>' +
         '<tbody>' + rows + '</tbody>' +
       '</table>' +
     '</div>';
 
   document.getElementById('history-export-btn').addEventListener('click', () => {
     const csvRows = [
-      ['Plate', 'Unit', 'Registered At', 'Expires At', 'Status'],
+      ['Plate', 'Unit', 'Spot', 'Registered At', 'Expires At', 'Status'],
       ...historyResults.map(v => {
         const active = new Date(v.expires_at) > new Date();
-        return [v.visitor_plate, v.unit_number, formatDateTime(v.registered_at), formatDateTime(v.expires_at), active ? 'Active' : 'Expired'];
+        return [v.visitor_plate, v.unit_number, v.spot || '', formatDateTime(v.registered_at), formatDateTime(v.expires_at), active ? 'Active' : 'Expired'];
       }),
     ];
     exportCSV(csvRows, 'history-' + query.replace(/\s/g, '') + '-' + todayStr() + '.csv');
@@ -798,6 +851,84 @@ document.getElementById('settings-form').addEventListener('submit', async (e) =>
   btn.disabled = true;
   try {
     await updateTenantLimits(currentAddress.tenant_id, monthlyLimit, plateLimit);
+    successEl.textContent = 'Settings saved.';
+    successEl.classList.remove('hidden');
+  } catch (err) {
+    errEl.textContent = err.message || 'Could not save settings.';
+    errEl.classList.remove('hidden');
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+// ════════════════════════════════════════════════════════════
+// VISITOR SPOTS — optional, per-building (unlike Settings above)
+// ════════════════════════════════════════════════════════════
+
+function updateVisitorSpotPreview() {
+  const prefix = document.getElementById('vs-prefix').value.trim().toUpperCase();
+  const start  = parseInt(document.getElementById('vs-start').value, 10);
+  const end    = parseInt(document.getElementById('vs-end').value, 10);
+  const preview = document.getElementById('vs-preview');
+  if (!prefix || !Number.isFinite(start) || !Number.isFinite(end) || end < start) {
+    preview.textContent = '';
+    return;
+  }
+  const count = end - start + 1;
+  preview.textContent = 'Residents will choose from ' + prefix + start + '–' + prefix + end +
+    ' (' + count + ' spot' + (count === 1 ? '' : 's') + ').';
+}
+['vs-prefix', 'vs-start', 'vs-end'].forEach(id =>
+  document.getElementById(id).addEventListener('input', updateVisitorSpotPreview));
+
+document.getElementById('vs-enabled').addEventListener('change', function() {
+  document.getElementById('vs-range-fields').classList.toggle('hidden', !this.checked);
+});
+
+function loadVisitorSpots() {
+  document.getElementById('vs-error').classList.add('hidden');
+  document.getElementById('vs-success').classList.add('hidden');
+  if (!currentAddress) return;
+
+  const enabled = !!currentAddress.visitor_spot_prefix;
+  document.getElementById('vs-enabled').checked = enabled;
+  document.getElementById('vs-range-fields').classList.toggle('hidden', !enabled);
+  // Sensible defaults pre-filled even when disabled, so checking the box
+  // for the first time doesn't present an admin with three empty fields.
+  document.getElementById('vs-prefix').value = currentAddress.visitor_spot_prefix || 'V';
+  document.getElementById('vs-start').value  = currentAddress.visitor_spot_start  || 1;
+  document.getElementById('vs-end').value    = currentAddress.visitor_spot_end    || 20;
+  updateVisitorSpotPreview();
+}
+
+document.getElementById('vs-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const errEl     = document.getElementById('vs-error');
+  const successEl = document.getElementById('vs-success');
+  const btn       = document.getElementById('vs-submit-btn');
+  errEl.classList.add('hidden');
+  successEl.classList.add('hidden');
+  if (!currentAddress) return;
+
+  const enabled = document.getElementById('vs-enabled').checked;
+  const prefix  = enabled ? document.getElementById('vs-prefix').value.trim().toUpperCase() : null;
+  const start   = enabled ? parseInt(document.getElementById('vs-start').value, 10) : null;
+  const end     = enabled ? parseInt(document.getElementById('vs-end').value, 10) : null;
+
+  if (enabled && (!prefix || !Number.isFinite(start) || !Number.isFinite(end))) {
+    errEl.textContent = 'Fill in a prefix, a first spot number, and a last spot number.';
+    errEl.classList.remove('hidden');
+    return;
+  }
+
+  btn.disabled = true;
+  try {
+    await updateAddressVisitorSpots(currentAddress.id, prefix, start, end);
+    // Keep the in-memory address in sync so switching tabs or buildings and
+    // back shows what was just saved without a full re-fetch.
+    currentAddress.visitor_spot_prefix = prefix;
+    currentAddress.visitor_spot_start  = start;
+    currentAddress.visitor_spot_end    = end;
     successEl.textContent = 'Settings saved.';
     successEl.classList.remove('hidden');
   } catch (err) {

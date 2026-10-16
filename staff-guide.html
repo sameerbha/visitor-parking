@@ -170,7 +170,7 @@
   <!-- Admin Portal -->
   <div class="g-section-title" id="admin">Using the Admin Portal</div>
   <p style="font-size:.9rem;color:var(--muted);line-height:1.6;margin-bottom:8px">
-    Four tabs: <strong>Vehicle Exemptions</strong>, <strong>🔑 Unit Codes</strong>, <strong>📜 Registration History</strong>, and <strong>⚙️ Settings</strong>.
+    Five tabs: <strong>Vehicle Exemptions</strong>, <strong>🔑 Unit Codes</strong>, <strong>🅿️ Visitor Spots</strong>, <strong>📜 Registration History</strong>, and <strong>⚙️ Settings</strong>.
   </p>
 
   <div class="g-subhead">Vehicle Exemptions</div>
@@ -207,6 +207,26 @@
   <div class="g-callout g-callout-blue">
     <span>ℹ️</span>
     <div>Setting up <strong>many units at once</strong> (e.g. onboarding a new tower) is a one-time step Regent Parking runs on request — not a routine task here. Email <strong>support@regentparking.ca</strong> to request it.</div>
+  </div>
+
+  <div class="g-subhead">🅿️ Visitor Spots</div>
+  <div class="g-steps">
+    <div class="g-step">
+      <div class="g-step-num">1</div>
+      <div><h3>Optional, and specific to this building</h3><p>Off by default. Switching buildings above configures a different one — this isn't a whole-account setting like Settings below.</p></div>
+    </div>
+    <div class="g-step">
+      <div class="g-step-num">2</div>
+      <div><h3>Turn it on and set a range</h3><p>Check the box, enter a prefix (e.g. "V") and a first/last spot number. The preview shows exactly what residents will see before you save.</p></div>
+    </div>
+    <div class="g-step">
+      <div class="g-step-num">3</div>
+      <div><h3>Residents then pick a spot at registration</h3><p>A required dropdown appears on the registration form, and the chosen spot shows up next to the plate in Enforcement, Patrol View, and Registration History.</p></div>
+    </div>
+  </div>
+  <div class="g-callout g-callout-blue">
+    <span>ℹ️</span>
+    <div>This is a <strong>label, not a reservation</strong> — nothing stops two residents from picking the same spot. It's there for enforcement's reference, the same way the rest of this app treats registration as a pass rather than a booking.</div>
   </div>
 
   <div class="g-subhead">📜 Registration History</div>
@@ -263,6 +283,10 @@
     <div class="g-scenario-a">Admin → Unit Codes → <strong>+ Add Unit Code</strong>. If a code already exists for that unit (previous tenant), reset it first.</div>
   </div>
   <div class="g-scenario">
+    <div class="g-scenario-q">❓ Our building wants residents to pick a visitor spot at registration</div>
+    <div class="g-scenario-a">Admin → 🅿️ Visitor Spots → enable it and set your building's prefix and spot range (e.g. V1–V20). Takes effect immediately on the registration form — no need to contact Regent Parking.</div>
+  </div>
+  <div class="g-scenario">
     <div class="g-scenario-q">❓ You forgot your own staff password</div>
     <div class="g-scenario-a">Click <strong>Forgot password?</strong> on the login page — fully self-service.</div>
   </div>
@@ -298,6 +322,7 @@
       <tr><td>Vehicle exemptions</td><td>Admin</td><td>View, Add, Edit, Delete</td></tr>
       <tr><td>Unit codes (single)</td><td>Admin</td><td>View, Add, Reset, Delete</td></tr>
       <tr><td>Bulk unit code setup</td><td>Regent Parking</td><td>Onboarding-only, on request</td></tr>
+      <tr><td>Visitor spot config</td><td>Admin</td><td>View, Edit — per building</td></tr>
       <tr><td>Registration history (3 yrs)</td><td>Admin</td><td>View, Export CSV</td></tr>
       <tr><td>Pass limit settings</td><td>Admin</td><td>View, Edit — whole account</td></tr>
       <tr><td>Staff accounts</td><td>Regent Parking</td><td>Invited by email, on request</td></tr>

@@ -209,5 +209,21 @@ check_contains admin.html "staff-guide.html" "admin.html links to the staff guid
 check_contains login.html "New here?" "login.html has sign-in/invite help reachable without logging in first"
 
 echo
+echo "== Visitor Spots markers present =="
+check_contains supabase-schema.sql "visitor_spot_prefix" "supabase-schema.sql has the visitor spot columns on addresses"
+check_contains supabase-schema.sql "validate_visitor_spot" "supabase-schema.sql defines the server-side spot validation trigger"
+check_contains supabase-schema.sql "update_address_visitor_spots" "supabase-schema.sql defines update_address_visitor_spots"
+check_status patch-visitor-spots.sql 200
+check_contains js/app.js "function buildVisitorSpotList" "app.js defines buildVisitorSpotList"
+check_contains js/app.js "function updateAddressVisitorSpots" "app.js defines updateAddressVisitorSpots"
+check_contains admin.html "panel-visitorspots" "admin.html has the Visitor Spots panel"
+check_contains admin.html "tab-visitorspots" "admin.html has the Visitor Spots tab"
+check_contains admin.html "updateAddressVisitorSpots" "admin.html can save a building's visitor spot config"
+check_contains index.html "spot-group" "index.html has the (conditionally shown) visitor spot dropdown"
+check_contains index.html "buildVisitorSpotList" "index.html builds the spot dropdown from the address config"
+check_contains enforcement.html "<th>Spot</th>" "enforcement.html Valid Plates table has a Spot column"
+check_contains enforcement.html "'Spot'" "enforcement.html CSV export includes Spot"
+
+echo
 echo "== Summary: $PASS passed, $FAIL failed =="
 [ "$FAIL" -eq 0 ]

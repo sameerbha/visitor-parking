@@ -28,7 +28,22 @@ CREATE TABLE addresses (
   name       TEXT NOT NULL,
   lot_code   TEXT UNIQUE NOT NULL,
   full_name  TEXT GENERATED ALWAYS AS (name || ' (' || lot_code || ')') STORED,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  -- Optional, per-building visitor spot selection (e.g. "V" + 1-20 ->
+  -- V1-V20), configured in Admin's Visitor Spots tab. Enabled when
+  -- visitor_spot_prefix IS NOT NULL; all three are always set together or
+  -- all NULL. See patch-visitor-spots.sql for the migration that added this
+  -- to earlier installs, and validate_visitor_spot() below for how a
+  -- submitted spot is checked against this range server-side.
+  visitor_spot_prefix TEXT,
+  visitor_spot_start  INT,
+  visitor_spot_end    INT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  CONSTRAINT visitor_spot_config_consistent CHECK (
+    (visitor_spot_prefix IS NULL AND visitor_spot_start IS NULL AND visitor_spot_end IS NULL)
+    OR (visitor_spot_prefix IS NOT NULL AND visitor_spot_start IS NOT NULL AND visitor_spot_end IS NOT NULL
+        AND visitor_spot_start >= 1 AND visitor_spot_end >= visitor_spot_start
+        AND (visitor_spot_end - visitor_spot_start) < 500)
+  )
 );
 
 -- Which staff logins belong to which tenant. A join table so one login could
@@ -57,7 +72,8 @@ CREATE TABLE visitor_registrations (
   visitor_plate    TEXT NOT NULL,
   registered_at    TIMESTAMPTZ DEFAULT NOW(),
   expires_at       TIMESTAMPTZ NOT NULL DEFAULT (NOW() + INTERVAL '24 hours'),
-  extension_count  INT NOT NULL DEFAULT 0
+  extension_count  INT NOT NULL DEFAULT 0,
+  spot             TEXT
 );
 -- Note: no phone number field, by design — we don't collect or store
 -- visitor/tenant phone numbers. See patch-remove-tenant-phone.sql for the
@@ -67,6 +83,11 @@ CREATE TABLE visitor_registrations (
 -- extension as its own pass, same as the original registration — see
 -- patch-fix-pass-counting.sql for the migration that added this on existing
 -- installs.
+-- spot: the visitor parking spot the resident picked (e.g. "V5"), only when
+-- the building has visitor_spot_prefix configured on addresses — NULL
+-- otherwise, including every registration made before this feature existed.
+-- Purely informational for enforcement's reference; nothing prevents two
+-- registrations from naming the same spot. See validate_visitor_spot() below.
 
 CREATE TABLE exemptions (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -325,6 +346,59 @@ END;
 $$;
 GRANT EXECUTE ON FUNCTION wipe_unit_codes TO authenticated;
 
+-- ── 4b. Visitor spot validation ─────────────────────────────────────────────
+-- Mirrors how unit codes are validated server-side rather than trusting
+-- whatever the browser submits. Runs on INSERT only — extending a
+-- registration (extend_visitor_registration) only ever touches expires_at
+-- and extension_count on the existing row, so narrowing a building's range
+-- later can't retroactively break an extend on an older registration.
+CREATE OR REPLACE FUNCTION validate_visitor_spot()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  v_prefix TEXT;
+  v_start  INT;
+  v_end    INT;
+  v_num    INT;
+BEGIN
+  SELECT visitor_spot_prefix, visitor_spot_start, visitor_spot_end
+  INTO v_prefix, v_start, v_end
+  FROM addresses WHERE id = NEW.address_id;
+
+  IF v_prefix IS NULL THEN
+    IF NEW.spot IS NOT NULL THEN
+      RAISE EXCEPTION 'This building does not use visitor spot selection';
+    END IF;
+    RETURN NEW;
+  END IF;
+
+  IF NEW.spot IS NULL OR NEW.spot = '' THEN
+    RAISE EXCEPTION 'A visitor parking spot is required for this building';
+  END IF;
+
+  IF NOT starts_with(NEW.spot, v_prefix) THEN
+    RAISE EXCEPTION 'Invalid visitor spot: %', NEW.spot;
+  END IF;
+
+  BEGIN
+    v_num := substring(NEW.spot FROM char_length(v_prefix) + 1)::INT;
+  EXCEPTION WHEN OTHERS THEN
+    RAISE EXCEPTION 'Invalid visitor spot: %', NEW.spot;
+  END;
+
+  IF v_num < v_start OR v_num > v_end THEN
+    RAISE EXCEPTION 'Visitor spot % is out of range for this building', NEW.spot;
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER trg_validate_visitor_spot
+  BEFORE INSERT ON visitor_registrations
+  FOR EACH ROW EXECUTE FUNCTION validate_visitor_spot();
+
 -- ── 5. Row Level Security ────────────────────────────────────────────────────
 
 ALTER TABLE tenants                ENABLE ROW LEVEL SECURITY;
@@ -556,6 +630,63 @@ BEGIN
 END;
 $$;
 GRANT EXECUTE ON FUNCTION update_tenant_limits TO authenticated;
+
+-- update_address_visitor_spots: lets a building's own staff turn visitor
+-- spot selection on/off and set its range themselves — unlike bulk unit
+-- code generation, this isn't a migration-sensitive onboarding action, so
+-- it doesn't need to go through Platform Admin. Gated by has_tenant_access(),
+-- the same helper exemptions/unit_codes already use, not is_platform_admin().
+-- Pass p_prefix = NULL to disable the feature for this address.
+CREATE OR REPLACE FUNCTION update_address_visitor_spots(
+  p_address_id UUID,
+  p_prefix     TEXT,
+  p_start      INT,
+  p_end        INT
+)
+RETURNS JSON
+LANGUAGE plpgsql SECURITY DEFINER
+AS $$
+BEGIN
+  IF NOT has_tenant_access(p_address_id) THEN
+    RAISE EXCEPTION 'Not authorized for this building';
+  END IF;
+
+  IF p_prefix IS NULL THEN
+    UPDATE addresses
+    SET visitor_spot_prefix = NULL, visitor_spot_start = NULL, visitor_spot_end = NULL
+    WHERE id = p_address_id;
+    RETURN json_build_object('enabled', FALSE);
+  END IF;
+
+  IF trim(p_prefix) = '' THEN
+    RAISE EXCEPTION 'Prefix cannot be blank';
+  END IF;
+  IF length(p_prefix) > 5 THEN
+    RAISE EXCEPTION 'Prefix must be 5 characters or fewer';
+  END IF;
+  IF p_start IS NULL OR p_end IS NULL OR p_start < 1 OR p_end < p_start THEN
+    RAISE EXCEPTION 'Enter a valid first and last spot number (last must be greater than or equal to first)';
+  END IF;
+  IF (p_end - p_start + 1) > 500 THEN
+    RAISE EXCEPTION 'A building can have at most 500 visitor spots configured';
+  END IF;
+
+  UPDATE addresses
+  SET visitor_spot_prefix = p_prefix,
+      visitor_spot_start  = p_start,
+      visitor_spot_end    = p_end
+  WHERE id = p_address_id;
+
+  RETURN json_build_object(
+    'enabled', TRUE,
+    'prefix',  p_prefix,
+    'start',   p_start,
+    'end',     p_end,
+    'count',   p_end - p_start + 1
+  );
+END;
+$$;
+GRANT EXECUTE ON FUNCTION update_address_visitor_spots TO authenticated;
 
 -- ── 7. Retention: visitor_registrations is kept for 3 years ─────────────────
 -- Registration history (active + expired) is intentionally NOT deleted on

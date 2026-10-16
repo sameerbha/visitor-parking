@@ -83,7 +83,7 @@
     <div class="table-header-bar">
       <h2 id="table-title">Loading…</h2>
       <div class="table-actions">
-        <input class="search-input" id="search-input" placeholder="Search plate, unit, phone…" />
+        <input class="search-input" id="search-input" placeholder="Search plate, unit, spot…" />
         <button class="btn btn-secondary" id="export-btn">⬇ Export CSV</button>
       </div>
     </div>
@@ -91,7 +91,7 @@
       <table class="data-table">
         <thead>
           <tr>
-            <th>Plate</th><th>Unit</th>
+            <th>Plate</th><th>Unit</th><th>Spot</th>
             <th>Registered</th><th>Expires</th><th>Time Left</th><th>Actions</th>
           </tr>
         </thead>
@@ -297,12 +297,13 @@ function renderTable() {
   const q        = document.getElementById('search-input').value.toLowerCase();
   const filtered = allVisitors.filter(v =>
     !q || v.visitor_plate.toLowerCase().includes(q) ||
-          v.unit_number.toLowerCase().includes(q)
+          v.unit_number.toLowerCase().includes(q) ||
+          (v.spot && v.spot.toLowerCase().includes(q))
   );
 
   const tbody = document.getElementById('plates-tbody');
   if (filtered.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" class="empty-row">' + (q ? 'No results matching your search.' : 'No active registrations for this address.') + '</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" class="empty-row">' + (q ? 'No results matching your search.' : 'No active registrations for this address.') + '</td></tr>';
   } else {
     tbody.innerHTML = filtered.map(v => {
       const expiring = (new Date(v.expires_at) - new Date()) < 2 * 3600000;
@@ -310,6 +311,7 @@ function renderTable() {
       return '<tr class="' + (expiring ? 'row-warning' : '') + '">' +
         '<td>' + plateBadge(v.visitor_plate) + '</td>' +
         '<td>' + escapeHtml(v.unit_number) + '</td>' +
+        '<td>' + (v.spot ? escapeHtml(v.spot) : '<span class="muted">—</span>') + '</td>' +
         '<td class="date-cell">' + formatDateTime(v.registered_at) + '</td>' +
         '<td class="date-cell">' + formatDateTime(v.expires_at) + '</td>' +
         '<td><span class="time-badge ' + (expiring ? 'expiring' : 'active') + '">' + rem + '</span></td>' +
@@ -344,8 +346,8 @@ document.getElementById('confirm-remove-btn').addEventListener('click', async ()
 // ── Export CSV ───────────────────────────────────────────────────────────────
 document.getElementById('export-btn').addEventListener('click', () => {
   const rows = [
-    ['Plate', 'Unit', 'Registered At', 'Expires At'],
-    ...allVisitors.map(v => [v.visitor_plate, v.unit_number, formatDateTime(v.registered_at), formatDateTime(v.expires_at)])
+    ['Plate', 'Unit', 'Spot', 'Registered At', 'Expires At'],
+    ...allVisitors.map(v => [v.visitor_plate, v.unit_number, v.spot || '', formatDateTime(v.registered_at), formatDateTime(v.expires_at)])
   ];
   exportCSV(rows, 'valid-plates-' + (currentAddress?.lot_code || '') + '-' + todayStr() + '.csv');
 });
@@ -394,7 +396,7 @@ function getPatrolItems() {
   const visitorItems = allVisitors.map(v => ({
     key:       'v-' + v.id,
     plate:     v.visitor_plate,
-    secondary: v.unit_number,
+    secondary: v.unit_number + (v.spot ? ' · ' + v.spot : ''),
     exempt:    false,
   }));
   const exemptItems = allExemptions.map(e => ({

@@ -2,6 +2,26 @@
 
 All changes to this project are documented here in reverse chronological order.
 
+## [2.7.0] — 2026-10-16
+
+### Optional per-building visitor parking spots (e.g. V1–V20)
+
+A board asked whether residents could be made to pick a specific visitor spot when registering, since most buildings' visitor parking is a numbered range (`V1`...`VX`). Built as an opt-in, per-building setting rather than a requirement, since not every building numbers its visitor spots the same way (or at all).
+
+**Admin's new "🅿️ Visitor Spots" tab** lets any staff member of a tenant turn this on for their own building — a prefix (e.g. `"V"`), a first number, and a last number, with a live preview before saving. Deliberately per-building (unlike the tenant-wide pass limits on the existing Settings tab) and deliberately self-serve, not a Platform Admin action — this is an ongoing setting a property manager might revisit (a garage renovation, a new tower), not a one-time migration-sensitive onboarding step like bulk unit codes.
+
+**The resident registration page** shows a required "Visitor Parking Spot" dropdown, built from that building's configured range, only for buildings that have turned this on — zero change anywhere on the form for a building that hasn't. The chosen spot shows on the confirmation screen.
+
+**Enforcement, Plate Lookup, and Admin's Registration History** all gained a Spot column (and matching CSV columns), and Patrol View appends it to the unit line. Spot is also now searchable in both Valid Plates' and Patrol View's search boxes. (Also fixed, while touching that search box: its placeholder still said "Search plate, unit, phone…", a leftover from phone numbers being removed entirely back in [1.8.0] — now reads "Search plate, unit, spot…".)
+
+**Informational only, by design** — per discussion before building this, there is no check anywhere that blocks two residents from picking the same spot for overlapping times. It's a label for enforcement's reference, consistent with the rest of the app treating registration as a pass rather than a reservation. Exemptions (contractor/vendor passes) are untouched for now.
+
+**Validated server-side, not just in the dropdown** — a new `validate_visitor_spot` trigger on `visitor_registrations` checks, on insert, that a spot is present when the building requires one and that it actually falls within the configured range, the same philosophy as unit-code validation never trusting the client alone. Runs on INSERT only, so narrowing a building's range later can't retroactively break an `extend_visitor_registration` call on an older row (extend never touches the `spot` column).
+
+**Files changed:** `supabase-schema.sql`, `patch-visitor-spots.sql` (new), `js/app.js`, `admin.html`, `enforcement.html`, `index.html`, `staff-guide.html`, `tests/regression-static.sh`, `README.md`, `CHANGELOG.md`
+
+---
+
 ## [2.6.0] — 2026-08-21
 
 ### Help & Support: public resident help center, in-app staff guide

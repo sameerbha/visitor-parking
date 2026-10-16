@@ -59,6 +59,16 @@
             autocapitalize="characters" autocomplete="off" />
         </div>
 
+        <!-- Hidden by default — only shown (and made required) when the
+             resolved building has visitor_spot_prefix configured. See the
+             init IIFE below. Buildings that don't use this optional feature
+             see no change to the form at all. -->
+        <div class="form-group hidden" id="spot-group">
+          <label for="visitor_spot">Visitor Parking Spot</label>
+          <select id="visitor_spot" class="form-control"></select>
+          <small class="field-hint">Choose the spot your visitor will park in.</small>
+        </div>
+
         <!-- No visible security-check UI here on purpose — reCAPTCHA runs
              invisibly (score-based, no checkbox/puzzle) and only shows
              Google's small "protected by reCAPTCHA" badge in the corner.
@@ -250,6 +260,19 @@ function resolveTenantSubdomain() {
       const badge = document.getElementById('tenant-badge');
       badge.textContent = currentAddress.name;
       badge.classList.remove('hidden');
+
+      // Optional, per-building: only shown when this address has visitor
+      // spot selection configured (Admin > Visitor Spots). Nothing changes
+      // on this form for a building that hasn't set it up.
+      const spots = buildVisitorSpotList(currentAddress);
+      if (spots.length > 0) {
+        const spotSelect = document.getElementById('visitor_spot');
+        spotSelect.innerHTML = '<option value="">Select a spot…</option>' +
+          spots.map(s => '<option value="' + s + '">' + s + '</option>').join('');
+        spotSelect.required = true;
+        document.getElementById('spot-group').classList.remove('hidden');
+      }
+
       // Only now is there actually something valid to submit against — a
       // fast tap on Submit before this resolves used to hit a "Building
       // not found" error that was really just this race.
@@ -279,6 +302,10 @@ document.getElementById('reg-form').addEventListener('submit', async function(e)
   const unit_number   = document.getElementById('unit_number').value.trim().toUpperCase();
   const unit_code     = document.getElementById('unit_code').value.trim();
   const visitor_plate = document.getElementById('visitor_plate').value.trim().toUpperCase();
+  // '' when the building doesn't use this feature (the group stays hidden
+  // and the select is never populated) — addVisitorRegistration sends null
+  // rather than an empty string in that case, below.
+  const visitor_spot  = document.getElementById('visitor_spot').value.trim();
 
   // 1. Require a valid address
   if (!currentAddress) {
@@ -372,6 +399,7 @@ document.getElementById('reg-form').addEventListener('submit', async function(e)
       lot_code:     currentAddress.lot_code,
       unit_number,
       visitor_plate,
+      spot: visitor_spot || null,
     });
 
     // 9. Show success
@@ -379,7 +407,8 @@ document.getElementById('reg-form').addEventListener('submit', async function(e)
     document.getElementById('success-msg').innerHTML =
       'Plate <strong>' + escapeHtml(visitor_plate) + '</strong> has been registered at ' +
       '<strong>' + escapeHtml(currentAddress.name) + '</strong>.<br>' +
-      'Valid until <strong>' + expires.toLocaleString('en-CA',{hour:'2-digit',minute:'2-digit',hour12:true,month:'short',day:'numeric'}) + '</strong>.';
+      'Valid until <strong>' + expires.toLocaleString('en-CA',{hour:'2-digit',minute:'2-digit',hour12:true,month:'short',day:'numeric'}) + '</strong>.' +
+      (visitor_spot ? '<br>Spot: <strong>' + escapeHtml(visitor_spot) + '</strong>' : '');
 
     await renderPassStats(unit_number, address_id, visitor_plate);
 

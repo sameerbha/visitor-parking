@@ -62,6 +62,23 @@ async function getAddressesByTenantId(tenantId) {
   return data;
 }
 
+// Builds the full list of configured visitor spot labels for an address,
+// e.g. prefix "V", start 1, end 20 -> ["V1", "V2", ..., "V20"]. Returns an
+// empty array for a building that hasn't configured this (optional) feature.
+// Shared by index.html (the resident dropdown) and admin.html (the live
+// preview on the Visitor Spots tab) so the two never drift apart.
+function buildVisitorSpotList(address) {
+  if (!address || !address.visitor_spot_prefix ||
+      address.visitor_spot_start == null || address.visitor_spot_end == null) {
+    return [];
+  }
+  const spots = [];
+  for (let n = address.visitor_spot_start; n <= address.visitor_spot_end; n++) {
+    spots.push(address.visitor_spot_prefix + n);
+  }
+  return spots;
+}
+
 // ─── Visitor Registrations ──────────────────────────────────────────────────
 
 async function getActiveVisitors(addressId) {
@@ -309,14 +326,15 @@ async function checkPlate(plate, addressId) {
 
   const { data: visitors } = await _sb
     .from('visitor_registrations')
-    .select('unit_number')
+    .select('unit_number, spot')
     .eq('address_id', addressId)
     .ilike('visitor_plate', norm)
     .gt('expires_at', new Date().toISOString())
     .limit(1);
 
   if (visitors && visitors.length > 0) {
-    return { valid: true, reason: 'Registered Visitor', detail: 'Unit ' + visitors[0].unit_number };
+    const detail = 'Unit ' + visitors[0].unit_number + (visitors[0].spot ? ' — Spot ' + visitors[0].spot : '');
+    return { valid: true, reason: 'Registered Visitor', detail };
   }
 
   const { data: exempts } = await _sb
@@ -446,6 +464,21 @@ async function updateTenantLimits(tenantId, monthlyPassLimit, plateDayLimit) {
     p_tenant_id: tenantId,
     p_monthly_pass_limit: monthlyPassLimit,
     p_plate_day_limit: plateDayLimit,
+  });
+  if (error) throw error;
+  return data;
+}
+
+// Used by Admin's Visitor Spots tab (per-building, unlike Settings' tenant-
+// wide pass limits — the RPC itself checks has_tenant_access(addressId)).
+// Pass prefix=null (with start/end also null) to disable the feature for
+// this address.
+async function updateAddressVisitorSpots(addressId, prefix, start, end) {
+  const { data, error } = await _sb.rpc('update_address_visitor_spots', {
+    p_address_id: addressId,
+    p_prefix:     prefix,
+    p_start:      start,
+    p_end:        end,
   });
   if (error) throw error;
   return data;

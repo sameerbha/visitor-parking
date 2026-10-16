@@ -217,6 +217,18 @@ Google scores every interaction 0.0–1.0; `verify-recaptcha.mjs` rejects anythi
 
 The monthly-passes-per-unit and days-per-plate limits are per-tenant settings, not fixed values — editable from Admin's "⚙️ Settings" tab by any staff member of that tenant (any building's staff can change it, consistent with the flat access decision — there's no separate property-manager tier). They apply across every building under that tenant's account, not per-building. Existing tenants default to 10/7, matching the original fixed behavior, until changed. Run [patch-tenant-limits.sql](/Users/sameerbhaidani/Documents/VIsitors%20Parking%20App/patch-tenant-limits.sql) once in the Supabase SQL Editor to add this to an existing install.
 
+## Visitor Parking Spots (Optional)
+
+Each building can optionally let residents pick a specific visitor spot (e.g. `V1`–`V20`) when registering — unlike pass limits, this is configured **per building**, not per tenant, from Admin's "🅿️ Visitor Spots" tab. Off by default; a building that never turns it on sees no change anywhere in the app.
+
+Turning it on sets three fields on that building's `addresses` row: a prefix (e.g. `"V"`), a first spot number, and a last spot number. Admin builds the full list from that range and shows a live preview before saving. Any staff member of the tenant can enable/edit/disable this for their own building — same flat-access pattern as pass limits and unit codes, no platform-admin involvement needed.
+
+Once enabled, the resident registration page shows a required "Visitor Parking Spot" dropdown between the license plate field and Submit, populated from that building's configured range. The selected spot is stored on the registration and shown to staff — a new "Spot" column in Enforcement's Valid Plates table, Patrol View, Plate Lookup, and Admin's Registration History, plus the matching CSV exports.
+
+This is **informational only** — there is no check anywhere that prevents two residents from both picking the same spot for overlapping times. It's a label for enforcement's reference (same philosophy as the rest of the app: a pass, not a reservation system), not a booking system. If a building needs to actually prevent double-booking a spot, that would be a different, larger feature.
+
+Submitted spots are still validated server-side, the same way unit codes are: a database trigger (`validate_visitor_spot`) checks that a spot is present when the building requires one, and that it actually falls within that building's configured range, rather than trusting whatever the browser sends. Run [patch-visitor-spots.sql](/Users/sameerbhaidani/Documents/VIsitors%20Parking%20App/patch-visitor-spots.sql) once in the Supabase SQL Editor to add this to an existing install.
+
 ## Bulk Unit Code Generator
 
 As of 2026-08-12, bulk generation is a **platform-admin-only** action, done from Platform Admin's Buildings table ("🎲 Codes" next to a building), not from tenant Admin. Bulk setup is a one-time onboarding step, not a routine staff task, so it moved out of the tenant-facing Admin portal entirely.
