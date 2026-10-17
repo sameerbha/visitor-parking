@@ -24,16 +24,109 @@
 </nav>
 
 <header class="hero">
-  <div class="wrap">
-    <span class="hero-eyebrow">Visitor Parking, Handled</span>
-    <h1>Visitor parking your management can <em>actually oversee</em> — without more work for your concierge.</h1>
-    <p class="lead">Regent Parking replaces the sign-in sheet and the spreadsheet with one system: residents register their own visitors in seconds, staff get a purpose-built tool for the garage, and your board gets a full history whenever they need it.</p>
-    <div class="hero-actions">
-      <a href="contact.html" class="btn btn-gold">Request a Demo</a>
-      <a href="pricing.html" class="btn btn-outline-light">See Pricing</a>
+  <div class="wrap hero-grid">
+    <div class="hero-copy">
+      <span class="hero-eyebrow">Visitor Parking, Handled</span>
+      <h1>Visitor parking your management can <em>actually oversee</em>.</h1>
+      <p class="lead">One system replaces the sign-in sheet and the spreadsheet: residents register in seconds, staff get a built-for-the-garage tool, and your board gets a full history.</p>
+      <div class="hero-actions">
+        <a href="contact.html" class="btn btn-gold">Request a Demo</a>
+        <a href="product.html" class="btn btn-outline-light">See It In Action</a>
+      </div>
+    </div>
+
+    <div class="hero-visual">
+      <div class="device-frame phone">
+        <div class="phone-bezel">
+          <div class="phone-notch"></div>
+          <div class="phone-screen" id="hero-phone">
+
+            <div class="ds-screen active" data-screen="1">
+              <div class="ds-resident-bg">
+                <div class="ds-rtop">🔒 Staff</div>
+                <div class="ds-rlogo">🅿️</div>
+                <h4>Regent <span>Parking</span></h4>
+                <div class="ds-rtag">VISITOR REGISTRATION</div>
+                <div class="ds-card">
+                  <div class="ds-field"><label>Unit Number</label><div class="ds-input filled">204</div></div>
+                  <div class="ds-field"><label>Unit Code</label><div class="ds-input filled">••••</div></div>
+                  <div class="ds-field dim"><label>Visitor License Plate</label><div class="ds-input placeholder">e.g. ABCD 123</div></div>
+                  <div class="ds-btn dim">Continue</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="ds-screen" data-screen="2">
+              <div class="ds-resident-bg">
+                <div class="ds-rtop">🔒 Staff</div>
+                <div class="ds-rlogo">🅿️</div>
+                <h4>Regent <span>Parking</span></h4>
+                <div class="ds-rtag">VISITOR REGISTRATION</div>
+                <div class="ds-card">
+                  <div class="ds-field"><label>Unit Number</label><div class="ds-input filled">204</div></div>
+                  <div class="ds-field"><label>Visitor License Plate</label><div class="ds-input filled">CXYT 482</div></div>
+                  <div class="ds-field"><label>Visitor Parking Spot</label><div class="ds-input filled">V7 — Visitor Spot 7</div></div>
+                  <div class="ds-btn ready">Register Visitor</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="ds-screen" data-screen="3">
+              <div class="ds-resident-bg">
+                <div class="ds-rtop">🔒 Staff</div>
+                <div class="ds-rlogo">🅿️</div>
+                <h4>Regent <span>Parking</span></h4>
+                <div class="ds-rtag">VISITOR REGISTRATION</div>
+                <div class="ds-card">
+                  <div class="ds-field"><label>Unit Number</label><div class="ds-input filled">204</div></div>
+                  <div class="ds-field"><label>Visitor License Plate</label><div class="ds-input filled">CXYT 482</div></div>
+                  <div class="ds-field"><label>Visitor Parking Spot</label><div class="ds-input filled">V7 — Visitor Spot 7</div></div>
+                  <div class="ds-btn ready">Verifying…</div>
+                  <div class="ds-rc-note" style="color:#6c757d;text-align:center">Protected by reCAPTCHA</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="ds-screen" data-screen="4">
+              <div class="ds-resident-bg">
+                <div class="ds-rlogo">🅿️</div>
+                <h4>Regent <span>Parking</span></h4>
+                <div class="ds-rtag">VISITOR REGISTRATION</div>
+                <div class="ds-card">
+                  <div class="ds-success">
+                    <div class="ds-check">✓</div>
+                    <p>You're all set!<br><strong>Unit 204 — Spot V7</strong></p>
+                    <div class="ds-passbox">
+                      Expires: Today, 9:42 PM<br>
+                      Visitor passes used this month: 3 of 10
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </header>
+
+<script>
+(function () {
+  // Auto-cycles the homepage hero's phone mockup through the same 4
+  // registration states shown on product.html, looping continuously so
+  // the hero reads as "alive" without needing scroll or a click.
+  var screens = document.querySelectorAll('#hero-phone .ds-screen');
+  if (!screens.length) return;
+  var i = 0;
+  setInterval(function () {
+    screens[i].classList.remove('active');
+    i = (i + 1) % screens.length;
+    screens[i].classList.add('active');
+  }, 2400);
+})();
+</script>
 
 <section>
   <div class="wrap">
@@ -45,17 +138,17 @@
       <div class="feature-card">
         <div class="num">01</div>
         <h3>Residents register in seconds</h3>
-        <p>One link, no app to install. A resident enters their unit, their code, and a plate — registration takes under a minute, and extensions are built in so a longer visit doesn't mean starting over.</p>
+        <p>No app needed. Unit, code, plate — registered in under a minute, with one-tap extensions if the visit runs long.</p>
       </div>
       <div class="feature-card">
         <div class="num">02</div>
         <h3>Built for the garage, not a desk</h3>
-        <p>Concierge and security get a large-text, mobile-first view of every valid plate — exempt vehicles clearly flagged — so a walk-through takes a glance, not a login and a squint at a spreadsheet.</p>
+        <p>A large-text, mobile-first list of every valid plate, exemptions flagged automatically — a walk-through takes a glance, not a login.</p>
       </div>
       <div class="feature-card">
         <div class="num">03</div>
         <h3>An answer, whenever the board asks</h3>
-        <p>Every registration — active or expired — is searchable by plate or by unit for three years. When a question comes up about who parked where and when, there's a real answer, not a guess.</p>
+        <p>Every registration, active or expired, stays searchable by plate or unit for three years — a real answer when the board asks, not a guess.</p>
       </div>
     </div>
   </div>
@@ -67,7 +160,7 @@
       <div>
         <div class="section-eyebrow" style="text-align:left">Built for Boards, Not Just IT</div>
         <h2>Fair limits, set by your building — enforced automatically.</h2>
-        <p>Every unit gets a monthly visitor-pass allowance and a cap on how many days any single plate can stay registered — both set by your board, not fixed by us. No manual tracking, no arguments at the desk — whatever limits you choose, the system enforces them the same way for every resident.</p>
+        <p>Every unit gets a monthly pass allowance and a day-cap per plate — both set by your board, not fixed by us, and enforced automatically the same way for every resident.</p>
         <ul class="check-list">
           <li>Monthly visitor passes per unit — you set the number, resets automatically</li>
           <li>A day-cap per plate, so one "visitor" can't quietly become a permanent tenant</li>
@@ -79,7 +172,7 @@
       <div>
         <div class="section-eyebrow" style="text-align:left">Privacy, By Design</div>
         <h2>We collect less than you'd think — on purpose.</h2>
-        <p>Regent Parking doesn't ask residents for a phone number, and never exposes a unit's parking code to a browser — it's checked server-side and only ever returns yes or no. Registration history is kept for three years, then automatically and permanently deleted, so nothing is retained longer than it needs to be.</p>
+        <p>No phone number is ever collected, and a unit's code is checked server-side — it never reaches the browser. History is kept three years, then permanently deleted.</p>
       </div>
     </div>
   </div>
