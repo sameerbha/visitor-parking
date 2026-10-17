@@ -173,6 +173,145 @@ section { padding: 80px 0; }
 .site-footer a { color: rgba(255,255,255,.8); }
 .site-footer a:hover { color: var(--gold-light); }
 
+/* ── Product demo: flow switcher + scroll-driven device mockups ──────
+   The marketing site stays charcoal/gold throughout, but the device
+   screens inside the mockups intentionally replicate the real app's own
+   navy/green/red/amber system (see css/style.css at the project root) —
+   the point is to show visitors what the product actually looks like,
+   not a re-skinned version of it. All device-screen classes are prefixed
+   "ds-" so nothing here collides with the marketing site's own .btn,
+   .form-group, etc. ── */
+
+.flow-switcher {
+  position: sticky; top: 0; z-index: 50; background: var(--white);
+  border-bottom: 1px solid var(--border); padding: 14px 0;
+}
+.flow-switcher .wrap { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.flow-pill {
+  padding: 9px 18px; border-radius: 20px; background: var(--cream); color: var(--text);
+  font-size: .88rem; font-weight: 600; border: 1px solid var(--border); transition: background .15s, color .15s, border-color .15s;
+}
+.flow-pill:hover { border-color: var(--gold); }
+.flow-pill.active { background: var(--charcoal); color: var(--white); border-color: var(--charcoal); }
+
+.demo-flow { padding: 76px 0; }
+.demo-flow.alt { background: var(--cream); }
+.demo-flow .section-eyebrow { text-align: left; }
+.demo-flow .flow-title { font-size: 1.9rem; font-weight: 800; letter-spacing: -.5px; margin-bottom: 44px; max-width: 640px; }
+
+.demo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: start; }
+.demo-copy { display: flex; flex-direction: column; gap: 22px; }
+.demo-step {
+  padding: 18px 22px; border-left: 3px solid var(--border); border-radius: 0 8px 8px 0;
+  transition: border-color .2s, background .2s; cursor: default;
+}
+.demo-step.active { border-left-color: var(--gold); background: var(--white); box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+.demo-flow.alt .demo-step.active { background: var(--white); }
+.demo-step .step-num { display: block; color: var(--gold); font-weight: 800; font-size: .76rem; letter-spacing: 1.5px; margin-bottom: 8px; }
+.demo-step h3 { font-size: 1.08rem; font-weight: 700; margin-bottom: 6px; letter-spacing: -.2px; }
+.demo-step p { color: var(--muted); font-size: .92rem; line-height: 1.6; }
+
+.demo-stage { position: sticky; top: 90px; display: flex; justify-content: center; }
+
+/* Phone frame (resident registration) */
+.device-frame.phone { width: 270px; }
+.phone-bezel { background: #111318; border-radius: 42px; padding: 12px; box-shadow: 0 30px 60px -12px rgba(0,0,0,.4); position: relative; }
+.phone-notch {
+  position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+  width: 86px; height: 20px; background: #111318; border-radius: 0 0 12px 12px; z-index: 5;
+}
+.phone-screen { position: relative; background: #fff; border-radius: 30px; overflow: hidden; height: 540px; }
+
+/* Browser frame (enforcement / admin) */
+.device-frame.browser { width: 100%; max-width: 480px; }
+.browser-bezel { background: #dde1e6; border-radius: 10px 10px 0 0; padding: 9px 12px; display: flex; gap: 6px; }
+.browser-dot { width: 9px; height: 9px; border-radius: 50%; background: #b9bec5; }
+.browser-screen {
+  position: relative; background: #f0f2f5; overflow: hidden; height: 460px;
+  box-shadow: 0 25px 50px -14px rgba(0,0,0,.3); border-radius: 0 0 10px 10px;
+}
+
+.ds-screen { position: absolute; inset: 0; opacity: 0; transition: opacity .35s ease; pointer-events: none; overflow: auto; }
+.ds-screen.active { opacity: 1; pointer-events: auto; }
+
+/* ds- resident phone screen */
+.ds-resident-bg {
+  height: 100%; padding: 22px 16px 16px; color: #fff; text-align: center;
+  background: linear-gradient(160deg, #1565c0 0%, #0a0a6e 100%); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+.ds-rtop { text-align: right; font-size: .68rem; opacity: .75; margin-bottom: 10px; }
+.ds-rlogo { font-size: 2rem; margin-bottom: 2px; }
+.ds-resident-bg h4 { font-size: 1.15rem; font-weight: 800; margin-bottom: 2px; }
+.ds-resident-bg h4 span { color: #E2BC68; }
+.ds-rtag { font-size: .72rem; font-weight: 600; opacity: .9; margin-bottom: 16px; }
+.ds-card { background: #fff; color: #212529; border-radius: 14px; padding: 18px 16px; text-align: left; }
+.ds-field { margin-bottom: 11px; }
+.ds-field.dim { opacity: .45; }
+.ds-field label { display: block; font-size: .7rem; font-weight: 700; color: #333; margin-bottom: 4px; }
+.ds-input {
+  border: 1.5px solid #ced4da; border-radius: 7px; padding: 8px 10px; font-size: .8rem; background: #fff;
+}
+.ds-input.placeholder { color: #8a929a; }
+.ds-input.filled { font-weight: 600; color: #212529; border-color: #0d6efd; }
+.ds-btn {
+  display: block; width: 100%; text-align: center; padding: 10px; border-radius: 7px;
+  font-weight: 700; font-size: .85rem; margin-top: 12px; color: #fff; background: #2ea843;
+}
+.ds-btn.dim { background: #adb5bd; }
+.ds-btn.ready { background: #2ea843; }
+.ds-rc-note { text-align: center; font-size: .64rem; opacity: .7; margin-top: 10px; }
+.ds-success { text-align: center; padding: 10px 2px; }
+.ds-check {
+  width: 48px; height: 48px; border-radius: 50%; background: #2ea843; color: #fff;
+  font-size: 1.4rem; font-weight: 800; display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 12px;
+}
+.ds-success p { font-size: .85rem; line-height: 1.6; margin-bottom: 12px; }
+.ds-passbox { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 10px 12px; font-size: .72rem; color: #495057; text-align: left; line-height: 1.7; }
+
+/* ds- browser app screens (enforcement / admin) */
+.ds-appbar {
+  background: #0a0a6e; color: #fff; padding: 10px 16px; font-size: .82rem; font-weight: 700;
+  display: flex; align-items: center; gap: 8px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+.ds-appbar-sub { opacity: .75; font-weight: 500; font-size: .74rem; }
+.ds-body { padding: 14px 16px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+.ds-tabs { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+.ds-tab { padding: 6px 12px; border-radius: 7px; font-size: .72rem; font-weight: 600; color: #6c757d; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+.ds-tab.active { background: #0a0a6e; color: #fff; }
+.ds-panel { background: #fff; border-radius: 9px; box-shadow: 0 1px 3px rgba(0,0,0,.08); overflow: hidden; }
+.ds-pmeta { display: flex; justify-content: space-between; padding: 9px 14px; font-size: .68rem; color: #6c757d; border-bottom: 1px solid #dee2e6; }
+.ds-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-bottom: 1px solid #dee2e6; font-size: .76rem; }
+.ds-row:last-child { border-bottom: none; }
+.ds-row.checked { opacity: .4; }
+.ds-row.exempt { background: #eef4ff; border-left: 3px solid #0d6efd; }
+.ds-row.flagged { background: #fff5f5; border-left: 3px solid #dc3545; }
+.ds-plate { font-family: 'Courier New', monospace; font-weight: 800; letter-spacing: 1px; font-size: .88rem; }
+.ds-unit { color: #6c757d; font-size: .7rem; }
+.ds-badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: .62rem; font-weight: 700; }
+.ds-badge.exempt { background: #cfe2ff; color: #084298; }
+.ds-badge.flagged { background: #f8d7da; color: #842029; }
+.ds-check-icon { color: #2ea843; font-weight: 800; }
+.ds-fab {
+  position: absolute; bottom: 14px; right: 14px; background: #dc3545; color: #fff; font-weight: 700;
+  font-size: .72rem; padding: 9px 14px; border-radius: 20px; box-shadow: 0 4px 12px rgba(0,0,0,.25);
+}
+.ds-field-row { margin-bottom: 10px; }
+.ds-field-row label { display: block; font-size: .68rem; font-weight: 700; color: #333; margin-bottom: 3px; }
+.ds-select, .ds-text { border: 1.5px solid #ced4da; border-radius: 6px; padding: 6px 9px; font-size: .74rem; background: #fff; display: inline-block; }
+.ds-select.focus, .ds-text.focus { border-color: #0d6efd; box-shadow: 0 0 0 3px rgba(13,110,253,.15); }
+.ds-check-row { display: flex; align-items: center; gap: 8px; font-size: .76rem; font-weight: 600; margin-bottom: 10px; }
+.ds-check-box { width: 15px; height: 15px; border-radius: 4px; border: 1.5px solid #ced4da; display: inline-flex; align-items: center; justify-content: center; font-size: .7rem; color: #fff; }
+.ds-check-box.on { background: #0d6efd; border-color: #0d6efd; }
+.ds-hint { font-size: .68rem; color: #6c757d; margin-top: 6px; }
+.ds-banner { background: #d1e7dd; color: #0f5132; border: 1px solid #badbcc; border-radius: 7px; padding: 8px 10px; font-size: .7rem; font-weight: 600; margin-bottom: 12px; }
+
+@media (max-width: 900px) {
+  .demo-grid { grid-template-columns: 1fr; }
+  .demo-stage { position: static; margin-bottom: 36px; }
+  .flow-switcher { position: static; }
+}
+
 /* ── Mobile ── */
 @media (max-width: 800px) {
   .nav-links { display: none; }

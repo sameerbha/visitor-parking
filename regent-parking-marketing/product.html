@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Regent Parking — See It In Action</title>
+  <meta name="description" content="Scroll through exactly what a resident, your concierge or security team, and your board each see in Regent Parking — no login required." />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<nav class="site-nav">
+  <div class="wrap">
+    <a href="index.html" class="nav-brand">Regent<span>Parking</span></a>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="product.html" class="active">Product</a>
+      <a href="pricing.html">Pricing</a>
+      <a href="help.html">Help</a>
+      <a href="contact.html">Contact</a>
+    </div>
+    <a href="contact.html" class="nav-cta">Request a Demo</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <span class="hero-eyebrow">See It In Action</span>
+    <h1>This is what your building would <em>actually</em> be running.</h1>
+    <p class="lead">No login required. Scroll through exactly what a resident, your concierge or security team, and your board each see — the real screens, not just a description of them.</p>
+    <div class="hero-actions">
+      <a href="contact.html" class="btn btn-gold">Request a Demo</a>
+      <a href="pricing.html" class="btn btn-outline-light">See Pricing</a>
+    </div>
+  </div>
+</header>
+
+<div class="flow-switcher">
+  <div class="wrap">
+    <a href="#flow-resident" class="flow-pill" data-flow="flow-resident">Resident Registration</a>
+    <a href="#flow-enforcement" class="flow-pill" data-flow="flow-enforcement">Enforcement Patrol</a>
+    <a href="#flow-admin" class="flow-pill" data-flow="flow-admin">Admin Configuration</a>
+  </div>
+</div>
+
+<!-- ───────────────────────── Flow 1: Resident Registration ───────────────────────── -->
+<section class="demo-flow" id="flow-resident">
+  <div class="wrap">
+    <div class="section-eyebrow">What Residents See</div>
+    <h2 class="flow-title">Registering a visitor takes less than a minute.</h2>
+
+    <div class="demo-grid">
+      <div class="demo-copy">
+        <div class="demo-step" data-stage="resident" data-step="1">
+          <span class="step-num">STEP 1</span>
+          <h3>Enter the unit number and code</h3>
+          <p>Every unit has its own private code, set by building management — never a parking spot number or anything a stranger could guess.</p>
+        </div>
+        <div class="demo-step" data-stage="resident" data-step="2">
+          <span class="step-num">STEP 2</span>
+          <h3>Add the visitor's plate (and a spot, if used)</h3>
+          <p>If the building uses numbered visitor spots, residents pick one here too. Buildings that don't use that feature never see this step at all.</p>
+        </div>
+        <div class="demo-step" data-stage="resident" data-step="3">
+          <span class="step-num">STEP 3</span>
+          <h3>Submit — protected automatically</h3>
+          <p>An invisible, score-based security check runs in the background. No puzzle, no checkbox — nothing for the resident to solve.</p>
+        </div>
+        <div class="demo-step" data-stage="resident" data-step="4">
+          <span class="step-num">STEP 4</span>
+          <h3>Confirmed, with an expiry time</h3>
+          <p>The resident sees their expiry and remaining monthly passes immediately, and can extend later without starting over.</p>
+        </div>
+      </div>
+
+      <div class="demo-stage">
+        <div class="device-frame phone">
+          <div class="phone-bezel">
+            <div class="phone-notch"></div>
+            <div class="phone-screen">
+
+              <div class="ds-screen active" data-stage="resident" data-screen="1">
+                <div class="ds-resident-bg">
+                  <div class="ds-rtop">🔒 Staff</div>
+                  <div class="ds-rlogo">🅿️</div>
+                  <h4>Regent <span>Parking</span></h4>
+                  <div class="ds-rtag">VISITOR REGISTRATION</div>
+                  <div class="ds-card">
+                    <div class="ds-field"><label>Unit Number</label><div class="ds-input filled">204</div></div>
+                    <div class="ds-field"><label>Unit Code</label><div class="ds-input filled">••••</div></div>
+                    <div class="ds-field dim"><label>Visitor License Plate</label><div class="ds-input placeholder">e.g. ABCD 123</div></div>
+                    <div class="ds-btn dim">Continue</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="ds-screen" data-stage="resident" data-screen="2">
+                <div class="ds-resident-bg">
+                  <div class="ds-rtop">🔒 Staff</div>
+                  <div class="ds-rlogo">🅿️</div>
+                  <h4>Regent <span>Parking</span></h4>
+                  <div class="ds-rtag">VISITOR REGISTRATION</div>
+                  <div class="ds-card">
+                    <div class="ds-field"><label>Unit Number</label><div class="ds-input filled">204</div></div>
+                    <div class="ds-field"><label>Visitor License Plate</label><div class="ds-input filled">CXYT 482</div></div>
+                    <div class="ds-field"><label>Visitor Parking Spot</label><div class="ds-input filled">V7 — Visitor Spot 7</div></div>
+                    <div class="ds-btn ready">Register Visitor</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="ds-screen" data-stage="resident" data-screen="3">
+                <div class="ds-resident-bg">
+                  <div class="ds-rtop">🔒 Staff</div>
+                  <div class="ds-rlogo">🅿️</div>
+                  <h4>Regent <span>Parking</span></h4>
+                  <div class="ds-rtag">VISITOR REGISTRATION</div>
+                  <div class="ds-card">
+                    <div class="ds-field"><label>Unit Number</label><div class="ds-input filled">204</div></div>
+                    <div class="ds-field"><label>Visitor License Plate</label><div class="ds-input filled">CXYT 482</div></div>
+                    <div class="ds-field"><label>Visitor Parking Spot</label><div class="ds-input filled">V7 — Visitor Spot 7</div></div>
+                    <div class="ds-btn ready">Verifying…</div>
+                    <div class="ds-rc-note" style="color:#6c757d;text-align:center">Protected by reCAPTCHA</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="ds-screen" data-stage="resident" data-screen="4">
+                <div class="ds-resident-bg">
+                  <div class="ds-rlogo">🅿️</div>
+                  <h4>Regent <span>Parking</span></h4>
+                  <div class="ds-rtag">VISITOR REGISTRATION</div>
+                  <div class="ds-card">
+                    <div class="ds-success">
+                      <div class="ds-check">✓</div>
+                      <p>You're all set!<br><strong>Unit 204 — Spot V7</strong></p>
+                      <div class="ds-passbox">
+                        Expires: Today, 9:42 PM<br>
+                        Visitor passes used this month: 3 of 10
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────────────────── Flow 2: Enforcement Patrol ───────────────────────── -->
+<section class="demo-flow alt" id="flow-enforcement">
+  <div class="wrap">
+    <div class="section-eyebrow">What Your Concierge or Security Team Sees</div>
+    <h2 class="flow-title">A lot walk-through takes a glance, not a login and a spreadsheet.</h2>
+
+    <div class="demo-grid">
+      <div class="demo-copy">
+        <div class="demo-step" data-stage="enforcement" data-step="1">
+          <span class="step-num">STEP 1</span>
+          <h3>Today's valid plates, already loaded</h3>
+          <p>Every currently-registered vehicle for the building, in large text built for a phone held in one hand.</p>
+        </div>
+        <div class="demo-step" data-stage="enforcement" data-step="2">
+          <span class="step-num">STEP 2</span>
+          <h3>Tap each match while walking the lot</h3>
+          <p>A quick tap checks a plate off the list — no typing, no searching through a binder.</p>
+        </div>
+        <div class="demo-step" data-stage="enforcement" data-step="3">
+          <span class="step-num">STEP 3</span>
+          <h3>Whatever's left needs attention</h3>
+          <p>Anything still unchecked at the end of the walk-through is exactly what's unregistered — flag it in one tap.</p>
+        </div>
+        <div class="demo-step" data-stage="enforcement" data-step="4">
+          <span class="step-num">STEP 4</span>
+          <h3>Exempt vehicles are called out automatically</h3>
+          <p>Contractors and vendors with an approved exemption are marked clearly, so staff never have to second-guess a familiar vehicle.</p>
+        </div>
+      </div>
+
+      <div class="demo-stage">
+        <div class="device-frame browser">
+          <div class="browser-bezel">
+            <div class="browser-dot"></div><div class="browser-dot"></div><div class="browser-dot"></div>
+          </div>
+          <div class="browser-screen">
+
+            <div class="ds-screen active" data-stage="enforcement" data-screen="1">
+              <div class="ds-appbar">🅿️ Regent Parking <span class="ds-appbar-sub">Enforcement</span></div>
+              <div class="ds-body">
+                <div class="ds-tabs">
+                  <span class="ds-tab">Valid Plates</span><span class="ds-tab active">Patrol View</span><span class="ds-tab">Flagged</span>
+                </div>
+                <div class="ds-panel">
+                  <div class="ds-pmeta"><span>14 valid plates</span><span>Updated 2m ago</span></div>
+                  <div class="ds-row"><div><div class="ds-plate">CXYT 482</div><div class="ds-unit">Unit 204 · Spot V7</div></div></div>
+                  <div class="ds-row"><div><div class="ds-plate">HJKQ 119</div><div class="ds-unit">Unit 311</div></div></div>
+                  <div class="ds-row exempt"><div><div class="ds-plate">ABCD 001</div><div class="ds-unit">Acme Contracting</div></div><span class="ds-badge exempt">Exempt</span></div>
+                  <div class="ds-row"><div><div class="ds-plate">PLMB 773</div><div class="ds-unit">Unit 112</div></div></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="ds-screen" data-stage="enforcement" data-screen="2">
+              <div class="ds-appbar">🅿️ Regent Parking <span class="ds-appbar-sub">Enforcement</span></div>
+              <div class="ds-body">
+                <div class="ds-tabs">
+                  <span class="ds-tab">Valid Plates</span><span class="ds-tab active">Patrol View</span><span class="ds-tab">Flagged</span>
+                </div>
+                <div class="ds-panel">
+                  <div class="ds-pmeta"><span>14 valid plates</span><span>Updated 2m ago</span></div>
+                  <div class="ds-row checked"><div><div class="ds-plate">CXYT 482</div><div class="ds-unit">Unit 204 · Spot V7</div></div><span class="ds-check-icon">✓</span></div>
+                  <div class="ds-row checked"><div><div class="ds-plate">HJKQ 119</div><div class="ds-unit">Unit 311</div></div><span class="ds-check-icon">✓</span></div>
+                  <div class="ds-row exempt"><div><div class="ds-plate">ABCD 001</div><div class="ds-unit">Acme Contracting</div></div><span class="ds-badge exempt">Exempt</span></div>
+                  <div class="ds-row"><div><div class="ds-plate">PLMB 773</div><div class="ds-unit">Unit 112</div></div></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="ds-screen" data-stage="enforcement" data-screen="3">
+              <div class="ds-appbar">🅿️ Regent Parking <span class="ds-appbar-sub">Enforcement</span></div>
+              <div class="ds-body">
+                <div class="ds-tabs">
+                  <span class="ds-tab">Valid Plates</span><span class="ds-tab active">Patrol View</span><span class="ds-tab">Flagged</span>
+                </div>
+                <div class="ds-panel">
+                  <div class="ds-pmeta"><span>14 valid plates</span><span>Updated 2m ago</span></div>
+                  <div class="ds-row checked"><div><div class="ds-plate">CXYT 482</div><div class="ds-unit">Unit 204 · Spot V7</div></div><span class="ds-check-icon">✓</span></div>
+                  <div class="ds-row checked"><div><div class="ds-plate">HJKQ 119</div><div class="ds-unit">Unit 311</div></div><span class="ds-check-icon">✓</span></div>
+                  <div class="ds-row exempt"><div><div class="ds-plate">ABCD 001</div><div class="ds-unit">Acme Contracting</div></div><span class="ds-badge exempt">Exempt</span></div>
+                  <div class="ds-row flagged"><div><div class="ds-plate">PLMB 773</div><div class="ds-unit">Not registered</div></div><span class="ds-badge flagged">Unmatched</span></div>
+                </div>
+              </div>
+              <div class="ds-fab">🚩 Flag Vehicle</div>
+            </div>
+
+            <div class="ds-screen" data-stage="enforcement" data-screen="4">
+              <div class="ds-appbar">🅿️ Regent Parking <span class="ds-appbar-sub">Enforcement</span></div>
+              <div class="ds-body">
+                <div class="ds-tabs">
+                  <span class="ds-tab">Valid Plates</span><span class="ds-tab active">Patrol View</span><span class="ds-tab">Flagged</span>
+                </div>
+                <div class="ds-panel">
+                  <div class="ds-pmeta"><span>14 valid plates</span><span>Updated 2m ago</span></div>
+                  <div class="ds-row"><div><div class="ds-plate">CXYT 482</div><div class="ds-unit">Unit 204 · Spot V7</div></div></div>
+                  <div class="ds-row"><div><div class="ds-plate">HJKQ 119</div><div class="ds-unit">Unit 311</div></div></div>
+                  <div class="ds-row exempt"><div><div class="ds-plate">ABCD 001</div><div class="ds-unit">Acme Contracting</div></div><span class="ds-badge exempt">Exempt</span></div>
+                  <div class="ds-row"><div><div class="ds-plate">PLMB 773</div><div class="ds-unit">Unit 112</div></div></div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────────────────── Flow 3: Admin Configuration ───────────────────────── -->
+<section class="demo-flow" id="flow-admin">
+  <div class="wrap">
+    <div class="section-eyebrow">What Your Board Controls</div>
+    <h2 class="flow-title">Every rule is yours to set — and change anytime.</h2>
+
+    <div class="demo-grid">
+      <div class="demo-copy">
+        <div class="demo-step" data-stage="admin" data-step="1">
+          <span class="step-num">STEP 1</span>
+          <h3>Pick a building</h3>
+          <p>Multiple towers or buildings live under one account, each configured independently.</p>
+        </div>
+        <div class="demo-step" data-stage="admin" data-step="2">
+          <span class="step-num">STEP 2</span>
+          <h3>Turn on numbered visitor spots (optional)</h3>
+          <p>Most buildings don't need this — but if yours assigns specific spots to visitors, it's one toggle away.</p>
+        </div>
+        <div class="demo-step" data-stage="admin" data-step="3">
+          <span class="step-num">STEP 3</span>
+          <h3>Set the range</h3>
+          <p>V1 through V20, or whatever your building actually has. Residents only ever see a dropdown of real, available spots.</p>
+        </div>
+        <div class="demo-step" data-stage="admin" data-step="4">
+          <span class="step-num">STEP 4</span>
+          <h3>It shows up everywhere else, automatically</h3>
+          <p>The same spot appears on the resident's confirmation and in the enforcement view — no second system to keep in sync.</p>
+        </div>
+      </div>
+
+      <div class="demo-stage">
+        <div class="device-frame browser">
+          <div class="browser-bezel">
+            <div class="browser-dot"></div><div class="browser-dot"></div><div class="browser-dot"></div>
+          </div>
+          <div class="browser-screen">
+
+            <div class="ds-screen active" data-stage="admin" data-screen="1">
+              <div class="ds-appbar">🅿️ Regent Parking <span class="ds-appbar-sub">Admin</span></div>
+              <div class="ds-body">
+                <div class="ds-field-row">
+                  <label>Building</label>
+                  <span class="ds-select focus">123 Harbourview Dr ▾</span>
+                </div>
+                <div class="ds-tabs">
+                  <span class="ds-tab">Exemptions</span><span class="ds-tab">Unit Codes</span><span class="ds-tab active">Visitor Spots</span><span class="ds-tab">History</span><span class="ds-tab">Settings</span>
+                </div>
+                <div class="ds-panel" style="padding:14px;opacity:.5">
+                  <div class="ds-check-row"><span class="ds-check-box"></span> Enable visitor spot selection</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="ds-screen" data-stage="admin" data-screen="2">
+              <div class="ds-appbar">🅿️ Regent Parking <span class="ds-appbar-sub">Admin</span></div>
+              <div class="ds-body">
+                <div class="ds-field-row">
+                  <label>Building</label>
+                  <span class="ds-select">123 Harbourview Dr ▾</span>
+                </div>
+                <div class="ds-tabs">
+                  <span class="ds-tab">Exemptions</span><span class="ds-tab">Unit Codes</span><span class="ds-tab active">Visitor Spots</span><span class="ds-tab">History</span><span class="ds-tab">Settings</span>
+                </div>
+                <div class="ds-panel" style="padding:14px">
+                  <div class="ds-check-row"><span class="ds-check-box on">✓</span> Enable visitor spot selection</div>
+                  <div class="ds-field-row"><label>Prefix</label><span class="ds-text placeholder">—</span></div>
+                  <div class="ds-field-row"><label>First / Last Spot Number</label><span class="ds-text placeholder">—</span> &nbsp; <span class="ds-text placeholder">—</span></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="ds-screen" data-stage="admin" data-screen="3">
+              <div class="ds-appbar">🅿️ Regent Parking <span class="ds-appbar-sub">Admin</span></div>
+              <div class="ds-body">
+                <div class="ds-field-row">
+                  <label>Building</label>
+                  <span class="ds-select">123 Harbourview Dr ▾</span>
+                </div>
+                <div class="ds-tabs">
+                  <span class="ds-tab">Exemptions</span><span class="ds-tab">Unit Codes</span><span class="ds-tab active">Visitor Spots</span><span class="ds-tab">History</span><span class="ds-tab">Settings</span>
+                </div>
+                <div class="ds-panel" style="padding:14px">
+                  <div class="ds-check-row"><span class="ds-check-box on">✓</span> Enable visitor spot selection</div>
+                  <div class="ds-field-row"><label>Prefix</label><span class="ds-text focus">V</span></div>
+                  <div class="ds-field-row"><label>First / Last Spot Number</label><span class="ds-text focus">1</span> &nbsp; <span class="ds-text focus">20</span></div>
+                  <div class="ds-hint">Residents will choose from V1–V20 (20 spots).</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="ds-screen" data-stage="admin" data-screen="4">
+              <div class="ds-appbar">🅿️ Regent Parking <span class="ds-appbar-sub">Admin</span></div>
+              <div class="ds-body">
+                <div class="ds-banner">✓ Saved — now live in Resident Registration and Enforcement</div>
+                <div class="ds-field-row">
+                  <label>Building</label>
+                  <span class="ds-select">123 Harbourview Dr ▾</span>
+                </div>
+                <div class="ds-tabs">
+                  <span class="ds-tab">Exemptions</span><span class="ds-tab">Unit Codes</span><span class="ds-tab active">Visitor Spots</span><span class="ds-tab">History</span><span class="ds-tab">Settings</span>
+                </div>
+                <div class="ds-panel" style="padding:14px">
+                  <div class="ds-check-row"><span class="ds-check-box on">✓</span> Enable visitor spot selection</div>
+                  <div class="ds-hint">V1–V20 (20 spots) — residents choose one at registration.</div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="cta-band">
+  <div class="wrap">
+    <h2>Ready to put this in your building?</h2>
+    <p>A short walkthrough is the fastest way to know if this fits how your building actually operates.</p>
+    <a href="contact.html" class="btn btn-gold">Request a Demo</a>
+  </div>
+</section>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <span>© 2026 Regent Parking. All rights reserved.</span>
+    <span><a href="product.html">Product</a> · <a href="contact.html">Contact</a> · <a href="pricing.html">Pricing</a> · <a href="help.html">Help</a></span>
+  </div>
+</footer>
+
+<script>
+(function () {
+  // Drives both the scroll-spy pill nav and the per-flow device mockups.
+  // Each flow ("resident" | "enforcement" | "admin") has N .demo-step
+  // elements and N matching .ds-screen elements, matched by data-step /
+  // data-screen. As a step scrolls near the middle of the viewport, its
+  // matching screen crossfades in and its own text is highlighted.
+
+  function wireStageObserver() {
+    var steps = document.querySelectorAll('.demo-step');
+    var screensByStage = {};
+    document.querySelectorAll('.ds-screen').forEach(function (screen) {
+      var stage = screen.getAttribute('data-stage');
+      screensByStage[stage] = screensByStage[stage] || {};
+      screensByStage[stage][screen.getAttribute('data-screen')] = screen;
+    });
+
+    var observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        var el = entry.target;
+        var stage = el.getAttribute('data-stage');
+        var step = el.getAttribute('data-step');
+
+        // Update step highlighting within this stage only.
+        document.querySelectorAll('.demo-step[data-stage="' + stage + '"]').forEach(function (s) {
+          s.classList.toggle('active', s === el);
+        });
+
+        // Crossfade the matching screen.
+        var screens = screensByStage[stage] || {};
+        Object.keys(screens).forEach(function (key) {
+          screens[key].classList.toggle('active', key === step);
+        });
+      });
+    }, { rootMargin: '-40% 0px -40% 0px', threshold: 0 });
+
+    steps.forEach(function (s) { observer.observe(s); });
+  }
+
+  function wireFlowSwitcher() {
+    var pills = document.querySelectorAll('.flow-pill');
+    var sections = Array.prototype.map.call(pills, function (p) {
+      return document.getElementById(p.getAttribute('data-flow'));
+    });
+
+    var observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        var id = entry.target.id;
+        pills.forEach(function (p) {
+          p.classList.toggle('active', p.getAttribute('data-flow') === id);
+        });
+      });
+    }, { rootMargin: '-45% 0px -45% 0px', threshold: 0 });
+
+    sections.forEach(function (sec) { if (sec) observer.observe(sec); });
+  }
+
+  if ('IntersectionObserver' in window) {
+    wireStageObserver();
+    wireFlowSwitcher();
+  }
+})();
+</script>
+
+</body>
+</html>
