@@ -56,6 +56,29 @@ a { color: inherit; text-decoration: none; }
 }
 .nav-cta:hover { background: var(--gold-light); }
 
+/* ── Mobile nav (hamburger + slide-down panel) ──
+   Below 800px .nav-links hides (see the mobile block at the bottom of this
+   file); this hamburger/panel is what keeps Pricing/Help/Contact reachable
+   on a phone without scrolling all the way to the footer. Hidden above
+   800px — desktop uses .nav-links directly. ── */
+.nav-hamburger {
+  display: none; background: none; border: none; cursor: pointer;
+  flex-direction: column; justify-content: center; gap: 5px; padding: 6px; width: 34px; height: 34px;
+}
+.nav-hamburger span { display: block; width: 22px; height: 2px; background: var(--white); border-radius: 2px; transition: transform .2s, opacity .2s; }
+.nav-hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.nav-hamburger.open span:nth-child(2) { opacity: 0; }
+.nav-hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+.mobile-nav { display: none; flex-direction: column; background: var(--charcoal); border-top: 1px solid rgba(255,255,255,.08); }
+.mobile-nav.open { display: flex; }
+.mobile-nav a { color: rgba(255,255,255,.85); padding: 15px 24px; font-size: .95rem; font-weight: 500; border-bottom: 1px solid rgba(255,255,255,.07); }
+.mobile-nav a.active { color: var(--gold-light); }
+.mobile-nav .mobile-nav-cta {
+  background: var(--gold); color: var(--charcoal); font-weight: 700; text-align: center;
+  margin: 14px 24px; padding: 12px; border-radius: 6px; border-bottom: none;
+}
+
 /* ── Hero ── */
 .hero { background: var(--charcoal); color: var(--white); padding: 90px 0 100px; text-align: center; }
 .hero-eyebrow {
@@ -76,12 +99,20 @@ a { color: inherit; text-decoration: none; }
 .hero-grid h1 { margin: 0 0 20px; max-width: none; }
 .hero-grid p.lead { margin: 0 0 32px; max-width: none; }
 .hero-grid .hero-actions { justify-content: flex-start; }
-.hero-visual { display: flex; justify-content: center; }
+.hero-visual { display: flex; flex-direction: column; align-items: center; justify-content: center; }
 @media (max-width: 900px) {
   .hero-grid { grid-template-columns: 1fr; text-align: center; }
   .hero-grid .hero-actions { justify-content: center; }
   .hero-visual { margin-top: 36px; }
 }
+
+/* Progress dots under the auto-cycling homepage phone mockup — without
+   these, a visitor who lands on the "Continue" (disabled-looking) frame
+   has no way to tell this is step 1 of a live sequence rather than a
+   broken button. */
+.hero-dots { display: flex; gap: 8px; margin-top: 20px; }
+.hero-dots .dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,.25); transition: background .25s, transform .25s; }
+.hero-dots .dot.active { background: var(--gold-light); transform: scale(1.3); }
 
 .btn {
   display: inline-block; padding: 14px 28px; border-radius: 6px; font-weight: 700;
@@ -229,14 +260,39 @@ section { padding: 80px 0; }
 
 .demo-stage { position: sticky; top: 90px; display: flex; justify-content: center; }
 
+/* Every device mockup on the site (homepage hero + all three product.html
+   flows) gets a soft gold bloom behind it. This is what bridges the
+   charcoal/gold marketing palette to the product's own real colors (navy
+   blue, etc.) inside the frame — without it, the device just looks like a
+   foreign object dropped onto the page; with it, gold visibly "stages"
+   the product the way a brand-colored light does in product photography. */
+.device-frame { position: relative; z-index: 0; }
+.device-frame::before {
+  content: ''; position: absolute; inset: -46px; z-index: -1; pointer-events: none;
+  background: radial-gradient(ellipse at center, rgba(212,175,90,.38) 0%, rgba(212,175,90,.14) 45%, rgba(212,175,90,0) 72%);
+  filter: blur(4px);
+}
+
 /* Phone frame (resident registration) */
 .device-frame.phone { width: 270px; }
-.phone-bezel { background: #111318; border-radius: 42px; padding: 12px; box-shadow: 0 30px 60px -12px rgba(0,0,0,.4); position: relative; }
+.phone-bezel {
+  background: #111318; border-radius: 42px; padding: 12px; position: relative;
+  /* Rim-light: the bezel (#111318) and the hero background (--charcoal,
+     #1C1F2A) are close enough in value that without this, the phone's
+     edges disappear into the page and it reads as floating, not framed. */
+  box-shadow: 0 30px 60px -12px rgba(0,0,0,.4), 0 0 0 1px rgba(212,175,90,.3), 0 0 0 1.5px rgba(255,255,255,.06) inset;
+}
 .phone-notch {
   position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
   width: 86px; height: 20px; background: #111318; border-radius: 0 0 12px 12px; z-index: 5;
 }
 .phone-screen { position: relative; background: #fff; border-radius: 30px; overflow: hidden; height: 540px; }
+
+/* Slightly smaller in the hero specifically, so its height sits closer to
+   the text column's height and the two feel like one balanced
+   composition rather than two mismatched blocks side by side. */
+.hero-visual .device-frame.phone { width: 232px; }
+.hero-visual .phone-screen { height: 462px; }
 
 /* Browser frame (enforcement / admin) */
 .device-frame.browser { width: 100%; max-width: 480px; }
@@ -331,6 +387,11 @@ section { padding: 80px 0; }
 /* ── Mobile ── */
 @media (max-width: 800px) {
   .nav-links { display: none; }
+  /* The top-right gold CTA moves into the mobile-nav panel below (as
+     .mobile-nav-cta) so the hamburger has room and the bar doesn't
+     crowd on narrow screens. */
+  .nav-cta { display: none; }
+  .nav-hamburger { display: flex; }
   .hero h1 { font-size: 2.1rem; }
   .feature-grid { grid-template-columns: 1fr; }
   .band-grid { grid-template-columns: 1fr; gap: 32px; }

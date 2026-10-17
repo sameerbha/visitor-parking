@@ -20,6 +20,17 @@
       <a href="contact.html">Contact</a>
     </div>
     <a href="contact.html" class="nav-cta">Request a Demo</a>
+    <button class="nav-hamburger" id="nav-hamburger" aria-label="Open menu" aria-expanded="false" aria-controls="mobile-nav">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+  <div class="mobile-nav" id="mobile-nav">
+    <a href="index.html" class="active">Home</a>
+    <a href="product.html">Product</a>
+    <a href="pricing.html">Pricing</a>
+    <a href="help.html">Help</a>
+    <a href="contact.html">Contact</a>
+    <a href="contact.html" class="mobile-nav-cta">Request a Demo</a>
   </div>
 </nav>
 
@@ -108,22 +119,32 @@
           </div>
         </div>
       </div>
+      <div class="hero-dots" id="hero-dots">
+        <span class="dot active"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span>
+      </div>
     </div>
   </div>
 </header>
 
+<script src="js/nav.js" defer></script>
 <script>
 (function () {
   // Auto-cycles the homepage hero's phone mockup through the same 4
   // registration states shown on product.html, looping continuously so
-  // the hero reads as "alive" without needing scroll or a click.
+  // the hero reads as "alive" without needing scroll or a click. The
+  // dots give a visitor who lands mid-cycle (e.g. on the greyed-out
+  // "Continue" frame) a clear signal this is step 1 of 4, not a stuck
+  // or broken button.
   var screens = document.querySelectorAll('#hero-phone .ds-screen');
+  var dots = document.querySelectorAll('#hero-dots .dot');
   if (!screens.length) return;
   var i = 0;
   setInterval(function () {
     screens[i].classList.remove('active');
+    if (dots[i]) dots[i].classList.remove('active');
     i = (i + 1) % screens.length;
     screens[i].classList.add('active');
+    if (dots[i]) dots[i].classList.add('active');
   }, 2400);
 })();
 </script>
