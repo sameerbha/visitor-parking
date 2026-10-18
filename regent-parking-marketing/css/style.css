@@ -250,7 +250,7 @@ section { padding: 80px 0; }
 .demo-copy { display: flex; flex-direction: column; gap: 22px; }
 .demo-step {
   padding: 18px 22px; border-left: 3px solid var(--border); border-radius: 0 8px 8px 0;
-  transition: border-color .2s, background .2s; cursor: default;
+  transition: border-color .2s, background .2s; cursor: pointer;
 }
 .demo-step.active { border-left-color: var(--gold); background: var(--white); box-shadow: 0 1px 3px rgba(0,0,0,.06); }
 .demo-flow.alt .demo-step.active { background: var(--white); }
@@ -268,10 +268,18 @@ section { padding: 80px 0; }
    the product the way a brand-colored light does in product photography. */
 .device-frame { position: relative; z-index: 0; }
 .device-frame::before {
-  content: ''; position: absolute; inset: -46px; z-index: -1; pointer-events: none;
-  background: radial-gradient(ellipse at center, rgba(212,175,90,.38) 0%, rgba(212,175,90,.14) 45%, rgba(212,175,90,0) 72%);
-  filter: blur(4px);
+  /* Fixed, circular size — NOT "inset" — on purpose. inset scales with the
+     frame's own box, and a phone frame is tall and narrow, so an inset
+     glow stretches into a vertical sliver/bar instead of a soft round
+     bloom. A fixed circle centered on the frame looks right regardless of
+     whether the frame itself is tall (phone) or wide (browser). */
+  content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  z-index: -1; pointer-events: none; border-radius: 50%;
+  background: radial-gradient(circle, rgba(212,175,90,.30) 0%, rgba(212,175,90,.10) 50%, rgba(212,175,90,0) 72%);
+  filter: blur(14px);
 }
+.device-frame.phone::before { width: 340px; height: 340px; }
+.device-frame.browser::before { width: 460px; height: 380px; }
 
 /* Phone frame (resident registration) */
 .device-frame.phone { width: 270px; }
@@ -303,7 +311,7 @@ section { padding: 80px 0; }
   box-shadow: 0 25px 50px -14px rgba(0,0,0,.3); border-radius: 0 0 10px 10px;
 }
 
-.ds-screen { position: absolute; inset: 0; opacity: 0; transition: opacity .35s ease; pointer-events: none; overflow: auto; }
+.ds-screen { position: absolute; inset: 0; opacity: 0; transition: opacity .15s linear; pointer-events: none; overflow: auto; }
 .ds-screen.active { opacity: 1; pointer-events: auto; }
 
 /* ds- resident phone screen */

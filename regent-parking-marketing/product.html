@@ -406,39 +406,84 @@
   // Drives both the scroll-spy pill nav and the per-flow device mockups.
   // Each flow ("resident" | "enforcement" | "admin") has N .demo-step
   // elements and N matching .ds-screen elements, matched by data-step /
-  // data-screen. As a step scrolls near the middle of the viewport, its
-  // matching screen crossfades in and its own text is highlighted.
+  // data-screen.
+  //
+  // The per-flow mockup used to be driven by an IntersectionObserver that
+  // just toggled a step fully on/off once it crossed a band near the
+  // viewport's center. That felt choppy on a fast scroll: the observer
+  // only fires when a threshold is crossed, so a quick scroll could skip
+  // straight past a step's "on" window, or land mid-transition with
+  // nothing clearly active. Instead, this recomputes on every animation
+  // frame during scroll, picks whichever step's center is closest to a
+  // fixed trigger line, and crossfades to it — tied to actual scroll
+  // position rather than a one-shot threshold event.
+  //
+  // Hovering a step now also jumps straight to its screen (desktop mice
+  // only — touch doesn't fire hover), for anyone who'd rather explore the
+  // steps directly than scroll to each one. Moving the mouse away reverts
+  // to whatever the current scroll position calls for.
 
-  function wireStageObserver() {
-    var steps = document.querySelectorAll('.demo-step');
-    var screensByStage = {};
+  function wireStageDemos() {
+    var stages = {};
+    document.querySelectorAll('.demo-step').forEach(function (step) {
+      var stage = step.getAttribute('data-stage');
+      stages[stage] = stages[stage] || { steps: [], screens: {} };
+      stages[stage].steps.push(step);
+    });
     document.querySelectorAll('.ds-screen').forEach(function (screen) {
       var stage = screen.getAttribute('data-stage');
-      screensByStage[stage] = screensByStage[stage] || {};
-      screensByStage[stage][screen.getAttribute('data-screen')] = screen;
+      if (stages[stage]) stages[stage].screens[screen.getAttribute('data-screen')] = screen;
     });
 
-    var observer = new IntersectionObserver(function (entries) {
-      entries.forEach(function (entry) {
-        if (!entry.isIntersecting) return;
-        var el = entry.target;
-        var stage = el.getAttribute('data-stage');
-        var step = el.getAttribute('data-step');
+    var hovered = {}; // stage name -> step number being hovered, or null
 
-        // Update step highlighting within this stage only.
-        document.querySelectorAll('.demo-step[data-stage="' + stage + '"]').forEach(function (s) {
-          s.classList.toggle('active', s === el);
-        });
+    function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 
-        // Crossfade the matching screen.
-        var screens = screensByStage[stage] || {};
-        Object.keys(screens).forEach(function (key) {
-          screens[key].classList.toggle('active', key === step);
-        });
+    function updateStage(stageName) {
+      var data = stages[stageName];
+      if (!data) return;
+      var triggerY = window.innerHeight * 0.45;
+      var bestStep = null, bestT = -1;
+
+      data.steps.forEach(function (step) {
+        var num = step.getAttribute('data-step');
+        var rect = step.getBoundingClientRect();
+        var center = rect.top + rect.height / 2;
+        var t = clamp(1 - Math.abs(center - triggerY) / Math.max(rect.height, 120), 0, 1);
+
+        if (hovered[stageName]) t = (num === hovered[stageName]) ? 1 : 0;
+
+        var screen = data.screens[num];
+        if (screen) {
+          screen.style.opacity = t;
+          screen.style.pointerEvents = t > 0.5 ? 'auto' : 'none';
+        }
+        if (t > bestT) { bestT = t; bestStep = num; }
       });
-    }, { rootMargin: '-40% 0px -40% 0px', threshold: 0 });
 
-    steps.forEach(function (s) { observer.observe(s); });
+      data.steps.forEach(function (step) {
+        step.classList.toggle('active', step.getAttribute('data-step') === bestStep);
+      });
+    }
+
+    function updateAll() { Object.keys(stages).forEach(updateStage); }
+
+    document.querySelectorAll('.demo-step').forEach(function (step) {
+      var stage = step.getAttribute('data-stage');
+      var num = step.getAttribute('data-step');
+      step.addEventListener('mouseenter', function () { hovered[stage] = num; updateStage(stage); });
+      step.addEventListener('mouseleave', function () { hovered[stage] = null; updateStage(stage); });
+    });
+
+    var ticking = false;
+    function onScroll() {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(function () { updateAll(); ticking = false; });
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    updateAll();
   }
 
   function wireFlowSwitcher() {
@@ -460,10 +505,8 @@
     sections.forEach(function (sec) { if (sec) observer.observe(sec); });
   }
 
-  if ('IntersectionObserver' in window) {
-    wireStageObserver();
-    wireFlowSwitcher();
-  }
+  wireStageDemos();
+  if ('IntersectionObserver' in window) wireFlowSwitcher();
 })();
 </script>
 
