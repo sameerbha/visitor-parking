@@ -282,7 +282,7 @@ section { padding: 80px 0; }
 .device-frame.browser::before { width: 460px; height: 380px; }
 
 /* Phone frame (resident registration) */
-.device-frame.phone { width: 270px; }
+.device-frame.phone { width: 292px; }
 .phone-bezel {
   background: #111318; border-radius: 42px; padding: 12px; position: relative;
   /* Rim-light: the bezel (#111318) and the hero background (--charcoal,
@@ -294,13 +294,14 @@ section { padding: 80px 0; }
   position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
   width: 86px; height: 20px; background: #111318; border-radius: 0 0 12px 12px; z-index: 5;
 }
-.phone-screen { position: relative; background: #fff; border-radius: 30px; overflow: hidden; height: 540px; }
-
-/* Slightly smaller in the hero specifically, so its height sits closer to
-   the text column's height and the two feel like one balanced
-   composition rather than two mismatched blocks side by side. */
-.hero-visual .device-frame.phone { width: 232px; }
-.hero-visual .phone-screen { height: 462px; }
+/* 578px, not 540 — a bit of deliberate headroom above the tallest real
+   content (the "Visitor Parking Spot" screen, which wraps onto two lines)
+   so there's slack left over rather than an exact fit. One shared size
+   everywhere (hero + product.html) on purpose now — the previous
+   hero-only shrink override was what caused the wrap/scrollbar bug
+   twice; a single size that's never overridden can't drift out of sync
+   with the content again. */
+.phone-screen { position: relative; background: #fff; border-radius: 30px; overflow: hidden; height: 578px; }
 
 /* Browser frame (enforcement / admin) */
 .device-frame.browser { width: 100%; max-width: 480px; }
@@ -311,7 +312,10 @@ section { padding: 80px 0; }
   box-shadow: 0 25px 50px -14px rgba(0,0,0,.3); border-radius: 0 0 10px 10px;
 }
 
-.ds-screen { position: absolute; inset: 0; opacity: 0; transition: opacity .15s linear; pointer-events: none; overflow: auto; }
+/* overflow: hidden, not auto, on purpose — a mockup "screen" should never
+   show a real scrollbar; it breaks the illusion either way, and clipping
+   is the safer failure mode if content ever runs long again. */
+.ds-screen { position: absolute; inset: 0; opacity: 0; transition: opacity .15s linear; pointer-events: none; overflow: hidden; }
 .ds-screen.active { opacity: 1; pointer-events: auto; }
 
 /* ds- resident phone screen */
