@@ -230,6 +230,30 @@
       </div>
       <button type="submit" class="btn btn-primary" id="settings-submit-btn">Save Changes</button>
     </form>
+
+    <hr style="margin:28px 0;border:none;border-top:1px solid var(--border)" />
+
+    <h3 style="font-size:1rem;margin-bottom:10px">Re-registration Cooldown</h3>
+    <p class="unit-codes-info" style="margin-bottom:20px">
+      <strong>ℹ️ Optional — off by default</strong>
+      Not every building wants this. When on, the same vehicle can't register again for a while after its stay ends — a different vehicle from the same unit is never affected.
+    </p>
+    <div class="alert alert-error hidden" id="cooldown-error"></div>
+    <div class="alert alert-success hidden" id="cooldown-success"></div>
+    <form id="cooldown-form" novalidate style="max-width:480px">
+      <div class="form-group">
+        <label style="display:flex;align-items:center;gap:8px;font-weight:600;cursor:pointer">
+          <input type="checkbox" id="cd-enabled" style="width:auto" />
+          Enable re-registration cooldown
+        </label>
+      </div>
+      <div id="cd-hours-field" class="form-group hidden">
+        <label>Cooldown Length (hours) *</label>
+        <input type="number" id="cd-hours" class="form-control" min="1" max="720" style="max-width:160px" />
+        <span class="field-hint">How long after a stay ends before the same plate can register again. Starts counting from when the stay ends, not from the original registration — e.g. 72 hours means a 24-hour stay plus 3 more days before that plate is eligible again.</span>
+      </div>
+      <button type="submit" class="btn btn-primary" id="cooldown-submit-btn">Save Changes</button>
+    </form>
   </div>
 
 </div><!-- portal-page -->
@@ -833,6 +857,10 @@ async function loadSettings() {
 
   document.getElementById('s-monthly-limit').value = tenant.monthly_pass_limit;
   document.getElementById('s-plate-limit').value   = tenant.plate_day_limit;
+
+  document.getElementById('cd-enabled').checked = !!tenant.reregistration_cooldown_enabled;
+  document.getElementById('cd-hours').value     = tenant.reregistration_cooldown_hours || 72;
+  document.getElementById('cd-hours-field').classList.toggle('hidden', !tenant.reregistration_cooldown_enabled);
 }
 
 document.getElementById('settings-form').addEventListener('submit', async (e) => {
@@ -851,6 +879,45 @@ document.getElementById('settings-form').addEventListener('submit', async (e) =>
   btn.disabled = true;
   try {
     await updateTenantLimits(currentAddress.tenant_id, monthlyLimit, plateLimit);
+    successEl.textContent = 'Settings saved.';
+    successEl.classList.remove('hidden');
+  } catch (err) {
+    errEl.textContent = err.message || 'Could not save settings.';
+    errEl.classList.remove('hidden');
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+document.getElementById('cd-enabled').addEventListener('change', function() {
+  document.getElementById('cd-hours-field').classList.toggle('hidden', !this.checked);
+});
+
+document.getElementById('cooldown-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const errEl     = document.getElementById('cooldown-error');
+  const successEl = document.getElementById('cooldown-success');
+  const btn       = document.getElementById('cooldown-submit-btn');
+  errEl.classList.add('hidden');
+  successEl.classList.add('hidden');
+
+  if (!currentAddress || !currentAddress.tenant_id) return;
+
+  const enabled = document.getElementById('cd-enabled').checked;
+  const hours   = parseInt(document.getElementById('cd-hours').value, 10);
+
+  if (enabled && (!Number.isFinite(hours) || hours < 1 || hours > 720)) {
+    errEl.textContent = 'Enter a cooldown length between 1 and 720 hours.';
+    errEl.classList.remove('hidden');
+    return;
+  }
+
+  btn.disabled = true;
+  try {
+    // Still send whatever's in the field even when disabling, so the stored
+    // hours value is preserved (not reset to some default) if re-enabled
+    // later — defaults to 72 only when the field was never set at all.
+    await updateTenantReregistrationCooldown(currentAddress.tenant_id, enabled, hours || 72);
     successEl.textContent = 'Settings saved.';
     successEl.classList.remove('hidden');
   } catch (err) {

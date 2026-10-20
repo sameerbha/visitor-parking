@@ -19,6 +19,14 @@ CREATE TABLE tenants (
   -- original fixed limits so nothing changes until a tenant edits them.
   monthly_pass_limit INT NOT NULL DEFAULT 10 CHECK (monthly_pass_limit >= 1),
   plate_day_limit    INT NOT NULL DEFAULT 7  CHECK (plate_day_limit >= 1),
+  -- Optional, per-tenant: once enabled, the SAME plate can't register again
+  -- at one of this tenant's buildings until reregistration_cooldown_hours
+  -- after its most recent stay's expires_at. Off by default — not every
+  -- client wants this. See patch-reregistration-cooldown.sql for the
+  -- migration that added this to earlier installs, and can_register_visitor()
+  -- below for the actual enforcement.
+  reregistration_cooldown_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+  reregistration_cooldown_hours   INT NOT NULL DEFAULT 72 CHECK (reregistration_cooldown_hours BETWEEN 1 AND 720),
   created_at         TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -552,7 +560,8 @@ END;
 $$;
 GRANT EXECUTE ON FUNCTION get_monthly_pass_stats TO anon;
 
--- can_register_visitor: checks both monthly limits and returns allowed/reason.
+-- can_register_visitor: checks the re-registration cooldown (if this tenant
+-- has it enabled), then monthly limits, and returns allowed/reason.
 CREATE OR REPLACE FUNCTION can_register_visitor(
   p_unit_number TEXT,
   p_address_id  UUID,
@@ -562,13 +571,52 @@ RETURNS JSON
 LANGUAGE plpgsql SECURITY DEFINER
 AS $$
 DECLARE
-  v_stats       JSON;
-  v_norm_plate  TEXT;
-  v_days_used   INT;
-  v_plate_limit INT;
+  v_stats            JSON;
+  v_norm_plate       TEXT;
+  v_days_used        INT;
+  v_plate_limit      INT;
+  v_cooldown_enabled BOOLEAN;
+  v_cooldown_hours   INT;
+  v_last_expires_at  TIMESTAMPTZ;
+  v_cooldown_until   TIMESTAMPTZ;
 BEGIN
+  v_norm_plate := UPPER(REPLACE(p_plate, ' ', ''));
+
+  -- Optional, per-tenant (Admin > Settings). Scoped to address_id + plate
+  -- only, never unit_number, so a different vehicle from the same unit is
+  -- never affected, and the same plate is blocked regardless of which unit
+  -- tries to re-register it. "Not inclusive": the cooldown clock starts the
+  -- instant the stay's expires_at passes, not from the original
+  -- registration — so the total blocked span is the 24-hour stay plus the
+  -- full cooldown length, not the cooldown alone.
+  SELECT t.reregistration_cooldown_enabled, t.reregistration_cooldown_hours
+  INTO v_cooldown_enabled, v_cooldown_hours
+  FROM addresses a
+  JOIN tenants t ON t.id = a.tenant_id
+  WHERE a.id = p_address_id;
+
+  IF v_cooldown_enabled THEN
+    SELECT MAX(expires_at) INTO v_last_expires_at
+    FROM visitor_registrations
+    WHERE address_id = p_address_id
+      AND UPPER(REPLACE(visitor_plate, ' ', '')) = v_norm_plate;
+
+    IF v_last_expires_at IS NOT NULL THEN
+      v_cooldown_until := v_last_expires_at + make_interval(hours => v_cooldown_hours);
+      IF NOW() < v_cooldown_until THEN
+        -- cooldownUntil is the raw timestamp — the client formats it in the
+        -- resident's own local time, same pattern as the existing "already
+        -- registered, extend?" flow. reason is a plain-text fallback only.
+        RETURN json_build_object(
+          'allowed',       FALSE,
+          'reason',        'This vehicle is still in its re-registration cooldown period for this building and can''t be registered again yet.',
+          'cooldownUntil', v_cooldown_until
+        );
+      END IF;
+    END IF;
+  END IF;
+
   v_stats       := get_monthly_pass_stats(p_unit_number, p_address_id);
-  v_norm_plate  := UPPER(REPLACE(p_plate, ' ', ''));
   v_plate_limit := COALESCE((v_stats->>'plateLimit')::INT, 7);
 
   IF (v_stats->>'maxPassesReached')::BOOLEAN THEN
@@ -630,6 +678,40 @@ BEGIN
 END;
 $$;
 GRANT EXECUTE ON FUNCTION update_tenant_limits TO authenticated;
+
+-- update_tenant_reregistration_cooldown: self-serve by any of the tenant's
+-- own staff, same as update_tenant_limits above — this is a policy setting
+-- like monthly pass limits, not a migration-sensitive onboarding action, so
+-- it doesn't need Platform Admin.
+CREATE OR REPLACE FUNCTION update_tenant_reregistration_cooldown(
+  p_tenant_id      UUID,
+  p_enabled        BOOLEAN,
+  p_cooldown_hours INT
+)
+RETURNS JSON
+LANGUAGE plpgsql SECURITY DEFINER
+AS $$
+BEGIN
+  IF NOT is_tenant_member(p_tenant_id) THEN
+    RAISE EXCEPTION 'Not authorized for this tenant';
+  END IF;
+
+  IF p_cooldown_hours < 1 OR p_cooldown_hours > 720 THEN
+    RAISE EXCEPTION 'Cooldown length must be between 1 and 720 hours (30 days)';
+  END IF;
+
+  UPDATE tenants
+  SET reregistration_cooldown_enabled = p_enabled,
+      reregistration_cooldown_hours   = p_cooldown_hours
+  WHERE id = p_tenant_id;
+
+  RETURN json_build_object(
+    'enabled',       p_enabled,
+    'cooldownHours', p_cooldown_hours
+  );
+END;
+$$;
+GRANT EXECUTE ON FUNCTION update_tenant_reregistration_cooldown TO authenticated;
 
 -- update_address_visitor_spots: lets a building's own staff turn visitor
 -- spot selection on/off and set its range themselves — unlike bulk unit

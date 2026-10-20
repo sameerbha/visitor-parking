@@ -382,10 +382,21 @@ document.getElementById('reg-form').addEventListener('submit', async function(e)
       return;
     }
 
-    // 7. Check monthly pass limits (server-side RPC)
+    // 7. Check re-registration cooldown (if this tenant has it enabled) and
+    // monthly pass limits (server-side RPC, same call covers both).
     const passCheck = await canRegisterVisitor(unit_number, visitor_plate, address_id);
     if (!passCheck.allowed) {
-      showError(passCheck.reason);
+      if (passCheck.cooldownUntil) {
+        // Same formatting pattern as the extend-prompt expiry times above —
+        // the server only ever sends the raw timestamp back so this always
+        // renders in the resident's own local time, not the server's.
+        const fmt = { hour:'2-digit', minute:'2-digit', hour12:true, month:'short', day:'numeric' };
+        const until = new Date(passCheck.cooldownUntil);
+        showError('Plate ' + visitor_plate + ' can\'t be registered again until ' +
+          until.toLocaleString('en-CA', fmt) + '. A different vehicle from this unit can still be registered anytime.');
+      } else {
+        showError(passCheck.reason);
+      }
       submitBtn.textContent = 'Submit';
       submitBtn.disabled = false;
       return;

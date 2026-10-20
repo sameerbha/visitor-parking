@@ -2,6 +2,22 @@
 
 All changes to this project are documented here in reverse chronological order.
 
+## [2.8.0] — 2026-10-20
+
+### Optional per-tenant re-registration cooldown
+
+A client asked for a way to stop the same vehicle from cycling straight back in right after its visitor pass expires — a 24-hour stay, then the same plate blocked for another 3 days before it can register again, with a different plate from the same unit never affected. Built as an opt-in, per-tenant setting rather than a universal rule, since not every client wants this.
+
+**Admin's existing "⚙️ Settings" tab** gained a second form, "Re-registration Cooldown" — a toggle plus a configurable number of hours (default 72, matching the original ask, but editable per tenant rather than hardcoded). Same tenant-wide scope as the pass limits above it on that tab (not per-building), and same self-serve, any-staff-member access — no Platform Admin involvement.
+
+**Enforced server-side** in `can_register_visitor()`, the same RPC that already gates registration on monthly pass limits — a client can't bypass it by skipping a check that only ever lived in the browser. The rule is keyed on `address_id` + plate only, never `unit_number`: a different vehicle from the same unit registers exactly as before, and the same plate is blocked regardless of which unit tries to bring it back. The cooldown clock starts when the stay's `expires_at` passes, not from the original registration — so a 24-hour stay plus a 72-hour cooldown blocks that plate for 96 hours total, not 72, and an extended stay pushes the cutoff back to match.
+
+**The registration page** tells a blocked resident exactly when that plate becomes eligible again, in their own local time — the RPC hands back the raw cutoff timestamp rather than a pre-formatted string, the same pattern already used for the "already registered, extend?" prompt, so it's never off by a timezone.
+
+Added [patch-reregistration-cooldown.sql](/Users/sameerbhaidani/Documents/VIsitors%20Parking%20App/patch-reregistration-cooldown.sql) for existing installs, and [test-reregistration-cooldown.sql](/Users/sameerbhaidani/Documents/VIsitors%20Parking%20App/test-reregistration-cooldown.sql), a self-contained test (wrapped in a rolled-back transaction, safe to run against a real database) that exercises the boundary cases directly: just before cutoff, exactly at cutoff, just after, the "different plate, same unit" exemption, and the feature left off entirely.
+
+**Files changed:** supabase-schema.sql, patch-reregistration-cooldown.sql (new), test-reregistration-cooldown.sql (new), js/app.js, admin.html, index.html, staff-guide.html, tests/regression-static.sh, README.md, CHANGELOG.md
+
 ## [2.7.0] — 2026-10-16
 
 ### Optional per-building visitor parking spots (e.g. V1–V20)

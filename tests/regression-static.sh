@@ -225,5 +225,19 @@ check_contains enforcement.html "<th>Spot</th>" "enforcement.html Valid Plates t
 check_contains enforcement.html "'Spot'" "enforcement.html CSV export includes Spot"
 
 echo
+echo "== Re-registration Cooldown markers present =="
+check_contains supabase-schema.sql "reregistration_cooldown_enabled" "supabase-schema.sql has the cooldown columns on tenants"
+check_contains supabase-schema.sql "reregistration_cooldown_hours" "supabase-schema.sql has the configurable cooldown-hours column"
+check_contains supabase-schema.sql "update_tenant_reregistration_cooldown" "supabase-schema.sql defines update_tenant_reregistration_cooldown"
+check_contains supabase-schema.sql "cooldownUntil" "supabase-schema.sql's can_register_visitor returns cooldownUntil"
+check_status patch-reregistration-cooldown.sql 200
+check_status test-reregistration-cooldown.sql 200
+check_contains js/app.js "function updateTenantReregistrationCooldown" "app.js defines updateTenantReregistrationCooldown"
+check_contains admin.html "cd-enabled" "admin.html has the cooldown enable checkbox"
+check_contains admin.html "updateTenantReregistrationCooldown" "admin.html can save the cooldown setting"
+check_contains index.html "cooldownUntil" "index.html handles a cooldown-blocked registration"
+check_contains staff-guide.html "re-registration cooldown" "staff-guide.html documents the cooldown setting"
+
+echo
 echo "== Summary: $PASS passed, $FAIL failed =="
 [ "$FAIL" -eq 0 ]

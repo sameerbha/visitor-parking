@@ -217,6 +217,14 @@ Google scores every interaction 0.0–1.0; `verify-recaptcha.mjs` rejects anythi
 
 The monthly-passes-per-unit and days-per-plate limits are per-tenant settings, not fixed values — editable from Admin's "⚙️ Settings" tab by any staff member of that tenant (any building's staff can change it, consistent with the flat access decision — there's no separate property-manager tier). They apply across every building under that tenant's account, not per-building. Existing tenants default to 10/7, matching the original fixed behavior, until changed. Run [patch-tenant-limits.sql](/Users/sameerbhaidani/Documents/VIsitors%20Parking%20App/patch-tenant-limits.sql) once in the Supabase SQL Editor to add this to an existing install.
 
+## Re-registration Cooldown (Optional)
+
+A tenant-level setting, off by default, from Admin's "⚙️ Settings" tab (same tab and same per-tenant scope as the pass limits above — not per-building). When enabled, the **same vehicle** (by plate) can't register again at one of that tenant's buildings until a configurable number of hours (default 72) after its most recent stay's `expires_at`. A **different** vehicle from the same unit is never affected — the check is scoped to `address_id` + plate only, never `unit_number`, and blocks that plate regardless of which unit tries to register it again.
+
+The cooldown clock starts when the stay *ends*, not when it was originally registered — a 24-hour stay plus a 72-hour cooldown means that plate is blocked for a full 96 hours from the original registration, not 72. An extended stay (via the resident's "Extend by 24 Hours" flow) pushes the cooldown back accordingly, since it's based on the final `expires_at` after any extensions, not the original one.
+
+Enforced server-side in `can_register_visitor()` — the same RPC that already gates registration on monthly pass limits — so it can't be bypassed by a client that skips the check. When a plate is blocked, the resident sees exactly when it becomes eligible again, in their own local time (the RPC returns the raw cutoff timestamp; the client formats it, the same pattern used for the "already registered, extend?" flow). Run [patch-reregistration-cooldown.sql](/Users/sameerbhaidani/Documents/VIsitors%20Parking%20App/patch-reregistration-cooldown.sql) once in the Supabase SQL Editor to add this to an existing install. See [test-reregistration-cooldown.sql](/Users/sameerbhaidani/Documents/VIsitors%20Parking%20App/test-reregistration-cooldown.sql) for a self-contained (rolled-back) correctness test covering the boundary cases.
+
 ## Visitor Parking Spots (Optional)
 
 Each building can optionally let residents pick a specific visitor spot (e.g. `V1`–`V20`) when registering — unlike pass limits, this is configured **per building**, not per tenant, from Admin's "🅿️ Visitor Spots" tab. Off by default; a building that never turns it on sees no change anywhere in the app.

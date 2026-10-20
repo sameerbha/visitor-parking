@@ -469,6 +469,21 @@ async function updateTenantLimits(tenantId, monthlyPassLimit, plateDayLimit) {
   return data;
 }
 
+// Optional, per-tenant (Admin > Settings, same self-serve pattern as
+// updateTenantLimits above). When enabled, the same plate can't register
+// again at one of this tenant's buildings until cooldownHours after its
+// most recent stay ends — see can_register_visitor() in the schema for the
+// actual enforcement.
+async function updateTenantReregistrationCooldown(tenantId, enabled, cooldownHours) {
+  const { data, error } = await _sb.rpc('update_tenant_reregistration_cooldown', {
+    p_tenant_id: tenantId,
+    p_enabled: enabled,
+    p_cooldown_hours: cooldownHours,
+  });
+  if (error) throw error;
+  return data;
+}
+
 // Used by Admin's Visitor Spots tab (per-building, unlike Settings' tenant-
 // wide pass limits — the RPC itself checks has_tenant_access(addressId)).
 // Pass prefix=null (with start/end also null) to disable the feature for
